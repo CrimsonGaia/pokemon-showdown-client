@@ -161,6 +161,15 @@ License: GPLv2
 
 /* The declaration order of these hp* classes is significant. */
 
+
+.statbar .hpbar .hp-blue {
+	height: 4px;
+	border-top: 2px solid #003fdd;
+	background: #0600bb;
+	border-bottom: 2px solid #004777;
+	border-right: 1px solid #003c77;
+	border-radius: 3px;
+}
 .statbar .hpbar .hp {
 	height: 4px;
 	border-top: 2px solid #00dd60;
@@ -184,6 +193,11 @@ License: GPLv2
 
 /* The declaration order of these prevhp* classes is significant. */
 
+.statbar .hpbar .prevhp-blue {
+	background: #bbd7ee;
+	height: 8px;
+	border-radius: 3px;
+}
 .statbar .hpbar .prevhp {
 	background: #BBEECC;
 	height: 8px;
@@ -275,6 +289,11 @@ License: GPLv2
 	background: #009AA4;
 	color: #FFFFFF;
 }
+.statbar span.aura {
+	background: #e5c197;
+	color: #e68a2e;
+	border-color: #e68a2e;
+}
 .statbar span.bad {
 	background: #FFE5E0;
 	color: #FF4400;
@@ -319,7 +338,6 @@ License: GPLv2
 	right: 0;
 	bottom: 75px;
 }
-
 .trainer-near {
 	bottom: 75px;
 }
@@ -332,7 +350,6 @@ License: GPLv2
 .trainer-far2 {
 	bottom: 75px;
 }
-
 .trainer strong {
 	display: block;
 	font-size: 8pt;
@@ -461,7 +478,11 @@ License: GPLv2
 	color: #335511;
 }
 .psychicterrainweather {
-	background: #CCAAEE url(../fx/weather-psychicterrain.png) no-repeat scroll left top;
+	background: #eeaab7 url(../fx/weather-psychicterrain.png) no-repeat scroll left top;
+	color: #551135;
+}
+.toxicterrainweather {
+	background: #c5aaee url(../fx/weather-toxicterrain.png) no-repeat scroll left top;
 	color: #441155;
 }
 .gravityweather {
@@ -480,7 +501,6 @@ License: GPLv2
 	background: #DDAAEE url(../fx/weather-wonderroom.png) no-repeat scroll left top;
 	color: #661155;
 }
-
 .battle .result {
 	display: none;
 	position: absolute;
@@ -523,6 +543,10 @@ License: GPLv2
 .battle .frzresult strong {
 	color: #FFFFFF;
 	background: #009AA4;
+}
+.battle .auraresult strong {
+	color: #FFFFFF;
+	background: #e5c197;
 }
 .battle .abilityresult strong {
 	color: #FFFFFF;

@@ -2117,7 +2117,8 @@
 			pokemon: 'pokemon',
 			ability: 'abilities',
 			move: 'moves',
-			item: 'items'
+			item: 'items',
+			flag: 'flag',
 		},
 		updateChart: function (pokemonChanged, wasIncomplete) {
 			var type = this.curChartType;

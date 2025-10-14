@@ -1065,12 +1065,16 @@ export type TypeName = 'Normal' | 'Fighting' | 'Flying' | 'Poison' | 'Ground' | 
 export type StatusName = 'par' | 'psn' | 'frz' | 'slp' | 'brn';
 export type BoostStatName = 'atk' | 'def' | 'spa' | 'spd' | 'spe' | 'evasion' | 'accuracy' | 'spc';
 export type GenderName = 'M' | 'F' | 'N';
+export type FlagName = 'Binding' | 'Bite' | 'Bullet' | 'Bomb' | 'Contact' | 'Crash' | 'Dance' | 'Draining' | 'Explosive' | 
+'Healing' | 'Powder' | 'Pulse' | 'Punch' | 'Slice' | 'Sound' | 'Wind' | 'Airborne' | 'Aura' | 'Beam' | 'Breath' | 'Claw' |
+'Crush' | 'Kick' | 'Light' | 'Lunar' | 'Lunar' | 'Magic' | 'Pierce' | 'Shadow' | 'Solar' | 'Spin' | 'Sweep' | 'Throw' |
+'Weapon' | 'Wing';
 
 export interface Effect {
 	readonly id: ID;
 	readonly name: string;
 	readonly gen: number;
-	readonly effectType: 'Item' | 'Move' | 'Ability' | 'Species' | 'PureEffect';
+	readonly effectType: 'Item' | 'Move' | 'Flag' | 'Ability' | 'Species' | 'PureEffect';
 	/**
 	 * Do we have data on this item/move/ability/species?
 	 * WARNING: Always false if the relevant data files aren't loaded.
@@ -1387,6 +1391,7 @@ export class Move implements Effect {
 			}
 		}
 	}
+	
 }
 
 export interface AbilityFlags {
@@ -1407,6 +1412,28 @@ export interface AbilityFlags {
 	/** Disables the Ability if the user is Transformed */
 	notransform?: 1;
 }
+
+export class Flag implements Effect {
+	readonly effectType = 'Flag';
+	readonly id: ID;
+	readonly name: string;
+	readonly flags: Readonly<MoveFlags>;
+	readonly gen: number;
+	readonly exists: boolean;
+	readonly desc: string;
+	readonly shortDesc: string;
+
+	constructor(id: ID, name: string, data: any) {
+		if (!data || typeof data !== 'string') data = {};
+		if (data.name) name = data.name;
+		this.name = Dex.sanitizeName(name);
+		this.id = id;
+		this.flags = 
+		this.gen = data.gen || 0;
+		this.exists = ('exists' in data ? !!data.exists : true);
+		this.desc = data.desc;
+		this.shortDesc = data.shortDesc;
+	}}
 
 export class Ability implements Effect {
 	// effect

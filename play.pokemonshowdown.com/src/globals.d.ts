@@ -8,6 +8,7 @@ declare const BattleText: { [id: string]: { [templateName: string]: string } };
 declare const BattleFormats: { [id: string]: import('./panel-teamdropdown').FormatData };
 declare const BattlePokedex: { [id: string]: AnyObject };
 declare const BattleMovedex: { [id: string]: AnyObject };
+declare const BattleFlags: { [id: string]: AnyObject };
 declare const BattleAbilities: { [id: string]: AnyObject };
 declare const BattleItems: { [id: string]: AnyObject };
 declare const BattleAliases: { [id: string]: string };

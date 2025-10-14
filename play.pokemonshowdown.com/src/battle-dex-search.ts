@@ -12,9 +12,11 @@
  */
 
 import { Dex, type ModdedDex, toID, type ID } from "./battle-dex";
+import { Flag } from "./battle-dex-data";
+
 
 export type SearchType = (
-	'pokemon' | 'type' | 'tier' | 'move' | 'item' | 'ability' | 'egggroup' | 'category' | 'article'
+	'pokemon' | 'type' | 'tier' | 'move' | 'flag' | 'item' | 'ability' | 'egggroup' | 'category' | 'article'
 );
 
 export type SearchRow = (
@@ -55,12 +57,14 @@ export class DexSearch {
 		egggroup: 7,
 		category: 8,
 		article: 9,
+		flag: 10,
 	};
 	static typeName = {
 		pokemon: 'Pok\u00e9mon',
 		type: 'Type',
 		tier: 'Tiers',
 		move: 'Moves',
+		flag: 'Flags',
 		item: 'Items',
 		ability: 'Abilities',
 		egggroup: 'Egg group',
@@ -93,6 +97,7 @@ export class DexSearch {
 		case 'pokemon': return new BattlePokemonSearch('pokemon', format, speciesOrSet);
 		case 'item': return new BattleItemSearch('item', format, speciesOrSet);
 		case 'move': return new BattleMoveSearch('move', format, speciesOrSet);
+		case 'flag': return new BattleFlagSearch('flag', format, speciesOrSet);
 		case 'ability': return new BattleAbilitySearch('ability', format, speciesOrSet);
 		case 'type': return new BattleTypeSearch('type', format, speciesOrSet);
 		case 'category': return new BattleCategorySearch('category', format, speciesOrSet);
@@ -137,9 +142,10 @@ export class DexSearch {
 		let [type] = entry;
 		if (this.typedSearch.searchType === 'pokemon') {
 			if (type === this.sortCol) this.sortCol = null;
-			if (!['type', 'move', 'ability', 'egggroup', 'tier'].includes(type)) return false;
+			if (!['type', 'move', 'flag', 'ability', 'tier'].includes(type)) return false;
 			if (type === 'type') entry[1] = this.capitalizeFirst(entry[1]);
 			if (type === 'move') entry[1] = toID(entry[1]);
+			if (type === 'flag') entry[1] = this.dex.flags.get(entry[1]).name;
 			if (type === 'ability') entry[1] = this.dex.abilities.get(entry[1]).name;
 			if (type === 'tier') {
 				// very hardcode
@@ -162,9 +168,10 @@ export class DexSearch {
 			return true;
 		} else if (this.typedSearch.searchType === 'move') {
 			if (type === this.sortCol) this.sortCol = null;
-			if (!['type', 'category', 'pokemon'].includes(type)) return false;
+			if (!['type', 'category', 'flag', 'pokemon'].includes(type)) return false;
 			if (type === 'type') entry[1] = this.capitalizeFirst(entry[1]);
 			if (type === 'category') entry[1] = this.capitalizeFirst(entry[1]);
+			if (type === 'flag') entry[1] = this.capitalizeFirst(entry[1]);
 			if (type === 'pokemon') entry[1] = toID(entry[1]);
 			if (!this.filters) this.filters = [];
 			this.filters.push(entry.slice(0, 2) as SearchFilter);
@@ -381,14 +388,16 @@ export class DexSearch {
 
 			// For pokemon queries, accept types/tier/abilities/moves/eggroups as filters
 			if (searchType === 'pokemon' && (typeIndex === 5 || typeIndex > 7)) continue;
-			// For move queries, accept types/categories as filters
-			if (searchType === 'move' && ((typeIndex !== 8 && typeIndex > 4) || typeIndex === 3)) continue;
+			// For move queries, accept types/categories/flags as filters
+			if (searchType === 'move' && ((typeIndex !== 8 && typeIndex !== 10 && typeIndex > 4) || typeIndex === 3)) continue;
 			// For move queries in the teambuilder, don't accept pokemon as filters
 			if (searchType === 'move' && illegal && typeIndex === 1) continue;
 			// For ability/item queries, don't accept anything else as a filter
 			if ((searchType === 'ability' || searchType === 'item') && typeIndex !== searchTypeIndex) continue;
 			// Query was a type name followed 'type'; only show types
 			if (qFilterType === 'type' && typeIndex !== 2) continue;
+			// For flag queries, accept flags/moves as filters
+			if (searchType === 'flag' && ((typeIndex !== 10 && typeIndex !== 4))) continue;
 			// hardcode cases of duplicate non-consecutive aliases
 			if ((id === 'megax' || id === 'megay') && 'mega'.startsWith(query)) continue;
 
@@ -511,6 +520,16 @@ export class DexSearch {
 					}
 				}
 				break;
+			case 'flag':
+				let flag = fId.charAt(0).toUpperCase() + fId.slice(1);
+				buf.push(['header', `${flag} moves`]);
+				for (let id in BattleMovedex) {
+					if (BattleMovedex[id].flag === flag) {
+						(illegal && id in illegal ? illegalBuf : buf).push(['move', id as ID]);
+					
+				}
+				break;
+		}
 			case 'category':
 				let category = fId.charAt(0).toUpperCase() + fId.slice(1);
 				buf.push(['header', `${category} moves`]);
@@ -723,6 +742,8 @@ abstract class BattleTypedSearch<T extends SearchType> {
 			return [this.sortRow!, ...BattleCategorySearch.prototype.getDefaultResults.call(this, reverseSort)];
 		} else if (sortCol === 'ability') {
 			return [this.sortRow!, ...BattleAbilitySearch.prototype.getDefaultResults.call(this, reverseSort)];
+		} else if (sortCol === 'flag') {
+			return [this.sortRow!, ...BattleFlagSearch.prototype.getDefaultResults.call(this, reverseSort)];
 		}
 
 		if (!this.baseResults) {
@@ -1905,6 +1926,9 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 			case 'category':
 				if (move.category !== value) return false;
 				break;
+			case 'flag':
+				if (move.flags !== value) return false;
+				break;
 			case 'pokemon':
 				if (!this.canLearn(value as ID, move.id)) return false;
 				break;
@@ -1945,6 +1969,12 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 				let pp2 = this.dex.moves.get(id2).pp || 0;
 				return (pp2 - pp1) * sortOrder;
 			});
+		case 'flags:':
+			return results.sort(([rowType1, id1], [rowType2, id2]) => {
+				let flags1 = this.dex.moves.get(id1).flags || 0;
+				let flags2 = this.dex.moves.get(id2).flags || 0;
+				return (flags1 < flags2 ? -1 : flags1 > flags2 ? 1 : 0) * sortOrder;
+			})
 		case 'name':
 			return results.sort(([rowType1, id1], [rowType2, id2]) => {
 				const name1 = id1;
@@ -1966,6 +1996,28 @@ class BattleCategorySearch extends BattleTypedSearch<'category'> {
 			['category', 'special' as ID],
 			['category', 'status' as ID],
 		];
+		if (reverseSort) results.reverse();
+		return results;
+	}
+	getBaseResults() {
+		return this.getDefaultResults();
+	}
+	filter(row: SearchRow, filters: string[][]): boolean {
+		throw new Error("invalid filter");
+	}
+	sort(results: SearchRow[], sortCol: string | null, reverseSort?: boolean): SearchRow[] {
+		throw new Error("invalid sortcol");
+	}
+}
+class BattleFlagSearch extends BattleTypedSearch<'flag'> {
+	getTable() {
+		return BattleFlags;
+	}
+	getDefaultResults(reverseSort?: boolean): SearchRow[] {
+		const results: SearchRow[] = [];
+		for (let id in BattleFlags) {
+			results.push(['flag', id as ID]);
+		}
 		if (reverseSort) results.reverse();
 		return results;
 	}

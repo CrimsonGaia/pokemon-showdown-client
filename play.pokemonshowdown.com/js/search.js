@@ -251,6 +251,9 @@
 		case 'category':
 			var category = { name: id[0].toUpperCase() + id.substr(1), id: id };
 			return this.renderCategoryRow(category, matchStart, matchLength, errorMessage);
+		case 'flag':
+			var flag = this.engine.dex.flags.get(id);
+			return this.renderFlagRow(flag, matchStart, matchLength, errorMessage, attrs);
 		case 'article':
 			var articleTitle = (window.BattleArticleTitles && BattleArticleTitles[id]) || (id[0].toUpperCase() + id.substr(1));
 			var article = { name: articleTitle, id: id };
@@ -282,9 +285,10 @@
 		var buf = '<li class="result"><div class="sortrow">';
 		buf += '<button class="sortcol movenamesortcol' + (this.sortCol === 'name' ? ' cur' : '') + '" data-sort="name">Name</button>';
 		buf += '<button class="sortcol movetypesortcol' + (this.sortCol === 'type' ? ' cur' : '') + '" data-sort="type">Type</button>';
-		buf += '<button class="sortcol movetypesortcol' + (this.sortCol === 'category' ? ' cur' : '') + '" data-sort="category">Cat</button>';
-		buf += '<button class="sortcol powersortcol' + (this.sortCol === 'power' ? ' cur' : '') + '" data-sort="power">Pow</button>';
-		buf += '<button class="sortcol accuracysortcol' + (this.sortCol === 'accuracy' ? ' cur' : '') + '" data-sort="accuracy">Acc</button>';
+		buf += '<button class="sortcol catsortcol' + (this.sortCol === 'category' ? ' cur' : '') + '" data-sort="category">Category</button>';
+		buf += '<button class="sortcol flagsortcol' + (this.sortCol === 'flag' ? 'cur' : '') + '" data-sort="flag">Flags</button>';
+		buf += '<button class="sortcol powersortcol' + (this.sortCol === 'power' ? ' cur' : '') + '" data-sort="power">Power</button>';
+		buf += '<button class="sortcol accuracysortcol' + (this.sortCol === 'accuracy' ? ' cur' : '') + '" data-sort="accuracy">Accuracy</button>';
 		buf += '<button class="sortcol ppsortcol' + (this.sortCol === 'pp' ? ' cur' : '') + '" data-sort="pp">PP</button>';
 		buf += '</div></li>';
 		return buf;
@@ -560,16 +564,17 @@
 		// type
 		buf += '<span class="col typecol">';
 		buf += Dex.getTypeIcon(move.type);
+		buf += '</span> ';
+		buf += '<span class="col catcol">';
 		buf += Dex.getCategoryIcon(move.category);
 		buf += '</span> ';
-
 		// power, accuracy, pp
 		var pp = (move.pp === 1 || move.noPPBoosts ? move.pp : move.pp * 8 / 5);
 		if (this.engine && this.engine.dex.gen < 3) pp = Math.min(61, pp);
+		buf += '<span class="col widelabelcol">>' + (move.flags && move.flags !== true ? move.flags + '%' : '&mdash;') + '</span> ';
 		buf += '<span class="col labelcol">' + (move.category !== 'Status' ? ('<em>Power</em><br />' + (move.basePower || '&mdash;')) : '') + '</span> ';
 		buf += '<span class="col widelabelcol"><em>Accuracy</em><br />' + (move.accuracy && move.accuracy !== true ? move.accuracy + '%' : '&mdash;') + '</span> ';
 		buf += '<span class="col pplabelcol"><em>PP</em><br />' + pp + '</span> ';
-
 		// desc
 		buf += '<span class="col movedesccol">' + BattleLog.escapeHTML(move.shortDesc) + '</span> ';
 
@@ -640,7 +645,7 @@
 		buf += '</span> ';
 
 		// power, accuracy, pp
-		buf += '<span class="col labelcol">' + (move.category !== 'Status' ? ('<em>Power</em><br />' + (move.basePower || '&mdash;')) : '') + '</span> ';
+		buf += '<span class="col powercol">' + (move.category !== 'Status' ? ('<em>Power</em><br />' + (move.basePower || '&mdash;')) : '') + '</span> ';
 		buf += '<span class="col widelabelcol"><em>Accuracy</em><br />' + (move.accuracy && move.accuracy !== true ? move.accuracy + '%' : '&mdash;') + '</span> ';
 		buf += '<span class="col pplabelcol"><em>PP</em><br />' + (move.pp !== 1 ? move.pp * 8 / 5 : move.pp) + '</span> ';
 
@@ -693,6 +698,32 @@
 
 		// category
 		buf += '<span class="col typecol">' + Dex.getCategoryIcon(category.name) + '</span> ';
+
+		// error
+		if (errorMessage) {
+			buf += errorMessage + '</a></li>';
+			return buf;
+		}
+
+		buf += '</a></li>';
+
+		return buf;
+	};
+
+	Search.prototype.renderFlagRow = function (flag, matchStart, matchLength, errorMessage) {
+		var attrs = '';
+		if (Search.urlRoot) attrs = ' href="' + Search.urlRoot + 'flags/' + flag.id + '" data-target="push"';
+		var buf = '<li class="result"><a' + attrs + ' data-entry="flag|' + BattleLog.escapeHTML(dexdata.FlagName) + '">';
+
+		// name
+		var name = flag.name;
+		if (matchLength) {
+			name = name.substr(0, matchStart) + '<b>' + name.substr(matchStart, matchLength) + '</b>' + name.substr(matchStart + matchLength);
+		}
+		buf += '<span class="col namecol">' + name + '</span> ';
+
+		// flag
+		buf += '<span class="col flagcol">' + getFlagIcon(matchStart, matchLength) + '</span> ';
 
 		// error
 		if (errorMessage) {
@@ -791,6 +822,7 @@
 	Search.renderTaggedMoveRow = Search.prototype.renderTaggedMoveRow;
 	Search.renderTypeRow = Search.prototype.renderTypeRow;
 	Search.renderCategoryRow = Search.prototype.renderCategoryRow;
+	Search.renderFlagRow = Search.prototype.renderFlagRow;
 	Search.renderEggGroupRow = Search.prototype.renderEggGroupRow;
 	Search.renderTierRow = Search.prototype.renderTierRow;
 

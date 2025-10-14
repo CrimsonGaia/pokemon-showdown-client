@@ -137,8 +137,8 @@
 }
 .utilichart .labelcol {
 	text-align: center;
-	width: 30px;
-	margin-left: -2px;
+	width: 38px;
+	margin-left: -5px;
 }
 .utilichart .widelabelcol {
 	text-align: center;
@@ -146,12 +146,19 @@
 }
 .utilichart .pplabelcol {
 	text-align: center;
-	width: 18px;
+	width: 25px;
 	padding-right: 5px;
 }
 .utilichart .bstcol {
 	padding-left: 2px;
 }
+utilichart .flaglabelcol {
+	text-align: center;
+	width: 50px;
+}
+
+
+.utilichart .flaglabelcol em,
 .utilichart .labelcol em,
 .utilichart .widelabelcol em,
 .utilichart .pplabelcol em,
@@ -194,7 +201,7 @@
 .utilichart .movenamecol {
 	padding-top: 6px;
 	height: 23px;
-	width: 152px;
+	width: 147px;
 	color: #000000;
 	font-size: 10pt;
 }
@@ -219,7 +226,18 @@
 	margin-right: 1px;
 }
 .utilichart .typecol {
-	width: 70px;
+	width: 46px;
+}
+utilichart .catcol {
+	width: 66px;
+}
+.utilichart .flagcol{
+	padding-top: 8px;
+	height: 21px;
+	font-size: 8pt;
+	width: 40px;
+	text-align: center;
+	white-space: nowrap;
 }
 .utilichart .abilitycol {
 	padding-top: 8px;
@@ -310,7 +328,7 @@
 	float: left;
 	border-radius: 0;
 	border: 0;
-	padding: 0 0 0 0;
+	padding: 30 0 30 0;
 	text-align: center;
 	height: 20px;
 }
@@ -333,7 +351,10 @@
 	width: 127px;
 }
 .utilichart .typesortcol {
-	width: 70px;
+	width: 68px;
+}
+.utilichart .catsortcol {
+	width: 52px;
 }
 .utilichart .abilitysortcol {
 	width: 172px;
@@ -343,17 +364,20 @@
 	text-align: right;
 }
 .utilichart .movenamesortcol {
-	width: 159px;
+	width: 155px;
 }
 .utilichart .movetypesortcol {
 	width: 35px;
 }
+.utilichart .flagsortcol {
+	width: 35px;
+}
 .utilichart .powersortcol {
-	width: 30px;
+	width: 38px;
 }
 .utilichart .accuracysortcol {
-	width: 49px;
+	width: 47px;
 }
 .utilichart .ppsortcol {
-	width: 23px;
+	width: 38px;
 }

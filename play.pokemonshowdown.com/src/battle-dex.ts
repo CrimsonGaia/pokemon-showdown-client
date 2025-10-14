@@ -21,7 +21,7 @@
 import { Pokemon, type ServerPokemon } from "./battle";
 import {
 	BattleAvatarNumbers, BattleBaseSpeciesChart, BattlePokemonIconIndexes, BattlePokemonIconIndexesLeft,
-	Ability, Item, Move, Species, PureEffect, type ID, type Type,
+	Ability, Item, Move, Flag, Species, PureEffect, type ID, type Type,
 } from "./battle-dex-data";
 import type * as DexData from "./battle-dex-data";
 import type { Teams } from "./battle-teams";
@@ -32,6 +32,7 @@ export declare namespace Dex {
 	export type Ability = DexData.Ability;
 	export type Item = DexData.Item;
 	export type Move = DexData.Move;
+	export type Flag = DexData.Flag;
 	export type Species = DexData.Species;
 	export type Type = DexData.Type;
 	export type Nature = DexData.Nature;
@@ -213,6 +214,7 @@ export const Dex = new class implements ModdedDex {
 	readonly Ability = Ability;
 	readonly Item = Item;
 	readonly Move = Move;
+	readonly Flags = Flag;
 	readonly Species = Species;
 
 	readonly gen = 9;
@@ -330,7 +332,7 @@ export const Dex = new class implements ModdedDex {
 		return shortName;
 	}
 
-	getEffect(name: string | null | undefined): PureEffect | Item | Ability | Move {
+	getEffect(name: string | null | undefined): PureEffect | Item | Ability | Move | Flag {
 		name = (name || '').trim();
 		if (name.substr(0, 5) === 'item:') {
 			return Dex.items.get(name.substr(5).trim());
@@ -391,6 +393,26 @@ export const Dex = new class implements ModdedDex {
 			'Fire', 'Water', 'Grass', 'Electric', 'Ice', 'Psychic', 'Dark', 'Dragon',
 		].includes(type) ? 'Special' : 'Physical';
 	}
+
+	flags = {
+		get: (nameOrFlag: string | Flag | null | undefined): Flag => {
+			if (nameOrFlag && typeof nameOrFlag !== 'string') {
+				return nameOrFlag;
+			}
+			let name = nameOrFlag || '';
+			let id = toID(nameOrFlag);
+			if (window.BattleAliases && id in BattleAliases) {
+				name = BattleAliases[id];
+				id = toID(name);
+			}
+			if (!window.BattleFlags) window.BattleFlags = {};
+			let data = window.BattleFlags[id];
+			if (data && typeof data.exists === 'boolean') return data;
+			if (!data) data = { exists: false };
+			let flag = new Flag(id, name, data);
+			window.BattleFlags[id] = BattleFlags;
+			return flag ;
+		},};
 
 	items = {
 		get: (nameOrItem: string | Item | null | undefined): Item => {
@@ -929,6 +951,22 @@ export const Dex = new class implements ModdedDex {
 		return `<img src="${Dex.resourcePrefix}sprites/types/${sanitizedType}.png" alt="${type}" height="14" width="32" class="pixelated${b ? ' b' : ''}" />`;
 	}
 
+	getFlagIcon(flag: string | null, b?: boolean) {
+		const flagID = toID(flag);
+		let sanitizedFlag = '';
+		switch (flagID) {
+		case 'bind':
+		case 'bite':
+		case 'slice':
+			sanitizedFlag = flagID.charAt(0).toUpperCase() + flagID.slice(1);
+			break;
+		default:
+			sanitizedFlag = 'undefined';
+			break;
+		}
+		return `<img src="${Dex.resourcePrefix}sprites/flag-icons/${sanitizedFlag}.png" alt="${sanitizedFlag}" height="14" width="32" class="pixelated" />`;
+	}
+
 	getCategoryIcon(category: string | null) {
 		const categoryID = toID(category);
 		let sanitizedCategory = '';
@@ -962,6 +1000,7 @@ export class ModdedDex {
 	readonly modid: ID;
 	readonly cache = {
 		Moves: {} as { [k: string]: Move },
+		Flags: {} as { [k: string]: Flag},
 		Items: {} as { [k: string]: Item },
 		Abilities: {} as { [k: string]: Ability },
 		Species: {} as { [k: string]: Species },
@@ -1004,6 +1043,36 @@ export class ModdedDex {
 			const move = new Move(id, name, data);
 			this.cache.Moves[id] = move;
 			return move;
+		},
+	};
+
+	flags = {
+		get: (name: string): Flag => {
+			let id = toID(name);
+			if (window.BattleAliases && id in BattleAliases) {
+				name = BattleAliases[id];
+				id = toID(name);
+			}
+			if (this.cache.Flags.hasOwnProperty(id)) return this.cache.Flags[id];
+
+			let data = { ...Dex.flags.get(name) };
+
+			for (let i = Dex.gen - 1; i >= this.gen; i--) {
+				const table = window.BattleTeambuilderTable[`gen${i}`];
+				if (id in table.overrideFlagData) {
+					Object.assign(data, table.overrideFlagData[id]);
+				}
+			}
+			if (this.modid !== `gen${this.gen}`) {
+				const table = window.BattleTeambuilderTable[this.modid];
+				if (id in table.overrideFlagData) {
+					Object.assign(data, table.overrideFlagData[id]);
+				}
+			}
+
+			const flag = new Flag(id, name, data);
+			this.cache.Flags[id] = flag;
+			return flag;
 		},
 	};
 
