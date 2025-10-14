@@ -1065,10 +1065,6 @@ export type TypeName = 'Normal' | 'Fighting' | 'Flying' | 'Poison' | 'Ground' | 
 export type StatusName = 'par' | 'psn' | 'frz' | 'slp' | 'brn';
 export type BoostStatName = 'atk' | 'def' | 'spa' | 'spd' | 'spe' | 'evasion' | 'accuracy' | 'spc';
 export type GenderName = 'M' | 'F' | 'N';
-export type FlagName = 'Binding' | 'Bite' | 'Bullet' | 'Bomb' | 'Contact' | 'Crash' | 'Dance' | 'Draining' | 'Explosive' | 
-'Healing' | 'Powder' | 'Pulse' | 'Punch' | 'Slice' | 'Sound' | 'Wind' | 'Airborne' | 'Aura' | 'Beam' | 'Breath' | 'Claw' |
-'Crush' | 'Kick' | 'Light' | 'Lunar' | 'Lunar' | 'Magic' | 'Pierce' | 'Shadow' | 'Solar' | 'Spin' | 'Sweep' | 'Throw' |
-'Weapon' | 'Wing';
 
 export interface Effect {
 	readonly id: ID;
@@ -1165,56 +1161,109 @@ export class Item implements Effect {
 }
 
 export interface MoveFlags {
-	/** The move has an animation when used on an ally. */
-	allyanim?: 1 | 0;
+	
+	/** */
+	binding?:1|0;
 	/** Power is multiplied by 1.5 when used by a Pokemon with the Strong Jaw Ability. */
 	bite?: 1 | 0;
 	/** Has no effect on Pokemon with the Bulletproof Ability. */
 	bullet?: 1 | 0;
-	/** Ignores a target's substitute. */
-	bypasssub?: 1 | 0;
-	/** The user is unable to make a move between turns. */
-	charge?: 1 | 0;
+	/** */
+	bomb?:1|0;
 	/** Makes contact. */
 	contact?: 1 | 0;
 	/** When used by a Pokemon, other Pokemon with the Dancer Ability can attempt to execute the same move. */
 	dance?: 1 | 0;
+	/** */
+	drain?:1|0;
+	/** */
+	explosive?:1|0;
+	/** Prevented from being executed or selected during Heal Block's effect. */
+	heal?: 1 | 0;
+	/** Has no effect on Grass-type Pokemon, Pokemon with the Overcoat Ability, and Pokemon holding Safety Goggles. */
+	powder?: 1 | 0;
+	/** Power is multiplied by 1.5 when used by a Pokemon with the Mega Launcher Ability. */
+	pulse?: 1 | 0;
+	/** Power is multiplied by 1.2 when used by a Pokemon with the Iron Fist Ability. */
+	punch?: 1 | 0;
+	/** Power is multiplied by 1.5 when used by a Pokemon with the Sharpness Ability. */
+	slicing?: 1 | 0;
+	/** Has no effect on Pokemon with the Soundproof Ability. */
+	sound?: 1 | 0;
+	/** Activates the effects of the Wind Power and Wind Rider Abilities. */
+	wind?: 1 | 0;
+
+	
+	/**  */
+	airborne?: 1 | 0;
+	/**  */
+	aura?: 1 | 0;
+	/**  */
+	beam?: 1 | 0;
+	/**  */
+	breath?: 1 | 0;
+	/**  */
+	claw?: 1 | 0;
+	/**  */
+	crush?: 1 | 0;
+	/**  */
+	kick?: 1 | 0;
+	/**  */
+	light?: 1 | 0;
+	/**  */
+	lunar?: 1 | 0;
+	/**  */
+	magic?: 1 | 0;
+	/**  */
+	pierce?: 1 | 0;
+	/**  */
+	shadow?: 1 | 0;
+	/**  */
+	solar?: 1 | 0;
+	/**  */
+	spin?: 1 | 0;
+	/**  */
+	sweep?: 1 | 0;
+	/**  */
+	throw?: 1 | 0;
+	/**  */
+	weapon?: 1 | 0;
+	/**  */
+	wing?: 1 | 0;
+
+
+	/** The move has an animation when used on an ally. */
+	allyanim?: 1 | 0;
+	/** Ignores a target's substitute. */
+	bypasssub?: 1 | 0;
+		/** The user is unable to make a move between turns. */
+	charge?: 1 | 0;
 	/** Thaws the user if executed successfully while the user is frozen. */
 	defrost?: 1 | 0;
 	/** Can target a Pokemon positioned anywhere in a Triple Battle. */
 	distance?: 1 | 0;
 	/** Prevented from being executed or selected during Gravity's effect. */
 	gravity?: 1 | 0;
-	/** Prevented from being executed or selected during Heal Block's effect. */
-	heal?: 1 | 0;
 	/** Can be copied by Mirror Move. */
 	mirror?: 1 | 0;
 	/** Prevented from being executed or selected in a Sky Battle. */
 	nonsky?: 1 | 0;
 	/** Cannot be copied by Sketch */
 	nosketch?: 1 | 0;
-	/** Has no effect on Grass-type Pokemon, Pokemon with the Overcoat Ability, and Pokemon holding Safety Goggles. */
-	powder?: 1 | 0;
 	/** Blocked by Detect, Protect, Spiky Shield, and if not a Status move, King's Shield. */
 	protect?: 1 | 0;
-	/** Power is multiplied by 1.5 when used by a Pokemon with the Mega Launcher Ability. */
-	pulse?: 1 | 0;
-	/** Power is multiplied by 1.2 when used by a Pokemon with the Iron Fist Ability. */
-	punch?: 1 | 0;
-	/** If this move is successful, the user must recharge on the following turn and cannot make a move. */
+		/** If this move is successful, the user must recharge on the following turn and cannot make a move. */
 	recharge?: 1 | 0;
 	/** Bounced back to the original user by Magic Coat or the Magic Bounce Ability. */
 	reflectable?: 1 | 0;
-	/** Power is multiplied by 1.5 when used by a Pokemon with the Sharpness Ability. */
-	slicing?: 1 | 0;
 	/** Can be stolen from the original user and instead used by another Pokemon using Snatch. */
 	snatch?: 1 | 0;
-	/** Has no effect on Pokemon with the Soundproof Ability. */
-	sound?: 1 | 0;
-	/** Activates the effects of the Wind Power and Wind Rider Abilities. */
-	wind?: 1 | 0;
 }
-
+export type FlagName =
+ 'Binding' | 'Bite' | 'Bullet' | 'Bomb' | 'Contact' | 'Crash' | 'Dance' | 'Draining' | 'Explosive' | 
+'Healing' | 'Powder' | 'Pulse' | 'Punch' | 'Slice' | 'Sound' | 'Wind' | 'Airborne' | 'Aura' | 'Beam' | 'Breath' | 'Claw' |
+'Crush' | 'Kick' | 'Light' | 'Lunar' | 'Lunar' | 'Magic' | 'Pierce' | 'Shadow' | 'Solar' | 'Spin' | 'Sweep' | 'Throw' |
+'Weapon' | 'Wing';
 export type MoveTarget = 'normal' | 'any' | 'adjacentAlly' | 'adjacentFoe' | 'adjacentAllyOrSelf' | // single-target
 	'self' | 'randomNormal' | // single-target, automatic
 	'allAdjacent' | 'allAdjacentFoes' | // spread
@@ -1236,7 +1285,7 @@ export class Move implements Effect {
 	readonly priority: number;
 	readonly target: MoveTarget;
 	readonly pressureTarget: MoveTarget;
-	readonly flags: Readonly<MoveFlags>;
+	readonly flags: MoveFlags;
 	readonly critRatio: number;
 	readonly damage?: number | 'level' | false | null;
 

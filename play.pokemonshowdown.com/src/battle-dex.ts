@@ -951,22 +951,22 @@ export const Dex = new class implements ModdedDex {
 		return `<img src="${Dex.resourcePrefix}sprites/types/${sanitizedType}.png" alt="${type}" height="14" width="32" class="pixelated${b ? ' b' : ''}" />`;
 	}
 
-	getFlagIcon(flag: string | null, b?: boolean) {
+	getFlagIcon(flag: string | null,) {
 		const flagID = toID(flag);
 		let sanitizedFlag = '';
 		switch (flagID) {
-		case 'bind':
-		case 'bite':
-		case 'slice':
+		case 'bind':	case 'bite':	case 'bullet':	case 'contact':	case 'crash':	case 'dance':	case 'drain':	case 'explosive':	case 'heal':	
+		case 'powder':	case 'pulse':	case 'punch':	case 'slice':	case 'sound':	case 'wind':	case 'airborne':	case 'aura':	case 'beam':	
+		case 'breath':	case 'claw':	case 'crush':	case 'kick':	case 'light':	case 'lunar':	case 'magic':	case 'pierce':	case 'shadow':	
+		case 'solar':	case 'spin':	case 'sweep':	case 'throw':	case 'weapon':	case 'wing':
 			sanitizedFlag = flagID.charAt(0).toUpperCase() + flagID.slice(1);
 			break;
 		default:
 			sanitizedFlag = 'undefined';
 			break;
 		}
-		return `<img src="${Dex.resourcePrefix}sprites/flag-icons/${sanitizedFlag}.png" alt="${sanitizedFlag}" height="14" width="32" class="pixelated" />`;
+		return `<img src="https://github.com/CrimsonGaia/pokemon-showdown-client/blob/ebd580a91511fa3ab69decbc4e27ad113441664f/play.pokemonshowdown.com/sprites/flag-icons/${sanitizedFlag}.png" alt="${sanitizedFlag}" height="14" width="32"/>`;
 	}
-
 	getCategoryIcon(category: string | null) {
 		const categoryID = toID(category);
 		let sanitizedCategory = '';

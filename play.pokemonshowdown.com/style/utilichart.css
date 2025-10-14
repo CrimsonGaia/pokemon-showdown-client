@@ -232,12 +232,7 @@ utilichart .catcol {
 	width: 66px;
 }
 .utilichart .flagcol{
-	padding-top: 8px;
-	height: 21px;
-	font-size: 8pt;
-	width: 40px;
-	text-align: center;
-	white-space: nowrap;
+	width: 66px;
 }
 .utilichart .abilitycol {
 	padding-top: 8px;

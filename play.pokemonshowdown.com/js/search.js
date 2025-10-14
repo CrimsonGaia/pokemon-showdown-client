@@ -253,7 +253,7 @@
 			return this.renderCategoryRow(category, matchStart, matchLength, errorMessage);
 		case 'flag':
 			var flag = this.engine.dex.flags.get(id);
-			return this.renderFlagRow(flag, matchStart, matchLength, errorMessage, attrs);
+			return this.renderFlagRow(flag, errorMessage);
 		case 'article':
 			var articleTitle = (window.BattleArticleTitles && BattleArticleTitles[id]) || (id[0].toUpperCase() + id.substr(1));
 			var article = { name: articleTitle, id: id };
@@ -568,10 +568,13 @@
 		buf += '<span class="col catcol">';
 		buf += Dex.getCategoryIcon(move.category);
 		buf += '</span> ';
+		buf += '<span class="col flagcol">';
+		buf +=  Dex.getCategoryIcon(move.category);
+		buf += '</span> ';
+
 		// power, accuracy, pp
 		var pp = (move.pp === 1 || move.noPPBoosts ? move.pp : move.pp * 8 / 5);
 		if (this.engine && this.engine.dex.gen < 3) pp = Math.min(61, pp);
-		buf += '<span class="col widelabelcol">>' + (move.flags && move.flags !== true ? move.flags + '%' : '&mdash;') + '</span> ';
 		buf += '<span class="col labelcol">' + (move.category !== 'Status' ? ('<em>Power</em><br />' + (move.basePower || '&mdash;')) : '') + '</span> ';
 		buf += '<span class="col widelabelcol"><em>Accuracy</em><br />' + (move.accuracy && move.accuracy !== true ? move.accuracy + '%' : '&mdash;') + '</span> ';
 		buf += '<span class="col pplabelcol"><em>PP</em><br />' + pp + '</span> ';
@@ -710,20 +713,17 @@
 		return buf;
 	};
 
-	Search.prototype.renderFlagRow = function (flag, matchStart, matchLength, errorMessage) {
+	Search.prototype.renderFlagRow = function (flag,errorMessage) {
 		var attrs = '';
-		if (Search.urlRoot) attrs = ' href="' + Search.urlRoot + 'flags/' + flag.id + '" data-target="push"';
+		if (data.flags) attrs = ' href="' + Search.urlRoot + 'flags/' + flag.id + '" data-target="push"';
 		var buf = '<li class="result"><a' + attrs + ' data-entry="flag|' + BattleLog.escapeHTML(dexdata.FlagName) + '">';
 
 		// name
 		var name = flag.name;
-		if (matchLength) {
-			name = name.substr(0, matchStart) + '<b>' + name.substr(matchStart, matchLength) + '</b>' + name.substr(matchStart + matchLength);
-		}
 		buf += '<span class="col namecol">' + name + '</span> ';
 
 		// flag
-		buf += '<span class="col flagcol">' + getFlagIcon(matchStart, matchLength) + '</span> ';
+		buf += '<span class="col flagcol">' + dex.getFlagIcon(flag.name) + '</span> ';
 
 		// error
 		if (errorMessage) {
