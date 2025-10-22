@@ -237,6 +237,12 @@ export const Dex = new class implements ModdedDex {
 		return `${prefix}//${window.Config ? Config.routes.client : 'play.pokemonshowdown.com'}/`;
 	})();
 
+	indigostarstormPrefix = (() => {
+		let iprefix = '';
+		if (window.document?.location?.protocol !== 'http:') iprefix = 'https:';
+		return `${iprefix}//${window.Config ? Config.routes.client : 'https://github.com/CrimsonGaia/pokemon-showdown-client/tree/master/play.pokemonshowdown.com/sprites/'}`;
+	})();
+
 	fxPrefix = (() => {
 		const protocol = (window.document?.location?.protocol !== 'http:') ? 'https:' : '';
 		return `${protocol}//${window.Config ? Config.routes.client : 'play.pokemonshowdown.com'}/fx/`;
@@ -965,8 +971,9 @@ export const Dex = new class implements ModdedDex {
 			sanitizedFlag = 'undefined';
 			break;
 		}
-		return `<img src="https://github.com/CrimsonGaia/pokemon-showdown-client/blob/ebd580a91511fa3ab69decbc4e27ad113441664f/play.pokemonshowdown.com/sprites/flag-icons/${sanitizedFlag}.png" alt="${sanitizedFlag}" height="14" width="32"/>`;
+		return `<img src="${Dex.indigostarstormPrefix}flag-icons/${sanitizedFlag}.png" height="14" width="32" class="pixelated" />`;
 	}
+
 	getCategoryIcon(category: string | null) {
 		const categoryID = toID(category);
 		let sanitizedCategory = '';
@@ -980,7 +987,7 @@ export const Dex = new class implements ModdedDex {
 			sanitizedCategory = 'undefined';
 			break;
 		}
-		return `<img src="${Dex.resourcePrefix}sprites/categories/${sanitizedCategory}.png" alt="${sanitizedCategory}" height="14" width="32" class="pixelated" />`;
+		return `<img src="${Dex.indigostarstormPrefix}category-icons/${sanitizedCategory}.png" alt="${sanitizedCategory}" height="14" width="32" class="pixelated" />`;
 	}
 
 	getPokeballs() {

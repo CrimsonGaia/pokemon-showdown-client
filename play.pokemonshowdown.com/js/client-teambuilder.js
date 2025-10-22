@@ -1383,26 +1383,70 @@
 
 			// stats
 			buf += '<div class="setcol setcol-stats"><div class="setrow"><label>Stats</label><button class="textbox setstats" name="stats">';
-			buf += '<span class="statrow statrow-head"><label></label> <span class="statgraph"></span> <em>' + (!isLetsGo ? 'EV' : 'AV') + '</em></span>';
+			buf += '<span class="statrow statrow-head"><label></label><span class="statgraph"></span><ma>' + '</ma><ma>' + 'Base' + '</ma><em>' + '</em><em>' + '</em><ma>' + '</ma><ma>' + '</ma><ma>' + '</ma><ma>' +  '</ma><ma>' + (!isLetsGo ? 'EV' : 'AV') + '</ma><ma>' + '</ma><ma>' + '</ma></em>' + 'IV' + '</em></span>';
 			var stats = {};
+
 			var defaultEV = (this.curTeam.gen > 2 ? 0 : 252);
-			for (var j in BattleStatNames) {
-				if (j === 'spd' && this.curTeam.gen === 1) continue;
-				stats[j] = this.getStat(j, set);
-				var ev = (set.evs[j] === undefined ? defaultEV : set.evs[j]);
-				var evBuf = '<em>' + (ev === defaultEV ? '' : ev) + '</em>';
-				if (BattleNatures[set.nature] && BattleNatures[set.nature].plus === j) {
+			// collect stat values first so we can mark the highest one
+			var spacer = '<em></em>';
+			var spacersmall = '<ma></ma>';
+			var statOrder = [];
+			for (var k in BattleStatNames) {
+				if (k === 'spd' && this.curTeam.gen === 1) continue;
+				statOrder.push(k);
+			}
+			var statData = {};
+			var maxVal = -Infinity;
+			var maxKey = null;
+			for (var idx = 0; idx < statOrder.length; idx++) {
+				var s = statOrder[idx];
+				var val = this.getStat(s, set);
+				statData[s] = {};
+				statData[s].value = val;
+				if (val > maxVal) { maxVal = val; maxKey = s; }
+				var baseStats = species.baseStats;
+				statData[s].base = baseStats[s];
+				statData[s].baseStatsBuf = '<em>' + statData[s].base + '<em></em>' + '</em>';
+				var ev = (set.evs[s] === undefined ? defaultEV : set.evs[s]);
+				var evBuf = '<em' + (ev !== defaultEV && ev >= 100 ? ' class="ev-3"' : '') + '>' + (ev === defaultEV ? '' : ev);
+				if (BattleNatures[set.nature] && BattleNatures[set.nature].plus === s) {
 					evBuf += '<small>+</small>';
-				} else if (BattleNatures[set.nature] && BattleNatures[set.nature].minus === j) {
+				} else if (BattleNatures[set.nature] && BattleNatures[set.nature].minus === s) {
 					evBuf += '<small>&minus;</small>';
 				}
-				var width = stats[j] * 75 / 504;
-				if (j === 'hp') width = stats[j] * 75 / 704;
-				if (width > 75) width = 75;
-				var color = Math.floor(stats[j] * 180 / 714);
+				evBuf += '</em>';
+				statData[s].evBuf = evBuf;
+				var ivBuf = '<em>' + (set.ivs[s] === undefined || set.ivs[s] === 31 ? '' : set.ivs[s]) + '</em>';
+				statData[s].ivBuf = ivBuf;
+				statData[s].width = val * 90 / 504;
+				var color = Math.floor(val * (s === 'hp' ? 343 : 475) / 714);
 				if (color > 360) color = 360;
-				var statName = this.curTeam.gen === 1 && j === 'spa' ? 'Spc' : BattleStatNames[j];
-				buf += '<span class="statrow"><label>' + statName + '</label> <span class="statgraph"><span style="width:' + width + 'px;background:hsl(' + color + ',40%,75%);"></span></span> ' + evBuf + '</span>';
+				if (color <= 25) {
+					color = Math.floor(color * 0.5);
+				} else if (color >= 300) {
+					color = Math.floor(color * 1);
+				} else {
+					var m = 0.5 + (color - 25) * (1 - 0.5) / (300 - 25);
+					color = Math.floor(color * m);
+				}
+				statData[s].color = color;
+				statData[s].statName = this.curTeam.gen === 1 && s === 'spa' ? 'Spc' : BattleStatNames[s];
+			}
+			// detect whether all stats are equal; if so, don't draw borders
+			var _minStat = Infinity, _maxStat = -Infinity;
+			for (var k in statData) {
+				if (statData[k].value < _minStat) _minStat = statData[k].value;
+				if (statData[k].value > _maxStat) _maxStat = statData[k].value;
+			}
+			var allEqual = (_minStat === _maxStat);
+			// determine if any stat would have shown a border at all (so we only
+			// suppress borders when all stats are equal and at least one would have had a border)
+			var suppressBorders = allEqual;
+			for (var idx2 = 0; idx2 < statOrder.length; idx2++) {
+				var s2 = statOrder[idx2];
+				var sd = statData[s2];
+				var classFrag = (sd.value === maxVal ? ' class="statbar-highest"' : '');
+				buf += '<span class="statrow"><label>' + sd.statName + '</label> <span class="statgraph"><span' + classFrag + ' style="width:' + sd.width + 'px;background:' + ((s2 === 'hp' ? sd.value >= 700 : sd.value >= 500) ? "#fff" : ('hsl(' + sd.color + ',60%,75%)')) + ';' + ((sd.value === maxVal && !allEqual) ? 'border:1px solid #000;' : ('border-color:' + ('hsl(' + sd.color + ',60%,65%)'))) + '"></span></span> ' + spacersmall + sd.baseStatsBuf + spacer + spacer + sd.evBuf + sd.ivBuf + '</em></span>'; 
 			}
 			buf += '</button></div></div>';
 
@@ -2051,26 +2095,51 @@
 
 			var supportsEVs = !this.curTeam.format.includes('letsgo');
 
+			// species is needed for base stat lookups in the stat HTML below
+			var species = this.curTeam.dex.species.get(set.species);
+
 			// stat cell
-			var buf = '<span class="statrow statrow-head"><label></label> <span class="statgraph"></span> <em>' + (supportsEVs ? 'EV' : 'AV') + '</em></span>';
+			var buf = '<span class="statrow statrow-head"><label></label><span class="statgraph"></span><ma>' + '</ma><ma>' +  'Base' + '</ma><em>' + '</em><em>' + '</em><ma>' + '</ma><ma>' + '</ma><ma>' + '</ma><ma>' +  '</ma><ma>' +  (supportsEVs ? 'EV' : 'AV') + '</ma><ma>' + '</ma><ma>' + '</ma></em>' + 'IV' + '</em></span>';
 			var defaultEV = (this.curTeam.gen > 2 ? 0 : 252);
-			for (var stat in stats) {
-				if (stat === 'spd' && this.curTeam.gen === 1) continue;
-				stats[stat] = this.getStat(stat, set);
-				var ev = (set.evs[stat] === undefined ? defaultEV : set.evs[stat]);
-				var evBuf = '<em>' + (ev === defaultEV ? '' : ev) + '</em>';
-				if (BattleNatures[set.nature] && BattleNatures[set.nature].plus === stat) {
+			// build a stat list, find the highest, then render with a special class for it
+			var statList = [];
+			var maxVal = -Infinity;
+			var maxKey = null;
+			var minVal = Infinity;
+			for (var s in stats) {
+				if (s === 'spd' && this.curTeam.gen === 1) continue;
+				var val = this.getStat(s, set);
+				stats[s] = val;
+				statList.push(s);
+				if (val > maxVal) { maxVal = val; maxKey = s; }
+				if (val < minVal) { minVal = val; }
+			}
+			var allEqual = (minVal === maxVal);
+			var suppressBorders = allEqual;
+			for (var ii = 0; ii < statList.length; ii++) {
+				var st = statList[ii];
+				var ev = (set.evs[st] === undefined ? defaultEV : set.evs[st]);
+				var evBuf = '<em' + (ev !== defaultEV && ev >= 100 ? ' class="ev-3"' : '') + '>' + (ev === defaultEV ? '' : ev);
+				if (BattleNatures[set.nature] && BattleNatures[set.nature].plus === st) {
 					evBuf += '<small>+</small>';
-				} else if (BattleNatures[set.nature] && BattleNatures[set.nature].minus === stat) {
+				} else if (BattleNatures[set.nature] && BattleNatures[set.nature].minus === st) {
 					evBuf += '<small>&minus;</small>';
 				}
-				var width = stats[stat] * 75 / 504;
-				if (stat === 'hp') width = stats[stat] * 75 / 704;
-				if (width > 75) width = 75;
-				var color = Math.floor(stats[stat] * 180 / 714);
+				evBuf += '</em>';
+				var width = stats[st] * 90 / 504;
+				var color = Math.floor(stats[st] * (st === 'hp' ? 343 : 475) / 714);
 				if (color > 360) color = 360;
-				var statName = this.curTeam.gen === 1 && stat === 'spa' ? 'Spc' : BattleStatNames[stat];
-				buf += '<span class="statrow"><label>' + statName + '</label> <span class="statgraph"><span style="width:' + width + 'px;background:hsl(' + color + ',40%,75%);"></span></span> ' + evBuf + '</span>';
+				if (color <= 25) {
+					color = Math.floor(color * 0.5);
+				} else if (color >= 300) {
+					color = Math.floor(color * 1);
+				} else {
+					var m = 0.5 + (color - 25) * (1 - 0.5) / (300 - 25);
+					color = Math.floor(color * m);
+				}
+				var statName = this.curTeam.gen === 1 && st === 'spa' ? 'Spc' : BattleStatNames[st];
+				var classFrag = (stats[st] === maxVal ? ' class="statbar-highest"' : '');
+				buf += '<span class="statrow"><label>' + statName + '</label> <span class="statgraph"><span' + classFrag + ' style="width:' + width + 'px;background:' + ((st === 'hp' ? stats[st] > 699 : stats[st] > 499) ? "#fff" : ('hsl(' + color + ',40%,75%)')) + ';' + ((stats[st] === maxVal && !allEqual) ? 'border:1px solid #000;' : ('border-color:' + ('hsl(' + color + ',40%,65%)'))) + '"></span></span> ' + '<ma></ma>' + ('<em>' + (species && species.baseStats ? species.baseStats[st] : '') + '<em></em>' + '</em>') + '<em></em><em></em>' + evBuf + ('<em>' + (set.ivs && (set.ivs[st] === undefined || set.ivs[st] === 31) ? '' : set.ivs[st]) + '</em>') + '</span>';
 			}
 			this.$('button[name=stats]').html(buf);
 
@@ -2085,14 +2154,22 @@
 
 			buf = '<div></div>';
 			var totalev = 0;
+			// build min/max first so we can decide whether all stats are equal
+			// (in which case we hide borders)
+			// NOTE: stats already filled above, and allEqual computed
 			for (var stat in stats) {
-				if (stat === 'spd' && this.curTeam.gen === 1) continue;
 				var width = stats[stat] * 180 / 504;
-				if (stat === 'hp') width = stats[stat] * 180 / 704;
-				if (width > 179) width = 179;
-				var color = Math.floor(stats[stat] * 180 / 714);
+				var color = Math.floor(stats[stat] * (stat === 'hp' ? 343 : 475) / 714);
 				if (color > 360) color = 360;
-				buf += '<div><em><span style="width:' + Math.floor(width) + 'px;background:hsl(' + color + ',85%,45%);border-color:hsl(' + color + ',85%,35%)"></span></em></div>';
+				if (color <= 25) {
+					color = Math.floor(color * 0.5);
+				} else if (color >= 300) {
+					color = Math.floor(color * 1);
+				} else {
+					var m = 0.5 + (color - 25) * (1 - 0.5) / (300 - 25);
+					color = Math.floor(color * m);
+				}
+				buf += '<div><em><span style="width:' + Math.floor(width) + 'px;background:' + ((stat === 'hp' ? stats[stat] > 699 : stats[stat] > 499) ? "#fff" : ('hsl(' + color + ',85%,45%)')) + ';"></span></em></div>';
 				totalev += (set.evs[stat] || 0);
 			}
 
@@ -2344,11 +2421,17 @@
 			for (var i in stats) {
 				stats[i] = this.getStat(i);
 				var width = stats[i] * 180 / 504;
-				if (i === 'hp') width = Math.floor(stats[i] * 180 / 704);
-				if (width > 179) width = 179;
-				var color = Math.floor(stats[i] * 180 / 714);
+				var color = Math.floor(stats[i] * (i === 'hp' ? 343 : 475) / 714);
 				if (color > 360) color = 360;
-				buf += '<div><em><span style="width:' + Math.floor(width) + 'px;background:hsl(' + color + ',85%,45%);border-color:hsl(' + color + ',85%,35%)"></span></em></div>';
+				if (color <= 25) {
+					color = Math.floor(color * 0.5);
+				} else if (color >= 300) {
+					color = Math.floor(color * 1);
+				} else {
+					var m = 0.5 + (color - 25) * (1 - 0.5) / (300 - 25);
+					color = Math.floor(color * m);
+				}
+				buf += '<div><em><span style="width:' + Math.floor(width) + 'px;background:' + ((i === 'hp' ? stats[i] >= 700 : stats[i] >= 500) ? "#fff" : ('hsl(' + color + ',85%,45%)')) + ';' + ((i === 'hp' ? color >= 340 : color >= 332) ? 'border:1px solid #000;' : ('border-color:' + ('hsl(' + color + ',85%,35%)'))) + '"></span></em></div>';
 			}
 			if (this.curTeam.gen > 2 && supportsEVs) buf += '<div><em>Remaining:</em></div>';
 			buf += '</div>';

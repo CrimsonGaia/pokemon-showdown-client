@@ -1,15 +1,6 @@
 "use strict";function _inheritsLoose(t,o){t.prototype=Object.create(o.prototype),t.prototype.constructor=t,_setPrototypeOf(t,o);}function _setPrototypeOf(t,e){return _setPrototypeOf=Object.setPrototypeOf?Object.setPrototypeOf.bind():function(t,e){return t.__proto__=e,t;},_setPrototypeOf(t,e);}var
 
-
-
-
-
-
-
-
 ResourceRoom=function(_PSRoom){
-
-
 
 function ResourceRoom(options){var _this;
 _this=_PSRoom.call(this,options)||this;_this.classType='resources';_this.canConnect=false;
@@ -19,10 +10,6 @@ connect=function connect(){};return ResourceRoom;}(PSRoom);var
 
 
 ResourcePanel=function(_PSRoomPanel){function ResourcePanel(){var _this2;for(var _len=arguments.length,args=new Array(_len),_key=0;_key<_len;_key++){args[_key]=arguments[_key];}_this2=_PSRoomPanel.call.apply(_PSRoomPanel,[this].concat(args))||this;_this2.
-
-
-
-
 
 
 state={search:''};return _this2;}_inheritsLoose(ResourcePanel,_PSRoomPanel);var _proto2=ResourcePanel.prototype;_proto2.

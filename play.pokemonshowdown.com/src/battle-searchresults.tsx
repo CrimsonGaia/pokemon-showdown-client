@@ -24,6 +24,7 @@ export class PSSearchResults extends preact.Component<{
 	itemId: ID = '' as ID;
 	abilityId: ID = '' as ID;
 	moveIds: ID[] = [];
+	flagIds: ID[] = [];
 	resultIndex = -1;
 
 	renderPokemonSortRow() {
@@ -49,7 +50,7 @@ export class PSSearchResults extends preact.Component<{
 		return <li class="result"><div class="sortrow">
 			<button class={`sortcol movenamesortcol${sortCol === 'name' ? ' cur' : ''}`} data-sort="name">Name</button>
 			<button class={`sortcol movetypesortcol${sortCol === 'type' ? ' cur' : ''}`} data-sort="type">Type</button>
-			<button class={`sortcol movetypesortcol${sortCol === 'category' ? ' cur' : ''}`} data-sort="category">Cat</button>
+			<button class={`sortcol catsortcol${sortCol === 'category' ? ' cur' : ''}`} data-sort="category">Cat</button>
 			<button class={`sortcol powersortcol${sortCol === 'power' ? ' cur' : ''}`} data-sort="power">Pow</button>
 			<button class={`sortcol accuracysortcol${sortCol === 'accuracy' ? ' cur' : ''}`} data-sort="accuracy">Acc</button>
 			<button class={`sortcol ppsortcol${sortCol === 'pp' ? ' cur' : ''}`} data-sort="pp">PP</button>
@@ -254,7 +255,7 @@ export class PSSearchResults extends preact.Component<{
 					alt={move.type} height="14" width="32" class="pixelated"
 				/>
 				<img
-					src={`${Dex.resourcePrefix}sprites/categories/${move.category}.png`}
+					src={`${Dex.indigostarstormPrefix}sprites/category-icons/${move.category}.png`}
 					alt={move.category} height="14" width="32" class="pixelated"
 				/>
 			</span>
@@ -277,14 +278,14 @@ export class PSSearchResults extends preact.Component<{
 	renderTypeRow(id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
 		const name = id.charAt(0).toUpperCase() + id.slice(1);
 
-		return <li class="result"><a href={`${this.URL_ROOT}types/${id}`} data-target="push" data-entry={`type|${name}`}>
-			<span class="col namecol">{this.renderName(name, matchStart, matchEnd)}</span>
+		return <li class="result">
+			<a href={`${this.URL_ROOT}types/${id}`} data-target="push" data-entry={`type|${name}`}>
+				<span class="col namecol">{this.renderName(name, matchStart, matchEnd)}</span>
 
 			<span class="col typecol">
 				<img
 					src={`${Dex.resourcePrefix}sprites/types/${encodeURIComponent(name)}.png`}
-					alt={name} height="14" width="32" class="pixelated"
-				/>
+					alt={name} height="14" width="32" class="pixelated" />
 			</span>
 
 			{errorMessage}
@@ -299,7 +300,9 @@ export class PSSearchResults extends preact.Component<{
 				<span class="col namecol">{this.renderName(name, matchStart, matchEnd)}</span>
 
 				<span class="col typecol">
-					<img src={`${Dex.resourcePrefix}sprites/categories/${name}.png`} alt={name} height="14" width="32" class="pixelated" />
+					<img
+					 src={`${Dex.indigostarstormPrefix}sprites/category-icons/${name}.png`} 
+					 alt={name} height="14" width="32" class="pixelated" />
 				</span>
 
 				{errorMessage}

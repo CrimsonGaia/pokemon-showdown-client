@@ -1160,6 +1160,7 @@ export class Item implements Effect {
 	}
 }
 
+
 export interface MoveFlags {
 	
 	/** */
@@ -1259,11 +1260,7 @@ export interface MoveFlags {
 	/** Can be stolen from the original user and instead used by another Pokemon using Snatch. */
 	snatch?: 1 | 0;
 }
-export type FlagName =
- 'Binding' | 'Bite' | 'Bullet' | 'Bomb' | 'Contact' | 'Crash' | 'Dance' | 'Draining' | 'Explosive' | 
-'Healing' | 'Powder' | 'Pulse' | 'Punch' | 'Slice' | 'Sound' | 'Wind' | 'Airborne' | 'Aura' | 'Beam' | 'Breath' | 'Claw' |
-'Crush' | 'Kick' | 'Light' | 'Lunar' | 'Lunar' | 'Magic' | 'Pierce' | 'Shadow' | 'Solar' | 'Spin' | 'Sweep' | 'Throw' |
-'Weapon' | 'Wing';
+
 export type MoveTarget = 'normal' | 'any' | 'adjacentAlly' | 'adjacentFoe' | 'adjacentAllyOrSelf' | // single-target
 	'self' | 'randomNormal' | // single-target, automatic
 	'allAdjacent' | 'allAdjacentFoes' | // spread
@@ -1285,7 +1282,7 @@ export class Move implements Effect {
 	readonly priority: number;
 	readonly target: MoveTarget;
 	readonly pressureTarget: MoveTarget;
-	readonly flags: MoveFlags;
+	readonly flags: Readonly<MoveFlags>;
 	readonly critRatio: number;
 	readonly damage?: number | 'level' | false | null;
 
@@ -1466,7 +1463,6 @@ export class Flag implements Effect {
 	readonly effectType = 'Flag';
 	readonly id: ID;
 	readonly name: string;
-	readonly flags: Readonly<MoveFlags>;
 	readonly gen: number;
 	readonly exists: boolean;
 	readonly desc: string;
@@ -1477,7 +1473,6 @@ export class Flag implements Effect {
 		if (data.name) name = data.name;
 		this.name = Dex.sanitizeName(name);
 		this.id = id;
-		this.flags = 
 		this.gen = data.gen || 0;
 		this.exists = ('exists' in data ? !!data.exists : true);
 		this.desc = data.desc;

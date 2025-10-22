@@ -56,6 +56,9 @@
 	padding: 1px 0 0 0;
 	contain: strict;
 }
+.utilichart li.result {
+	border-bottom: 1px solid rgba(0,0,0,0.06);
+}
 .message .utilichart .result, .chat .utilichart .result, .notice .utilichart .result {
 	height: auto;
 	contain: none;
@@ -227,12 +230,18 @@ utilichart .flaglabelcol {
 }
 .utilichart .typecol {
 	width: 46px;
+	position: relative;
+	height: 30px;
 }
 utilichart .catcol {
 	width: 66px;
 }
 .utilichart .flagcol{
 	width: 66px;
+	height: 28px;
+	font-size: 7pt;
+	text-align: top;
+	white-space: nowrap;
 }
 .utilichart .abilitycol {
 	padding-top: 8px;
@@ -283,7 +292,25 @@ utilichart .catcol {
 }
 .utilichart .typecol img {
 	opacity: 0.6;
-	margin-right: 1px;
+	display: block;
+	position: absolute;
+	left: 7px; /* centers 32px icon inside 46px column */
+	width: 32px;
+	height: 14px;
+}
+.utilichart .typecol img:only-child {
+	/* center single icon vertically */
+	top: 8px; /* (30 - 14) / 2 */
+}
+.utilichart .typecol img:nth-child(1) {
+	top: 1px;
+}
+.utilichart .typecol img:nth-child(2) {
+	top: 13px;
+}
+.utilichart .typecol img:only-child {
+	/* Ensure single icon is vertically centered even when nth-child rules also match */
+	top: 8px !important;
 }
 .utilichart .typecol img.b {
 	opacity: 1;

@@ -2403,7 +2403,7 @@ p.or:after {
 	border-radius: 5px;
 	padding: 2px 0 0 3px;
 	height: 127px;
-	width: 626px;
+	width: 826px;
 	margin-top: 8px;
 
 	box-shadow: inset 1px 1px 0 rgba(255,255,255,.6);
@@ -2531,6 +2531,14 @@ p.or:after {
 	font-size: 9pt;
 	text-align: center;
 }
+/* Position +/- small icons when EV has 3 digits */
+.setstats em.ev-3 small,
+.statrow em.ev-3 small,
+.setcell .ev-3 small {
+	position: relative;
+	left: -6px;
+	top: -11px;
+}
 .setdetails .detailcell-first {
 	border-left: 0;
 }
@@ -2543,7 +2551,7 @@ p.or:after {
 	padding: 0;
 }
 .setstats {
-	width: 138px;
+	width: 140px;
 	height: 108px;
 	padding-right: 0;
 }
@@ -2560,20 +2568,18 @@ p.or:after {
 	width: 20px;
 	height: 5px;
 	text-align: right;
-	font-weight: normal;
-	font-size: 7pt;
+	font-size: 6pt;
 	padding: 0;
 }
 .setstats .statgraph {
 	float: left;
-	width: 75px;
-	padding: 0 0 0 3px;
-	height: 5px;
+	width: 0px;
+	padding: 0 0 0 0;
+	height: 1px;
 }
 .setstats .statgraph span {
 	display: block;
-	margin-top: 3px;
-	height: 6px;
+	height: 9px;
 	background: #CCCCCC;
 }
 .setstats em {
@@ -2581,7 +2587,14 @@ p.or:after {
 	font-style: normal;
 	width: 22px;
 	height: 5px;
-	text-align: right;
+	text-align: center;
+}
+.setstats ma {
+	float: left;
+	font-style: normal;
+	width: 6px;
+	height: 5px;
+	text-align: left;
 }
 .setstats small {
 	float: left;

@@ -211,6 +211,8 @@
 		case 'type':
 			var type = { name: id[0].toUpperCase() + id.substr(1) };
 			return this.renderTypeRow(type, matchStart, matchLength, errorMessage);
+
+			//RETURN TO THIS
 		case 'egggroup':
 			// very hardcode
 			var egName;
@@ -253,7 +255,7 @@
 			return this.renderCategoryRow(category, matchStart, matchLength, errorMessage);
 		case 'flag':
 			var flag = this.engine.dex.flags.get(id);
-			return this.renderFlagRow(flag, errorMessage);
+			return this.renderFlagRow(flag, matchStart, matchLength, errorMessage);
 		case 'article':
 			var articleTitle = (window.BattleArticleTitles && BattleArticleTitles[id]) || (id[0].toUpperCase() + id.substr(1));
 			var article = { name: articleTitle, id: id };
@@ -568,9 +570,47 @@
 		buf += '<span class="col catcol">';
 		buf += Dex.getCategoryIcon(move.category);
 		buf += '</span> ';
-		buf += '<span class="col flagcol">';
-		buf +=  Dex.getCategoryIcon(move.category);
-		buf += '</span> ';
+		// render flags as textual labels (escaped), showing truthy keys from move.flags
+		// but exclude implementation/internal flags from display.
+		var HIDDEN_FLAGS = new Set(['allyanim', 'bypasssub', 'cantusetwice', 'charge', 'defrost', 'distance', 'failcopycat', 'failencore', 'failinstruct', 'failmefirst', 'failmimic', 'futuremove', 'gravity', 'metronome', 'mirror', 'mustpressure', 'noassist', 'noparentalbond', 'nonsky', 'nosketch', 'nosleeptalk', 'pledgecombo', 'protect', 'recharge', 'reflectable', 'snatch']);
+		var flagsHtml = '&mdash;';
+		if (move.flags && typeof move.flags === 'object') {
+			var flagKeys = Object.keys(move.flags).filter(function (k) { return move.flags[k]; });
+			// filter out hidden/internal flags
+			flagKeys = flagKeys.filter(function (k) { return !HIDDEN_FLAGS.has(k); });
+			if (flagKeys.length) {
+				// render each flag on its own line; prefer an icon if the dex provides one
+				var dexRef = (this.engine && this.engine.dex) || null;
+				var useFlagIcons = dexRef && typeof dexRef.getFlagIcon === 'function';
+				flagsHtml = flagKeys.map(function (k) {
+					var s = k.charAt(0).toUpperCase() + k.slice(1);
+					if (useFlagIcons) {
+						try {
+							var icon = dexRef.getFlagIcon(k);
+							if (icon) return '<div>' + icon + '</div>';
+						} catch (e) {}
+					}
+					return '<div>' + BattleLog.escapeHTML(s) + '</div>';
+				}).join('');
+			}
+		} else if (typeof move.flags === 'string') {
+			var singleFlag = move.flags;
+			if (!HIDDEN_FLAGS.has(singleFlag)) {
+				var sf = singleFlag.charAt(0).toUpperCase() + singleFlag.slice(1);
+				var dexRef2 = (this.engine && this.engine.dex) || null;
+				var useFlagIcons2 = dexRef2 && typeof dexRef2.getFlagIcon === 'function';
+				if (useFlagIcons2) {
+					try {
+						var icon2 = dexRef2.getFlagIcon(singleFlag);
+						if (icon2) flagsHtml = '<div>' + icon2 + '</div>'; else flagsHtml = '<div>' + BattleLog.escapeHTML(sf) + '</div>';
+					} catch (e) {
+						flagsHtml = '<div>' + BattleLog.escapeHTML(sf) + '</div>';
+					}
+				} else {
+					flagsHtml = '<div>' + BattleLog.escapeHTML(sf) + '</div>';
+				}
+				}}
+		buf += '<span class="col flagcol" style="text-align:center;">' + flagsHtml + '</span> ';
 
 		// power, accuracy, pp
 		var pp = (move.pp === 1 || move.noPPBoosts ? move.pp : move.pp * 8 / 5);
@@ -607,6 +647,47 @@
 		buf += Dex.getTypeIcon(move.type);
 		buf += Dex.getCategoryIcon(move.category);
 		buf += '</span> ';
+
+		// flags
+		var HIDDEN_FLAGS = new Set(['allyanim', 'bypasssub', 'charge', 'defrost', 'distance', 'failinstruct', 'gravity', 'mirror', 'nonsky', 'nosketch', 'protect', 'recharge', 'reflectable', 'snatch']);
+		var innerFlagsHtml = '&mdash;';
+		if (move.flags && typeof move.flags === 'object') {
+			var innerFlagKeys = Object.keys(move.flags).filter(function (k) { return move.flags[k]; });
+			innerFlagKeys = innerFlagKeys.filter(function (k) { return !HIDDEN_FLAGS.has(k); });
+			if (innerFlagKeys.length) {
+				// render each inner flag on its own line; prefer an icon if the dex provides one
+				var dexRefInner = (this.engine && this.engine.dex) || null;
+				var useFlagIconsInner = dexRefInner && typeof dexRefInner.getFlagIcon === 'function';
+				innerFlagsHtml = innerFlagKeys.map(function (k) {
+					var s = k.charAt(0).toUpperCase() + k.slice(1);
+					if (useFlagIconsInner) {
+						try {
+							var iconInner = dexRefInner.getFlagIcon(k);
+							if (iconInner) return '<div>' + iconInner + '</div>';
+						} catch (e) {}
+					}
+					return '<div>' + BattleLog.escapeHTML(s) + '</div>';
+				}).join('');
+			}
+		} else if (typeof move.flags === 'string') {
+			var singleInnerFlag = move.flags;
+			if (!HIDDEN_FLAGS.has(singleInnerFlag)) {
+				var sif = singleInnerFlag.charAt(0).toUpperCase() + singleInnerFlag.slice(1);
+				var dexRefInner2 = (this.engine && this.engine.dex) || null;
+				var useFlagIconsInner2 = dexRefInner2 && typeof dexRefInner2.getFlagIcon === 'function';
+				if (useFlagIconsInner2) {
+					try {
+						var iconInner2 = dexRefInner2.getFlagIcon(singleInnerFlag);
+						if (iconInner2) innerFlagsHtml = '<div>' + iconInner2 + '</div>'; else innerFlagsHtml = '<div>' + BattleLog.escapeHTML(sif) + '</div>';
+					} catch (e) {
+						innerFlagsHtml = '<div>' + BattleLog.escapeHTML(sif) + '</div>';
+					}
+				} else {
+					innerFlagsHtml = '<div>' + BattleLog.escapeHTML(sif) + '</div>';
+				}
+			}
+		}
+		buf += '<span class="col flagcol";">' + innerFlagsHtml + '</span> ';
 
 		// power, accuracy, pp
 		var pp = (move.pp === 1 || move.noPPBoosts ? move.pp : move.pp * 8 / 5);
@@ -723,7 +804,7 @@
 		buf += '<span class="col namecol">' + name + '</span> ';
 
 		// flag
-		buf += '<span class="col flagcol">' + dex.getFlagIcon(flag.name) + '</span> ';
+		buf += '<span class="col flagcol" style="text-align:center;">' + dex.getFlagIcon(flag.name) + '</span> ';
 
 		// error
 		if (errorMessage) {

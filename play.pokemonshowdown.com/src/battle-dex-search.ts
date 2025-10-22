@@ -12,7 +12,6 @@
  */
 
 import { Dex, type ModdedDex, toID, type ID } from "./battle-dex";
-import { Flag } from "./battle-dex-data";
 
 
 export type SearchType = (
