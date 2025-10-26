@@ -9,7 +9,7 @@
 
 .utilichart li > a, .utilitychart li > div {
 	display: block;
-	height: 30px;
+	height: 36px;
 	padding: 0 0 0 4px;
 	border: 1px solid transparent;
 	margin: 0 5px 1px 5px;
@@ -52,7 +52,7 @@
 .resultheader,
 .utilichart li.resultheader,
 .utilichart .result {
-	height: 32px;
+	height: 36px;
 	padding: 1px 0 0 0;
 	contain: strict;
 }
@@ -92,14 +92,14 @@
 .utilichart .col {
 	float: left;
 	padding-top: 7px;
-	height: 22px;
+	height: 29px;
 	font-size: 9pt;
 	color: #444444;
 }
 .utilichart .iconcol {
-	padding-top: 0px;
+	padding-top: 3px;
 	width: 40px;
-	height: 30px;
+	height: 33px;
 }
 .utilichart .iconcol span {
 	display: block;
@@ -108,9 +108,9 @@
 	background: transparent none no-repeat scroll 0px -8px;
 }
 .utilichart .itemiconcol {
-	padding-top: 3px;
+	padding-top: 6px;
 	width: 24px;
-	height: 27px;
+	height: 30px;
 }
 .utilichart .itemiconcol span {
 	display: block;
@@ -133,7 +133,7 @@
 .utilichart .widelabelcol,
 .utilichart .pplabelcol {
 	padding-top: 1px;
-	height: 28px;
+	height: 35px;
 	width: 24px;
 	text-align: right;
 	font-size: 8pt;
@@ -155,11 +155,10 @@
 .utilichart .bstcol {
 	padding-left: 2px;
 }
-utilichart .flaglabelcol {
+.utilichart .flaglabelcol {
 	text-align: center;
-	width: 50px;
+	width: 104px;
 }
-
 
 .utilichart .flaglabelcol em,
 .utilichart .labelcol em,
@@ -180,14 +179,14 @@ utilichart .flaglabelcol {
 }
 .utilichart .namecol {
 	padding-top: 6px;
-	height: 23px;
+	height: 30px;
 	width: 120px;
 	color: #000000;
 	font-size: 10pt;
 }
 .utilichart .pokemonnamecol {
 	padding-top: 6px;
-	height: 23px;
+	height: 30px;
 	width: 127px;
 	color: #000000;
 	font-size: 10pt;
@@ -195,7 +194,7 @@ utilichart .flaglabelcol {
 }
 .utilichart .shortpokemonnamecol {
 	padding-top: 6px;
-	height: 23px;
+	height: 30px;
 	width: 118px;
 	color: #000000;
 	font-size: 10pt;
@@ -203,21 +202,21 @@ utilichart .flaglabelcol {
 }
 .utilichart .movenamecol {
 	padding-top: 6px;
-	height: 23px;
-	width: 147px;
+	height: 30px;
+	width: 140px;
 	color: #000000;
 	font-size: 10pt;
 }
 .utilichart .shortmovenamecol {
 	padding-top: 6px;
-	height: 23px;
+	height: 30px;
 	width: 112px;
 	color: #000000;
 	font-size: 10pt;
 }
 .utilichart .tagcol {
 	padding-top: 6px;
-	height: 24px;
+	height: 30px;
 	width: 34px;
 	border-right: 1px solid #CCCCCC;
 	margin-right: 5px;
@@ -231,21 +230,122 @@ utilichart .flaglabelcol {
 .utilichart .typecol {
 	width: 46px;
 	position: relative;
-	height: 30px;
+	height: 36px;
 }
-utilichart .catcol {
-	width: 66px;
+.utilichart .catcol {
+	width: 52px;
+	position: relative;
+	text-align: center;
+
 }
-.utilichart .flagcol{
-	width: 66px;
-	height: 28px;
+.utilichart .catcol img {
+	position: relative;
+	top: 1px;
+}
+.utilichart .flagcol {
+	width: 132px;
+	height: 48px !important;
 	font-size: 7pt;
-	text-align: top;
-	white-space: nowrap;
+	position: relative;
+	box-sizing: border-box;
+	margin-top: -6px;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: center;
+	align-content: flex-start;
+	gap: 2px;
+	padding: 2px;
+	overflow: visible;
+	line-height: 1;
 }
+
+.utilichart .flagcol img,
+.utilichart .flagcol span {
+	position: absolute;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	vertical-align: middle;
+	transform: translate(-50%, -50%);
+}
+
+.utilichart .flagcol div {
+	position: absolute;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	transform: translate(-50%, -50%);
+}
+
+/* Default: center all flags */
+.utilichart .flagcol img,
+.utilichart .flagcol span,
+.utilichart .flagcol div {
+	left: 50%;
+	top: 45%;
+}
+
+/* Single flag: centered */
+.utilichart .flagcol div:only-child {
+	left: 50%;
+	top: 45%;
+}
+
+/* Two flags: side by side */
+.utilichart .flagcol div:first-child:nth-last-child(2) {
+	left: 25%;
+	top: 45%;
+}
+
+.utilichart .flagcol div:nth-child(2):last-child {
+	left: 75%;
+	top: 45%;
+}
+
+/* Three flags: two on top, one below center */
+.utilichart .flagcol div:first-child:nth-last-child(3) {
+	left: 25%;
+	top: 30%;
+}
+
+.utilichart .flagcol div:nth-child(2):nth-last-child(2) {
+	left: 75%;
+	top: 30%;
+}
+
+.utilichart .flagcol div:nth-child(3):last-child {
+	left: 50%;
+	top: 64%;
+}
+
+/* Four flags: 2x2 grid */
+.utilichart .flagcol div:first-child:nth-last-child(4) {
+	left: 25%;
+	top: 30%;
+}
+
+.utilichart .flagcol div:nth-child(2):nth-last-child(3) {
+	left: 75%;
+	top: 30%;
+}
+
+.utilichart .flagcol div:nth-child(3):nth-last-child(2) {
+	left: 25%;
+	top: 64%;
+}
+
+.utilichart .flagcol div:nth-child(4):last-child {
+	left: 75%;
+	top: 64%;
+}
+
+
 .utilichart .abilitycol {
 	padding-top: 8px;
-	height: 21px;
+	height: 28px;
 	font-size: 8pt;
 	width: 86px;
 	text-align: center;
@@ -253,7 +353,7 @@ utilichart .catcol {
 }
 .utilichart .twoabilitycol {
 	padding-top: 1px;
-	height: 28px;
+	height: 35px;
 	font-size: 8pt;
 	width: 86px;
 	text-align: center;
@@ -318,6 +418,34 @@ utilichart .catcol {
 	outline-offset: 0;
 	background: #4488CC;
 }
+.utilichart .flagcol img {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 66px !important;
+	height: 16px !important;
+}
+.utilichart .flagcol div {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin: 0;
+	flex: 0 0 48%;
+	max-width: 64px;
+	height: 18px;
+}
+
+/* For 1-2 flags, take full width */
+.utilichart .flagcol div:first-child:nth-last-child(1),
+.utilichart .flagcol div:first-child:nth-last-child(2),
+.utilichart .flagcol div:first-child:nth-last-child(2) ~ div {
+	flex: 0 0 100%;
+	max-width: 132px;
+	height: 18px;
+}
+
+/* Remove the experimental :has() selectors */
+
 .utilichart .itemdesccol,
 .utilichart .abilitydesccol,
 .utilichart .movedesccol {
@@ -325,7 +453,7 @@ utilichart .catcol {
 	padding-top: 8px;
 	font-size: 8pt;
 	width: 488px;
-	height: 21px;
+	height: 28px;
 	overflow: hidden;
 	color: #777777;
 }
@@ -376,7 +504,7 @@ utilichart .catcol {
 	width: 68px;
 }
 .utilichart .catsortcol {
-	width: 52px;
+	width: 66px;
 }
 .utilichart .abilitysortcol {
 	width: 172px;
@@ -392,7 +520,7 @@ utilichart .catcol {
 	width: 35px;
 }
 .utilichart .flagsortcol {
-	width: 35px;
+	width: 116px;
 }
 .utilichart .powersortcol {
 	width: 38px;
@@ -403,3 +531,5 @@ utilichart .catcol {
 .utilichart .ppsortcol {
 	width: 38px;
 }
+
+

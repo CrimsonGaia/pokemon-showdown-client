@@ -610,7 +610,17 @@
 					flagsHtml = '<div>' + BattleLog.escapeHTML(sf) + '</div>';
 				}
 				}}
-		buf += '<span class="col flagcol" style="text-align:center;">' + flagsHtml + '</span> ';
+		
+		// Determine if we need multi-flag class (3+ flags)
+		var flagCount = 0;
+		if (typeof move.flags === 'object' && move.flags) {
+			flagCount = Object.keys(move.flags).filter(function (k) { return !HIDDEN_FLAGS.has(k); }).length;
+		} else if (typeof move.flags === 'string' && !HIDDEN_FLAGS.has(move.flags)) {
+			flagCount = 1;
+		}
+		var flagClass = flagCount >= 3 ? 'col flagcol multi-flag' : 'col flagcol';
+		
+		buf += '<span class="' + flagClass + '" style="text-align:center;">' + flagsHtml + '</span> ';
 
 		// power, accuracy, pp
 		var pp = (move.pp === 1 || move.noPPBoosts ? move.pp : move.pp * 8 / 5);

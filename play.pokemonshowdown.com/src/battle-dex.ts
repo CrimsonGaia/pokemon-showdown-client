@@ -958,6 +958,7 @@ export const Dex = new class implements ModdedDex {
 	}
 
 	getFlagIcon(flag: string | null,) {
+		if (!flag) return '\u2014'; // em dash
 		const flagID = toID(flag);
 		let sanitizedFlag = '';
 		switch (flagID) {
@@ -971,7 +972,8 @@ export const Dex = new class implements ModdedDex {
 			sanitizedFlag = 'undefined';
 			break;
 		}
-		return `<img src="${Dex.indigostarstormPrefix}flag-icons/${sanitizedFlag}.png" height="14" width="32" class="pixelated" />`;
+		const flagText = sanitizedFlag.charAt(0).toUpperCase() + sanitizedFlag.slice(1);
+		return `<img src="${Dex.resourcePrefix}sprites/flagicons/${sanitizedFlag}.png" height="14" width="32" class="pixelated" style="display: block; margin: 0 auto; vertical-align: middle;" onerror="this.style.display='none'; this.nextSibling.style.display='inline';" /><span style="display: none; font-size: 10px; font-weight: bold; text-align: center;">${flagText}</span>`;
 	}
 
 	getCategoryIcon(category: string | null) {
@@ -987,7 +989,7 @@ export const Dex = new class implements ModdedDex {
 			sanitizedCategory = 'undefined';
 			break;
 		}
-		return `<img src="${Dex.indigostarstormPrefix}category-icons/${sanitizedCategory}.png" alt="${sanitizedCategory}" height="14" width="32" class="pixelated" />`;
+		return `<img src="${Dex.resourcePrefix}sprites/categories/${sanitizedCategory}.png" alt="${sanitizedCategory}" height="14" width="32" class="pixelated" onerror="this.style.display='none'; this.nextSibling.style.display='inline';" /><span style="display: none; font-size: 10px; font-weight: bold; text-align: center;">${sanitizedCategory}</span>`;
 	}
 
 	getPokeballs() {
