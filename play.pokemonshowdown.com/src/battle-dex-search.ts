@@ -1926,7 +1926,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 				if (move.category !== value) return false;
 				break;
 			case 'flag':
-				if (move.flags !== value) return false;
+				if (!(value in move.flags)) return false;
 				break;
 			case 'pokemon':
 				if (!this.canLearn(value as ID, move.id)) return false;

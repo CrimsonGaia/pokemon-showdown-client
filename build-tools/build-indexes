@@ -53,7 +53,7 @@ function requireNoCache(pathSpec) {
 	index = index.concat(Object.keys(Dex.data.Abilities).map(x => x + ' ability'));
 	index = index.concat(Object.keys(Dex.data.TypeChart).map(x => toID(x) + ' type'));
 	index = index.concat(['physical', 'special', 'status'].map(x => toID(x) + ' category'));
-	index = index.concat(['bind', 'bite', 'bullet', 'bomb', 'contact', 'crash', 'dance', 'drain', 'explosive', 'heal', 'powder', 'pulse', 'punch', 'slice', 'sound', 'wind', 'airborne', 'aura', 'beam', 'breath', 'claw', 'crush', 'kick', 'light', 'lunar', 'magic', 'pierce', 'shadow', 'solar', 'spin', 'sweep', 'throw', 'weapon', 'wing',
+	index = index.concat(['bind', 'bite', 'bullet', 'bomb', 'contact', 'crash', 'dance', 'drain', 'explosive', 'heal', 'powder', 'pulse', 'punch', 'slice', 'sound', 'wind', 'airborne', 'aura', 'beam', 'breath', 'claw', 'crush', 'kick', 'launch', 'light', 'lunar', 'magic', 'pierce', 'shadow', 'solar', 'spin', 'sweep', 'throw', 'weapon', 'wing',
 	].map(x => toID(x) + ' flag'));
 	index = index.concat([
 		'monster', 'water1', 'bug', 'flying', 'field', 'fairy', 'grass', 'humanlike', 'water3', 'mineral', 'amorphous', 'water2', 'ditto', 'dragon', 'undiscovered',

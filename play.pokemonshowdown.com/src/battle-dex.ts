@@ -964,7 +964,7 @@ export const Dex = new class implements ModdedDex {
 		switch (flagID) {
 		case 'bind':	case 'bite':	case 'bullet':	case 'contact':	case 'crash':	case 'dance':	case 'drain':	case 'explosive':	case 'heal':	
 		case 'powder':	case 'pulse':	case 'punch':	case 'slice':	case 'sound':	case 'wind':	case 'airborne':	case 'aura':	case 'beam':	
-		case 'breath':	case 'claw':	case 'crush':	case 'kick':	case 'light':	case 'lunar':	case 'magic':	case 'pierce':	case 'shadow':	
+		case 'breath':	case 'claw':	case 'crush':	case 'kick':	case 'launch':	case 'light':	case 'lunar':	case 'magic':	case 'pierce':	case 'shadow':	
 		case 'solar':	case 'spin':	case 'sweep':	case 'throw':	case 'weapon':	case 'wing':
 			sanitizedFlag = flagID.charAt(0).toUpperCase() + flagID.slice(1);
 			break;

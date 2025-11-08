@@ -1210,6 +1210,8 @@ export interface MoveFlags {
 	/**  */
 	kick?: 1 | 0;
 	/**  */
+	launch?: 1 | 0;
+	/**  */
 	light?: 1 | 0;
 	/**  */
 	lunar?: 1 | 0;
