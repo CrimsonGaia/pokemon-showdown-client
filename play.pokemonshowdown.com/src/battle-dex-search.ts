@@ -170,7 +170,7 @@ export class DexSearch {
 			if (!['type', 'category', 'flag', 'pokemon'].includes(type)) return false;
 			if (type === 'type') entry[1] = this.capitalizeFirst(entry[1]);
 			if (type === 'category') entry[1] = this.capitalizeFirst(entry[1]);
-			if (type === 'flag') entry[1] = this.capitalizeFirst(entry[1]);
+			if (type === 'flag') entry[1] = toID(entry[1]);
 			if (type === 'pokemon') entry[1] = toID(entry[1]);
 			if (!this.filters) this.filters = [];
 			this.filters.push(entry.slice(0, 2) as SearchFilter);
@@ -519,21 +519,21 @@ export class DexSearch {
 					}
 				}
 				break;
-			case 'flag':
-				let flag = fId.charAt(0).toUpperCase() + fId.slice(1);
-				buf.push(['header', `${flag} moves`]);
-				for (let id in BattleMovedex) {
-					if (BattleMovedex[id].flag === flag) {
-						(illegal && id in illegal ? illegalBuf : buf).push(['move', id as ID]);
-					
-				}
-				break;
-		}
 			case 'category':
 				let category = fId.charAt(0).toUpperCase() + fId.slice(1);
 				buf.push(['header', `${category} moves`]);
 				for (let id in BattleMovedex) {
 					if (BattleMovedex[id].category === category) {
+						(illegal && id in illegal ? illegalBuf : buf).push(['move', id as ID]);
+					}
+				}
+				break;
+			case 'flag':
+				let flagName = BattleFlags && BattleFlags[fId] ? BattleFlags[fId].name : fId.charAt(0).toUpperCase() + fId.slice(1);
+				buf.push(['header', `${flagName} moves`]);
+				for (let id in BattleMovedex) {
+					const move = BattleMovedex[id];
+					if (move.flags && move.flags[fId]) {
 						(illegal && id in illegal ? illegalBuf : buf).push(['move', id as ID]);
 					}
 				}
