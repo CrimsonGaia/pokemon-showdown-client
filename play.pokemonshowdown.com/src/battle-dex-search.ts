@@ -2010,13 +2010,59 @@ class BattleCategorySearch extends BattleTypedSearch<'category'> {
 }
 class BattleFlagSearch extends BattleTypedSearch<'flag'> {
 	getTable() {
-		return BattleFlags;
+		return {
+			contact: 1, binding: 1, bite: 1, bomb: 1, bullet: 1,
+			drain: 1, explosive: 1, fist: 1, powder: 1, pulse: 1, slicing: 1, sound: 1,
+			wind: 1, airborne: 1, aura: 1, beam: 1, breath: 1, claw: 1, crash: 1, crush: 1,
+			kick: 1, launch: 1, light: 1, lunar: 1, magic: 1, pierce: 1, shadow: 1,
+			solar: 1, spin: 1, sweep: 1, throw: 1, weapon: 1, wing: 1, bypassprotect: 1,
+			nonreflectable: 1, nonmirror: 1, nonsnatchable: 1, bypasssubstitute: 1, maxmove: 1, gmaxmove: 1, zmove: 1
+		};
 	}
 	getDefaultResults(reverseSort?: boolean): SearchRow[] {
-		const results: SearchRow[] = [];
-		for (let id in BattleFlags) {
-			results.push(['flag', id as ID]);
-		}
+		const results: SearchRow[] = [
+			['flag', 'contact' as ID],
+			['flag', 'binding' as ID],
+			['flag', 'bite' as ID],
+			['flag', 'bomb' as ID],
+			['flag', 'bullet' as ID],
+			['flag', 'drain' as ID],
+			['flag', 'explosive' as ID],
+			['flag', 'fist' as ID],
+			['flag', 'powder' as ID],
+			['flag', 'pulse' as ID],
+			['flag', 'slicing' as ID],
+			['flag', 'sound' as ID],
+			['flag', 'wind' as ID],
+			['flag', 'airborne' as ID],
+			['flag', 'aura' as ID],
+			['flag', 'beam' as ID],
+			['flag', 'breath' as ID],
+			['flag', 'claw' as ID],
+			['flag', 'crash' as ID],
+			['flag', 'crush' as ID],
+			['flag', 'kick' as ID],
+			['flag', 'launch' as ID],
+			['flag', 'light' as ID],
+			['flag', 'lunar' as ID],
+			['flag', 'magic' as ID],
+			['flag', 'pierce' as ID],
+			['flag', 'shadow' as ID],
+			['flag', 'solar' as ID],
+			['flag', 'spin' as ID],
+			['flag', 'sweep' as ID],
+			['flag', 'throw' as ID],
+			['flag', 'weapon' as ID],
+			['flag', 'wing' as ID],
+			['flag', 'bypassprotect' as ID],
+			['flag', 'nonreflectable' as ID],
+			['flag', 'nonmirror' as ID],
+			['flag', 'nonsnatchable' as ID],
+			['flag', 'bypasssubstitute' as ID],
+			['flag', 'maxmove' as ID],
+			['flag', 'gmaxmove' as ID],
+			['flag', 'zmove' as ID],
+		];
 		if (reverseSort) results.reverse();
 		return results;
 	}

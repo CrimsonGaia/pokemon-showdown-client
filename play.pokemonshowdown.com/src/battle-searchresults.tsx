@@ -24,7 +24,6 @@ export class PSSearchResults extends preact.Component<{
 	itemId: ID = '' as ID;
 	abilityId: ID = '' as ID;
 	moveIds: ID[] = [];
-	flagIds: ID[] = [];
 	resultIndex = -1;
 
 	renderPokemonSortRow() {
@@ -47,14 +46,16 @@ export class PSSearchResults extends preact.Component<{
 
 	renderMoveSortRow() {
 		const sortCol = this.props.search.sortCol;
-		return <li class="result"><div class="sortrow">
-			<button class={`sortcol movenamesortcol${sortCol === 'name' ? ' cur' : ''}`} data-sort="name">Name</button>
-			<button class={`sortcol movetypesortcol${sortCol === 'type' ? ' cur' : ''}`} data-sort="type">Type</button>
-			<button class={`sortcol catsortcol${sortCol === 'category' ? ' cur' : ''}`} data-sort="category">Cat</button>
-			<button class={`sortcol powersortcol${sortCol === 'power' ? ' cur' : ''}`} data-sort="power">Pow</button>
-			<button class={`sortcol accuracysortcol${sortCol === 'accuracy' ? ' cur' : ''}`} data-sort="accuracy">Acc</button>
-			<button class={`sortcol ppsortcol${sortCol === 'pp' ? ' cur' : ''}`} data-sort="pp">PP</button>
-		</div></li>;
+	return <li class="result"><div class="sortrow">
+		<button class={`sortcol movenamesortcol${sortCol === 'name' ? ' cur' : ''}`} data-sort="name">Name</button>
+		<button class={`sortcol movetypesortcol${sortCol === 'type' ? ' cur' : ''}`} data-sort="type">Type</button>
+		<button class={`sortcol catsortcol${sortCol === 'category' ? ' cur' : ''}`} data-sort="category">Cat</button>
+		<button class={`sortcol catsortcol${sortCol === 'flag' ? ' cur' : ''}`} data-sort="flag">Flag</button>
+		<button class={`sortcol powersortcol${sortCol === 'power' ? ' cur' : ''}`} data-sort="power">Pow</button>
+		<button class={`sortcol accuracysortcol${sortCol === 'accuracy' ? ' cur' : ''}`} data-sort="accuracy">Acc</button>
+		<button class={`sortcol ppsortcol${sortCol === 'pp' ? ' cur' : ''}`} data-sort="pp">PP</button>
+		
+	</div></li>;
 	}
 
 	renderPokemonRow(id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
@@ -310,6 +311,30 @@ export class PSSearchResults extends preact.Component<{
 		</li>;
 	}
 
+	renderFlagRow(id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
+		const name = id.charAt(0).toUpperCase() + id.slice(1);
+		
+		// Map flag IDs to icon filenames
+		let iconName = name;
+		if (id === 'binding') iconName = 'Bind';
+		else if (id === 'fist') iconName = 'Punch';
+		else if (id === 'slicing') iconName = 'Slice';
+
+		return <li class="result">
+			<a href={`${this.URL_ROOT}categories/${id}`} data-target="push" data-entry={`flag|${name}`}>
+				<span class="col namecol">{this.renderName(name, matchStart, matchEnd)}</span>
+
+				<span class="col typecol">
+					<img
+					 src={`${Dex.indigostarstormPrefix}sprites/flagicons/${iconName}.png`} 
+					 alt={name} height="14" width="32" class="pixelated" />
+				</span>
+
+				{errorMessage}
+			</a>
+		</li>;
+	}
+
 	renderArticleRow(id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
 		const isSearchType = (id === 'pokemon' || id === 'moves');
 		const name = window.BattleArticleTitles?.[id] || (id.charAt(0).toUpperCase() + id.substr(1));
@@ -405,16 +430,18 @@ export class PSSearchResults extends preact.Component<{
 			return this.renderItemRow(id, matchStart, matchEnd, errorMessage);
 		case 'ability':
 			return this.renderAbilityRow(id, matchStart, matchEnd, errorMessage);
-		case 'type':
-			return this.renderTypeRow(id, matchStart, matchEnd, errorMessage);
-		case 'egggroup':
-			return this.renderEggGroupRow(id, matchStart, matchEnd, errorMessage);
-		case 'tier':
-			return this.renderTierRow(id, matchStart, matchEnd, errorMessage);
-		case 'category':
-			return this.renderCategoryRow(id, matchStart, matchEnd, errorMessage);
-		case 'article':
-			return this.renderArticleRow(id, matchStart, matchEnd, errorMessage);
+	case 'type':
+		return this.renderTypeRow(id, matchStart, matchEnd, errorMessage);
+	case 'egggroup':
+		return this.renderEggGroupRow(id, matchStart, matchEnd, errorMessage);
+	case 'tier':
+		return this.renderTierRow(id, matchStart, matchEnd, errorMessage);
+	case 'category':
+		return this.renderCategoryRow(id, matchStart, matchEnd, errorMessage);
+	case 'flag':
+		return this.renderFlagRow(id, matchStart, matchEnd, errorMessage);
+	case 'article':
+		return this.renderArticleRow(id, matchStart, matchEnd, errorMessage);
 		}
 		return <li>Error: not found</li>;
 	}
@@ -466,11 +493,18 @@ export class PSSearchResults extends preact.Component<{
 				// sort
 				const sort = target.getAttribute('data-sort');
 				if (sort) {
+					if (sort === 'category' || sort === 'flag' || sort === 'type' || sort === 'ability') {
+						// For filter columns, clear query and show all options on first click
+						if (search.sortCol !== sort) {
+							search.query = '';
+						}
+					}
 					search.toggleSort(sort);
 					search.find('');
 					ev.preventDefault();
 					ev.stopPropagation();
 					this.props.onSelect?.(null, '');
+					this.forceUpdate();
 					break;
 				}
 			}

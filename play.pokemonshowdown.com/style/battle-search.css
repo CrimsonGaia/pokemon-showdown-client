@@ -217,6 +217,9 @@
 .dexlist .typecol {
 	width: 70px;
 }
+.dexlist .flagcol {
+	width: 140px;
+}
 .dexlist .abilitycol {
 	padding-top: 8px;
 	height: 21px;

@@ -962,18 +962,55 @@ export const Dex = new class implements ModdedDex {
 		const flagID = toID(flag);
 		let sanitizedFlag = '';
 		switch (flagID) {
-		case 'bind':	case 'bite':	case 'bullet':	case 'contact':	case 'crash':	case 'dance':	case 'drain':	case 'explosive':	case 'heal':	
-		case 'powder':	case 'pulse':	case 'punch':	case 'slice':	case 'sound':	case 'wind':	case 'airborne':	case 'aura':	case 'beam':	
-		case 'breath':	case 'claw':	case 'crush':	case 'kick':	case 'launch':	case 'light':	case 'lunar':	case 'magic':	case 'pierce':	case 'shadow':	
-		case 'solar':	case 'spin':	case 'sweep':	case 'throw':	case 'weapon':	case 'wing':
-			sanitizedFlag = flagID.charAt(0).toUpperCase() + flagID.slice(1);
-			break;
+		case 'zmove': sanitizedFlag = 'Z-Move'; break;
+		case 'maxmove': sanitizedFlag = 'Max Move'; break;
+		case 'contact': sanitizedFlag = 'Contact'; break;
+		case 'binding': case 'bind': sanitizedFlag = 'Bind'; break;
+		case 'bite': sanitizedFlag = 'Bite'; break;
+		case 'bomb': sanitizedFlag = 'Bomb'; break;
+		case 'bullet': sanitizedFlag = 'Bullet'; break;
+		case 'drain': sanitizedFlag = 'Drain'; break;
+		case 'explosive': sanitizedFlag = 'Explosive'; break;
+		case 'fist': case 'punch': sanitizedFlag = 'Punch'; break;
+		case 'powder': sanitizedFlag = 'Powder'; break;
+		case 'pulse': sanitizedFlag = 'Pulse'; break;
+		case 'slicing': case 'slice': sanitizedFlag = 'Slice'; break;
+		case 'sound': sanitizedFlag = 'Sound'; break;
+		case 'wind': sanitizedFlag = 'Wind'; break;
+		case 'airborne': sanitizedFlag = 'Airborne'; break;
+		case 'aura': sanitizedFlag = 'Aura'; break;
+		case 'beam': sanitizedFlag = 'Beam'; break;
+		case 'breath': sanitizedFlag = 'Breath'; break;
+		case 'claw': sanitizedFlag = 'Claw'; break;
+		case 'crash': sanitizedFlag = 'Crash'; break;
+		case 'crush': sanitizedFlag = 'Crush'; break;
+		case 'dance': sanitizedFlag = 'Dance'; break;
+		case 'heal': sanitizedFlag = 'Heal'; break;
+		case 'kick': sanitizedFlag = 'Kick'; break;
+		case 'launch': sanitizedFlag = 'Launch'; break;
+		case 'light': sanitizedFlag = 'Light'; break;
+		case 'lunar': sanitizedFlag = 'Lunar'; break;
+		case 'magic': sanitizedFlag = 'Magic'; break;
+		case 'pierce': sanitizedFlag = 'Pierce'; break;
+		case 'shadow': sanitizedFlag = 'Shadow'; break;
+		case 'solar': sanitizedFlag = 'Solar'; break;
+		case 'spin': sanitizedFlag = 'Spin'; break;
+		case 'sweep': sanitizedFlag = 'Sweep'; break;
+		case 'throw': sanitizedFlag = 'Throw'; break;
+		case 'weapon': sanitizedFlag = 'Weapon'; break;
+		case 'wing': sanitizedFlag = 'Wing'; break;
+		case 'bypassprotect': sanitizedFlag = 'Bypass Protect'; break;
+		case 'nonreflectable': sanitizedFlag = 'Non-Reflectable'; break;
+		case 'nonmirror': sanitizedFlag = 'Non-Mirror'; break;
+		case 'nonsnatchable': sanitizedFlag = 'Non-Snatchable'; break;
+		case 'bypasssubstitute': sanitizedFlag = 'Bypass Substitute'; break;
+		case 'gmaxmove': sanitizedFlag = 'G-Max Move'; break;
 		default:
 			sanitizedFlag = 'undefined';
 			break;
 		}
 		const flagText = sanitizedFlag.charAt(0).toUpperCase() + sanitizedFlag.slice(1);
-		return `<img src="${Dex.resourcePrefix}sprites/flagicons/${sanitizedFlag}.png" height="14" width="32" class="pixelated" style="display: block; margin: 0 auto; vertical-align: middle;" onerror="this.style.display='none'; this.nextSibling.style.display='inline';" /><span style="display: none; font-size: 10px; font-weight: bold; text-align: center;">${flagText}</span>`;
+		return `<img src="sprites/flagicons/${sanitizedFlag}.png" alt="${flagText}" height="32" width="132" class="pixelated" onerror="this.style.display='none'; this.nextSibling.style.display='inline';" /><span style="display: none;">${flagText}</span>`;
 	}
 
 	getCategoryIcon(category: string | null) {

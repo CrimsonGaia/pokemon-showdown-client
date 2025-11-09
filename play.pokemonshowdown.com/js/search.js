@@ -250,12 +250,12 @@
 			};
 			var tier = { name: tierTable[id] };
 			return this.renderTierRow(tier, matchStart, matchLength, errorMessage);
-		case 'category':
-			var category = { name: id[0].toUpperCase() + id.substr(1), id: id };
-			return this.renderCategoryRow(category, matchStart, matchLength, errorMessage);
-		case 'flag':
-			var flag = this.engine.dex.flags.get(id);
-			return this.renderFlagRow(flag, matchStart, matchLength, errorMessage);
+	case 'category':
+		var category = { name: id[0].toUpperCase() + id.substr(1), id: id };
+		return this.renderCategoryRow(category, matchStart, matchLength, errorMessage);
+	case 'flag':
+		var flag = { name: id[0].toUpperCase() + id.substr(1), id: id };
+		return this.renderFlagRow(flag, matchStart, matchLength, errorMessage);
 		case 'article':
 			var articleTitle = (window.BattleArticleTitles && BattleArticleTitles[id]) || (id[0].toUpperCase() + id.substr(1));
 			var article = { name: articleTitle, id: id };
@@ -287,9 +287,9 @@
 		var buf = '<li class="result"><div class="sortrow">';
 		buf += '<button class="sortcol movenamesortcol' + (this.sortCol === 'name' ? ' cur' : '') + '" data-sort="name">Name</button>';
 		buf += '<button class="sortcol movetypesortcol' + (this.sortCol === 'type' ? ' cur' : '') + '" data-sort="type">Type</button>';
-		buf += '<button class="sortcol catsortcol' + (this.sortCol === 'category' ? ' cur' : '') + '" data-sort="category">Category</button>';
-		buf += '<button class="sortcol flagsortcol' + (this.sortCol === 'flag' ? 'cur' : '') + '" data-sort="flag">Flags</button>';
-		buf += '<button class="sortcol powersortcol' + (this.sortCol === 'power' ? ' cur' : '') + '" data-sort="power">Power</button>';
+	buf += '<button class="sortcol catsortcol' + (this.sortCol === 'category' ? ' cur' : '') + '" data-sort="category">Category</button>';
+	buf += '<button class="sortcol flagsortcol' + (this.sortCol === 'flag' ? ' cur' : '') + '" data-sort="flag">Flags</button>';
+	buf += '<button class="sortcol powersortcol' + (this.sortCol === 'power' ? ' cur' : '') + '" data-sort="power">Power</button>';
 		buf += '<button class="sortcol accuracysortcol' + (this.sortCol === 'accuracy' ? ' cur' : '') + '" data-sort="accuracy">Accuracy</button>';
 		buf += '<button class="sortcol ppsortcol' + (this.sortCol === 'pp' ? ' cur' : '') + '" data-sort="pp">PP</button>';
 		buf += '</div></li>';
@@ -799,33 +799,36 @@
 			return buf;
 		}
 
-		buf += '</a></li>';
 
+	buf += '</a></li>';
+
+	return buf;
+};
+
+Search.prototype.renderFlagRow = function (flag, matchStart, matchLength, errorMessage) {
+	var attrs = '';
+	if (Search.urlRoot) attrs = ' href="' + Search.urlRoot + 'categories/' + flag.id + '" data-target="push"';
+	var buf = '<li class="result"><a' + attrs + ' data-entry="flag|' + BattleLog.escapeHTML(flag.name) + '">';
+
+	// name
+	var name = flag.name;
+	if (matchLength) {
+		name = name.substr(0, matchStart) + '<b>' + name.substr(matchStart, matchLength) + '</b>' + name.substr(matchStart + matchLength);
+	}
+	buf += '<span class="col namecol">' + name + '</span> ';
+
+	// flag icon
+	buf += '<span class="col flagcol">' + Dex.getFlagIcon(flag.id) + '</span> ';
+
+	// error
+	if (errorMessage) {
+		buf += errorMessage + '</a></li>';
 		return buf;
-	};
+	}
 
-	Search.prototype.renderFlagRow = function (flag,errorMessage) {
-		var attrs = '';
-		if (data.flags) attrs = ' href="' + Search.urlRoot + 'flags/' + flag.id + '" data-target="push"';
-		var buf = '<li class="result"><a' + attrs + ' data-entry="flag|' + BattleLog.escapeHTML(dexdata.FlagName) + '">';
-
-		// name
-		var name = flag.name;
-		buf += '<span class="col namecol">' + name + '</span> ';
-
-		// flag
-		buf += '<span class="col flagcol" style="text-align:center;">' + dex.getFlagIcon(flag.name) + '</span> ';
-
-		// error
-		if (errorMessage) {
-			buf += errorMessage + '</a></li>';
-			return buf;
-		}
-
-		buf += '</a></li>';
-
-		return buf;
-	};
+	buf += '</a></li>';
+	return buf;
+};
 	Search.prototype.renderArticleRow = function (article, matchStart, matchLength, errorMessage) {
 		var attrs = '';
 		if (Search.urlRoot) attrs = ' href="' + Search.urlRoot + 'articles/' + article.id + '" data-target="push"';
