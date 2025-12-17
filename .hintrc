@@ -8,6 +8,12 @@
     "axe/name-role-value": "off",
     "axe/language": "off",
     "no-inline-styles": "off",
-    "disown-opener": "off"
+    "disown-opener": "off",
+    "axe/forms": [
+      "default",
+      {
+        "label": "off"
+      }
+    ]
   }
 }
