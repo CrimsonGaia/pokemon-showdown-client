@@ -374,9 +374,23 @@ summary:hover .expandbutton,
 	left: 0;
 	right: 0;
 	bottom: 0;
+	min-width: 860px;
 
 	border-left: 1px solid #AAAAAA;
 	margin-left: -1px;
+}
+.ps-room.ps-room-right,
+.ps-room[data-side="right"] {
+	left: 860px !important;
+}
+.ps-room.ps-room-left,
+.ps-room[data-side="left"] {
+	right: auto;
+	width: 860px;
+}
+/* Fallback: position even-indexed rooms to the right */
+.mainmenuwrapper > .ps-room:nth-child(even) {
+	left: 860px !important;
 }
 .scrollable {
 	overflow: auto;
@@ -1587,14 +1601,14 @@ p.or:after {
 	position: absolute;
 	top: 370px;
 	left: 0;
-	width: 640px;
+	width: 840px;
 	background: #EEF2F5;
 }
 .ps-room .ally-pokemon {
 	position: absolute;
 	top: 280px;
 	left: 0;
-	width: 640px;
+	width: 840px;
 	background: #EEF2F5;
 }
 .battle-chat-toggle {
@@ -2236,10 +2250,19 @@ p.or:after {
 }
 .teamlist .team small {
 	display: block;
-	padding: 0 45px 0 55px;
+	padding: 0;
+}
+.teamlist .team .team-icons-container {
+	text-align: center;
+	width: 100%;
+	line-height: 0;
+}
+.teamlist .team .team-icons-container .picon {
+	display: inline-block;
+	float: none;
 }
 .teamlist .team .picon {
-	margin: 0 -2px;
+	margin: 0 -4px;
 }
 .teamlist .team .picon span {
 	font-size: 9px !important;
@@ -2410,14 +2433,18 @@ p.or:after {
 }
 .setcol {
 	height: 127px;
-	width: 112px;
+	width: 104px;
 	float: left;
+	margin-right: 10px;
 }
 .setcol-icon {
 	background: transparent none no-repeat scroll center top;
 }
 .setcol-details {
-	width: 234px;
+	width: 114px;
+}
+.setcol-affinity {
+	width: 170px;
 }
 .setcell {
 	float: left;
@@ -2426,7 +2453,7 @@ p.or:after {
 	float: none;
 }
 .setcell-ability {
-	float: right;
+	float: none;
 }
 .setcol-details .itemicon {
 	display: block;
@@ -2449,6 +2476,7 @@ p.or:after {
 .setcell-sprite {
 	height: 82px;
 	padding: 1px;
+	width: 106px;
 }
 .setcell-pokemon {
 	margin-top: 0;
@@ -2475,7 +2503,7 @@ p.or:after {
 	margin-bottom: -1px;
 }
 .setcol-moves {
-	width: 137px;
+	width: 132px;
 }
 .setcol-stats {
 	width: 142px;
