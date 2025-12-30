@@ -292,7 +292,17 @@
 	width: 284px;
 }
 .dexlist .itemdesccol {
-	width: 464px;
+	width: 380px;
+}
+.dexlist .itemclasscol {
+	float: right;
+	padding-top: 8px;
+	font-size: 8pt;
+	width: 70px;
+	height: 21px;
+	text-align: right;
+	color: #FF6B6B;
+	font-weight: bold;
 }
 
 .dexlist .sortrow {

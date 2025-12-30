@@ -461,7 +461,17 @@
 	width: 284px;
 }
 .utilichart .itemdesccol {
-	width: 464px;
+	width: 380px;
+}
+.utilichart .itemclasscol {
+	float: right;
+	padding-top: 8px;
+	font-size: 8pt;
+	width: 70px;
+	height: 28px;
+	text-align: right;
+	color: #FF6B6B;
+	font-weight: bold;
 }
 
 .utilichart .sortrow {

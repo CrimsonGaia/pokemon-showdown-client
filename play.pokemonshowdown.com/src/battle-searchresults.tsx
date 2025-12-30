@@ -175,6 +175,14 @@ export class PSSearchResults extends preact.Component<{
 		const item = search.dex.items.get(id);
 		if (!item) return <li class="result">Unrecognized item</li>;
 
+		// Determine item classification
+		let classification = '';
+		if (item.isFragile) {
+			classification = 'Fragile';
+		} else if (item.isMildlyFragile) {
+			classification = 'Volatile';
+		}
+
 		return <li class="result"><a
 			href={`${this.URL_ROOT}items/${id}`} class={id === this.itemId ? 'cur' : ''}
 			data-target="push" data-entry={`item|${item.name}`}
@@ -187,7 +195,9 @@ export class PSSearchResults extends preact.Component<{
 
 			{!!id && errorMessage}
 
-			{!errorMessage && <span class="col itemdesccol">{item.shortDesc}</span>}
+			{!errorMessage && <span class="col itemdesccol">{item.shortDesc || ''}</span>}
+
+			{!errorMessage && classification && <span class="col itemclasscol">{classification}</span>}
 		</a></li>;
 	}
 
