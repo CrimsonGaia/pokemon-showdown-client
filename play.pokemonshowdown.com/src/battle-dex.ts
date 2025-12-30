@@ -1168,13 +1168,13 @@ export class ModdedDex {
 
 			for (let i = Dex.gen - 1; i >= this.gen; i--) {
 				const table = window.BattleTeambuilderTable[`gen${i}`];
-				if (id in table.overrideAbilityData) {
+				if (table && table.overrideAbilityData && id in table.overrideAbilityData) {
 					Object.assign(data, table.overrideAbilityData[id]);
 				}
 			}
 			if (this.modid !== `gen${this.gen}`) {
 				const table = window.BattleTeambuilderTable[this.modid];
-				if (id in table.overrideAbilityData) {
+				if (table && table.overrideAbilityData && id in table.overrideAbilityData) {
 					Object.assign(data, table.overrideAbilityData[id]);
 				}
 			}
@@ -1198,13 +1198,13 @@ export class ModdedDex {
 
 			for (let i = Dex.gen - 1; i >= this.gen; i--) {
 				const table = window.BattleTeambuilderTable[`gen${i}`];
-				if (id in table.overrideSpeciesData) {
+				if (table && table.overrideSpeciesData && id in table.overrideSpeciesData) {
 					Object.assign(data, table.overrideSpeciesData[id]);
 				}
 			}
 			if (this.modid !== `gen${this.gen}`) {
 				const table = window.BattleTeambuilderTable[this.modid];
-				if (id in table.overrideSpeciesData) {
+				if (table && table.overrideSpeciesData && id in table.overrideSpeciesData) {
 					Object.assign(data, table.overrideSpeciesData[id]);
 				}
 			}
@@ -1213,7 +1213,7 @@ export class ModdedDex {
 			}
 
 			const table = window.BattleTeambuilderTable[this.modid];
-			if (id in table.overrideTier) data.tier = table.overrideTier[id];
+			if (table && table.overrideTier && id in table.overrideTier) data.tier = table.overrideTier[id];
 			if (!data.tier && id.endsWith('totem')) {
 				data.tier = this.species.get(id.slice(0, -5)).tier;
 			}

@@ -125,7 +125,9 @@ class TeamEditorState extends PSModel {
 	}
 	setSearchType(type: SearchType, i: number, value?: string) {
 		const set = this.sets[i];
+		console.log('[DEBUG] setSearchType called:', { type, format: this.format, species: set.species, dex_modid: this.dex.modid });
 		this.search.setType(type, this.format, set);
+		console.log('[DEBUG] after setType, search.dex.modid:', this.search.dex.modid);
 		this.originalSpecies = null;
 		this.search.prependResults = null;
 		if (type === 'move') {
