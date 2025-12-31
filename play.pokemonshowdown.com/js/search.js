@@ -48,12 +48,14 @@
 		this.$el.on('click', '.itemclasscol[data-tag], .itemconsumecol[data-tag]', function (e) {
 			e.preventDefault();
 			e.stopPropagation();
+			e.stopImmediatePropagation();
 			var tag = e.currentTarget.dataset.tag;
-			if (self.$inputEl) {
-				self.$inputEl.val(tag);
-				self.find(tag);
-				self.$inputEl.focus();
-			}
+			// Add as filter instead of searching
+			self.engine.addFilter(['itemclass', tag]);
+			self.filters = self.engine.filters;
+			self.find('');
+			if (self.$inputEl) self.$inputEl.focus();
+			return false;
 		});
 		this.$el.on('click', '.sortcol', function (e) {
 			e.preventDefault();
@@ -120,6 +122,7 @@
 			var text = this.filters[i][1];
 			if (this.filters[i][0] === 'move') text = Dex.moves.get(text).name;
 			if (this.filters[i][0] === 'pokemon') text = Dex.species.get(text).name;
+			if (this.filters[i][0] === 'itemclass') text = this.filters[i][1]; // Already capitalized
 			buf += '<button class="filter" value="' + BattleLog.escapeHTML(this.filters[i].join(':')) + '">' + text + ' <i class="fa fa-times-circle"></i></button> ';
 		}
 		if (!q) buf += '<small style="color: #888">(backspace = delete filter)</small>';

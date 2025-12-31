@@ -178,6 +178,19 @@ export class DexSearch {
 			this.filters.push(entry.slice(0, 2) as SearchFilter);
 			this.results = null;
 			return true;
+		} else if (this.typedSearch.searchType === 'item') {
+			if (type === this.sortCol) this.sortCol = null;
+			if (!['itemclass'].includes(type)) return false;
+			if (type === 'itemclass') entry[1] = this.capitalizeFirst(entry[1]);
+			if (!this.filters) this.filters = [];
+			this.results = null;
+			for (const filter of this.filters) {
+				if (filter[0] === type && filter[1] === entry[1]) {
+					return true;
+				}
+			}
+			this.filters.push(entry.slice(0, 2) as SearchFilter);
+			return true;
 		}
 		return false;
 	}
@@ -552,6 +565,7 @@ export class DexSearch {
 					fragile: 'Fragile',
 					volatile: 'Volatile',
 					consumable: 'Consumable',
+					berry: 'Berry',
 					pokeball: 'Pokéball',
 					evolution: 'Evolution',
 					tradeevo: 'Trade Evo',
@@ -1517,13 +1531,13 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 		const id = item.id;
 		
 		// Check static lists in priority order
-		if (DexSearch.fragileItems.has(id)) return 'Fragile';
-		if (DexSearch.volatileItems.has(id)) return 'Volatile';
-		if (DexSearch.pokeballItems.has(id)) return 'Pokéball';
-		if (DexSearch.berryItems.has(id)) return 'Berry';
-		if (DexSearch.tradeEvoItems.has(id)) return 'Trade Evo';
-		if (DexSearch.evolutionItems.has(id)) return 'Evolution';
-		if (DexSearch.consumableItems.has(id)) return 'Consumable';
+		if (BattleItemSearch.fragileItems.has(id)) return 'Fragile';
+		if (BattleItemSearch.volatileItems.has(id)) return 'Volatile';
+		if (BattleItemSearch.pokeballItems.has(id)) return 'Pokéball';
+		if (BattleItemSearch.berryItems.has(id)) return 'Berry';
+		if (BattleItemSearch.tradeEvoItems.has(id)) return 'Trade Evo';
+		if (BattleItemSearch.evolutionItems.has(id)) return 'Evolution';
+		if (BattleItemSearch.consumableItems.has(id)) return 'Consumable';
 		
 		return '';
 	}
