@@ -15,7 +15,7 @@ import { Dex, type ModdedDex, toID, type ID } from "./battle-dex";
 
 
 export type SearchType = (
-	'pokemon' | 'type' | 'tier' | 'move' | 'flag' | 'item' | 'ability' | 'egggroup' | 'category' | 'article'
+	'pokemon' | 'type' | 'tier' | 'move' | 'flag' | 'item' | 'ability' | 'egggroup' | 'category' | 'article' | 'itemclass'
 );
 
 export type SearchRow = (
@@ -57,6 +57,7 @@ export class DexSearch {
 		category: 8,
 		article: 9,
 		flag: 10,
+		itemclass: 11,
 	};
 	static typeName = {
 		pokemon: 'Pok\u00e9mon',
@@ -69,6 +70,7 @@ export class DexSearch {
 		egggroup: 'Egg group',
 		category: 'Category',
 		article: 'Article',
+		itemclass: 'Item Class',
 	};
 	firstPokemonColumn: 'Tier' | 'Number' = 'Number';
 
@@ -106,7 +108,7 @@ export class DexSearch {
 
 	find(query: string) {
 		query = toID(query);
-		if (this.query === query && this.results) {
+		if (this.query === query && this.results && this.results.length > 0) {
 			return false;
 		}
 		this.query = query;
@@ -326,7 +328,7 @@ export class DexSearch {
 
 		// Notes:
 		// - if we have a searchType, that searchType's buffer will be on top
-		let bufs: SearchRow[][] = [[], [], [], [], [], [], [], [], [], []];
+		let bufs: SearchRow[][] = [[], [], [], [], [], [], [], [], [], [], [], []];
 		let topbufIndex = -1;
 
 		let count = 0;
@@ -391,8 +393,10 @@ export class DexSearch {
 			if (searchType === 'move' && ((typeIndex !== 8 && typeIndex !== 10 && typeIndex > 4) || typeIndex === 3)) continue;
 			// For move queries in the teambuilder, don't accept pokemon as filters
 			if (searchType === 'move' && illegal && typeIndex === 1) continue;
-			// For ability/item queries, don't accept anything else as a filter
-			if ((searchType === 'ability' || searchType === 'item') && typeIndex !== searchTypeIndex) continue;
+			// For item queries, accept itemclass as a filter
+			if (searchType === 'item' && typeIndex !== searchTypeIndex && typeIndex !== 11) continue;
+			// For ability queries, don't accept anything else as a filter
+			if (searchType === 'ability' && typeIndex !== searchTypeIndex) continue;
 			// Query was a type name followed 'type'; only show types
 			if (qFilterType === 'type' && typeIndex !== 2) continue;
 			// For flag queries, accept flags/moves as filters
@@ -535,6 +539,51 @@ export class DexSearch {
 					const move = BattleMovedex[id];
 					if (move.flags && move.flags[fId]) {
 						(illegal && id in illegal ? illegalBuf : buf).push(['move', id as ID]);
+					}
+				}
+				break;
+			}
+		} else if (searchType === 'item') {
+			switch (fType) {
+			case 'itemclass' as any:
+				let className = fId.charAt(0).toUpperCase() + fId.slice(1);
+				// Map the IDs to display names
+				const classNames: {[k: string]: string} = {
+					fragile: 'Fragile',
+					volatile: 'Volatile',
+					consumable: 'Consumable',
+					pokeball: 'Pokéball',
+					evolution: 'Evolution',
+					tradeevo: 'Trade Evo',
+				};
+				className = classNames[fId] || className;
+				buf.push(['header', `${className} items`]);
+				for (let id in BattleItems) {
+					const item = this.dex.items.get(id);
+					// Inline getItemClass logic
+					let itemClass = '';
+					if (item.isFragile) itemClass = 'Fragile';
+					else if (item.isMildlyFragile) itemClass = 'Volatile';
+					else if (item.isPokeball) itemClass = 'Pokéball';
+					else if (item.isBerry) itemClass = 'Berry';
+					else if (item.isGem) itemClass = 'Consumable';
+					else {
+						const desc = item.desc || item.shortDesc || '';
+						if (desc.includes('Single use') || desc.includes('Holder\'s use of') || desc.includes('One-time use')) {
+							itemClass = 'Consumable';
+						} else {
+							const evolutionStones = ['firestone', 'waterstone', 'thunderstone', 'leafstone', 'moonstone', 'sunstone',
+								'shinystone', 'duskstone', 'dawnstone', 'everstone', 'linkingcord', 'ovalstone', 'icestone'];
+							if (evolutionStones.includes(item.id) || desc.includes('Evolves')) {
+								itemClass = 'Evolution';
+							} else if (desc.includes('when traded')) {
+								itemClass = 'Trade Evo';
+							}
+						}
+					}
+					
+					if (itemClass === className) {
+						buf.push(['item', id as ID]);
 					}
 				}
 				break;
@@ -1381,8 +1430,9 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 		} else if (this.formatType === 'rs') {
 			table = table['gen3rs'];
 		} else if (this.formatType === 'indigostarstorm') {
-			// Use parent gen table for items list, mod table only has overrides
-			table = table[`gen${this.dex.gen}`];
+			// Mod tables only have overrides, use parent gen for full item list
+			// Gen 9 items are at the root level of BattleTeambuilderTable
+			console.log('[DEBUG] BattleItemSearch.getDefaultResults() - formatType:', this.formatType, 'using root table, has items:', !!table?.items);
 		} else if (this.formatType === 'natdex') {
 			table = table[`gen${this.dex.gen}natdex`];
 		} else if (this.formatType?.endsWith('doubles')) { // no natdex/bdsp doubles support
@@ -1392,6 +1442,7 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 		} else if (this.dex.gen < 9) {
 			table = table[`gen${this.dex.gen}`];
 		}
+		console.log('[DEBUG] BattleItemSearch final check - table:', !!table, 'items:', !!table?.items, 'formatType:', this.formatType);
 		if (!table || !table.items) return [];
 		if (!table.itemSet) {
 			table.itemSet = table.items.map((r: any) => {
@@ -1446,7 +1497,45 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 		}
 		return results;
 	}
+	
+	// Static item classification lists
+	static fragileItems = new Set(['airballoon', 'focussash', 'powerherb', 'electricseed', 'grassyseed', 'mistyseed', 'psychicseed', 'snowball', 'weaknesspolicy', 'absorbbulb', 'cellbattery', 'luminousmoss', 'mentalherb', 'whiteherb', 'redcard']);
+	
+	static volatileItems = new Set(['boosterenergy']);
+	
+	static berryItems = new Set(['aguavberry', 'apicotberry', 'aspearberry', 'babiriberry', 'belueberry', 'blukberry', 'chartiberry', 'cherimberry', 'chestoberry', 'chilanberry', 'chopleberry', 'cobaberry', 'colburberry', 'cornnberry', 'custapberry', 'durinberry', 'enigmaberry', 'figyberry', 'ganlonberry', 'grepaberry', 'habanberry', 'hondewberry', 'iapapaberry', 'jabocaberry', 'kasibberry', 'kebiaberry', 'kelpsyberry', 'lansatberry', 'leppaberry', 'liechiberry', 'lumberry', 'magoberry', 'magostberry', 'micleberry', 'nanabberry', 'nomelberry', 'occaberry', 'oranberry', 'pamtreberry', 'passhoberry', 'payapaberry', 'pechaberry', 'persimberry', 'petayaberry', 'pinapberry', 'pomegberry', 'qualotberry', 'rabutaberry', 'rawstberry', 'razzberry', 'rindoberry', 'rowapberry', 'salacberry', 'shucaberry', 'sitrusberry', 'spelonberry', 'starfberry', 'tamatoberry', 'tangaberry', 'wacanberry', 'watmelberry', 'wepearberry', 'wikiberry', 'yacheberry']);
+	
+	static pokeballItems = new Set(['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'fastball', 'levelball', 'lureball', 'heavyball', 'loveball', 'friendball', 'moonball', 'sportball', 'netball', 'diveball', 'nestball', 'repeatball', 'timerball', 'luxuryball', 'premierball', 'duskball', 'healball', 'quickball', 'cherishball', 'parkball', 'dreamball', 'beastball']);
+	
+	static evolutionItems = new Set(['firestone', 'waterstone', 'thunderstone', 'leafstone', 'moonstone', 'sunstone', 'shinystone', 'duskstone', 'dawnstone', 'everstone', 'linkingcord', 'ovalstone', 'icestone']);
+	
+	static tradeEvoItems = new Set(['deepseatooth', 'deepseascale', 'dragonscale', 'electirizer', 'magmarizer', 'metalcoat', 'prismscale', 'protector', 'reapercloth', 'sachet', 'upgrade', 'whippeddream']);
+	
+	static consumableItems = new Set(['normalgem', 'fightinggem', 'flyinggem', 'poisongem', 'groundgem', 'rockgem', 'buggem', 'ghostgem', 'steelgem', 'firegem', 'watergem', 'grassgem', 'electricgem', 'psychicgem', 'icegem', 'dragongem', 'darkgem', 'fairygem', 'focusband', 'kingsrock', 'razorclaw', 'razorfang']);
+	
+	getItemClass(item: any) {
+		const id = item.id;
+		
+		// Check static lists in priority order
+		if (DexSearch.fragileItems.has(id)) return 'Fragile';
+		if (DexSearch.volatileItems.has(id)) return 'Volatile';
+		if (DexSearch.pokeballItems.has(id)) return 'Pokéball';
+		if (DexSearch.berryItems.has(id)) return 'Berry';
+		if (DexSearch.tradeEvoItems.has(id)) return 'Trade Evo';
+		if (DexSearch.evolutionItems.has(id)) return 'Evolution';
+		if (DexSearch.consumableItems.has(id)) return 'Consumable';
+		
+		return '';
+	}
 	filter(row: SearchRow, filters: string[][]) {
+		if (row[0] !== 'item') return true;
+		const item = this.dex.items.get(row[1]);
+		for (const [filterType, value] of filters) {
+			if (filterType === 'itemclass') {
+				const itemClass = this.getItemClass(item);
+				if (itemClass !== value) return false;
+			}
+		}
 		return true;
 	}
 	sort(results: SearchRow[], sortCol: string | null, reverseSort?: boolean): SearchRow[] {

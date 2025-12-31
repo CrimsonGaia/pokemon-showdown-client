@@ -2780,17 +2780,17 @@
 			// Update button display and styling
 			$btn.attr('data-value', newGender);
 			if (newGender === 'M') {
-				$btn.text('♂').css({
+				$btn.html('<span style="position: relative; top: -0.75px; right: 2px; color: #0004ffff;">♂</span>').css({
 					'background': 'linear-gradient(to right, rgba(0, 150, 255, 0.3) 50%, transparent 50%)',
 					'text-align': 'left',
-					'padding-left': '8px',
+					'padding-left': '6px',
 					'padding-right': '0'
 				});
 			} else {
-				$btn.text('♀').css({
+				$btn.html('<span style="position: relative; top: -1.5px; left: 1px; color: #ff0055ff;">♀</span>').css({
 					'background': 'linear-gradient(to left, rgba(255, 100, 150, 0.3) 50%, transparent 50%)',
 					'text-align': 'right',
-					'padding-right': '8px',
+					'padding-right': '6px',
 					'padding-left': '0'
 				});
 			}

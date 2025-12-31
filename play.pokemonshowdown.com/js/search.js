@@ -45,6 +45,16 @@
 			self.removeFilter(e);
 			if (self.$inputEl) self.$inputEl.focus();
 		});
+		this.$el.on('click', '.itemclasscol[data-tag], .itemconsumecol[data-tag]', function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+			var tag = e.currentTarget.dataset.tag;
+			if (self.$inputEl) {
+				self.$inputEl.val(tag);
+				self.find(tag);
+				self.$inputEl.focus();
+			}
+		});
 		this.$el.on('click', '.sortcol', function (e) {
 			e.preventDefault();
 			e.stopPropagation();
@@ -256,6 +266,17 @@
 	case 'flag':
 		var flag = { name: id[0].toUpperCase() + id.substr(1), id: id };
 		return this.renderFlagRow(flag, matchStart, matchLength, errorMessage);
+	case 'itemclass':
+		var itemclassNames = {
+			'fragile': 'Fragile',
+			'volatile': 'Volatile',
+			'consumable': 'Consumable',
+			'pokeball': 'Pokéball',
+			'evolution': 'Evolution',
+			'tradeevo': 'Trade Evo'
+		};
+		var itemclass = { name: itemclassNames[id] || id[0].toUpperCase() + id.substr(1), id: id };
+		return this.renderItemClassRow(itemclass, matchStart, matchLength, errorMessage);
 		case 'article':
 			var articleTitle = (window.BattleArticleTitles && BattleArticleTitles[id]) || (id[0].toUpperCase() + id.substr(1));
 			var article = { name: articleTitle, id: id };
@@ -476,8 +497,45 @@
 		if (!attrs) attrs = '';
 		if (!item) return '<li class="result">Unrecognized item</li>';
 		var id = toID(item.name);
+		
+		// Calculate classification and type for later use
+		var classification = '';
+		var classificationClass = '';
+		if (item.isFragile) {
+			classification = 'Fragile';
+			classificationClass = 'fragile';
+		} else if (item.isMildlyFragile) {
+			classification = 'Volatile';
+			classificationClass = 'volatile';
+		}
+		
+		var consumable = '';
+		var consumableClass = '';
+		var isSingleUse = (item.shortDesc || item.desc || '').includes('Single use');
+		var evolutionStones = ['dawnstone', 'duskstone', 'firestone', 'icestone', 'leafstone', 'moonstone', 'shinystone', 'sunstone', 'thunderstone', 'waterstone'];
+		var isEvolutionStone = evolutionStones.includes(id);
+		var isEvolution = (item.shortDesc || item.desc || '').includes('Evolves') || isEvolutionStone;
+		var isTradeEvo = (item.shortDesc || item.desc || '').includes('when traded');
+		var isBerryItem = (item.isBerry || id.endsWith('berry')) && id !== 'berryjuice';
+		if (item.isPokeball) {
+			consumable = 'Pokéball';
+			consumableClass = 'pokeball';
+		} else if (isTradeEvo) {
+			consumable = 'Trade Evo';
+			consumableClass = 'tradeevo';
+		} else if (isEvolution) {
+			consumable = 'Evolution';
+			consumableClass = 'evolution';
+		} else if (isBerryItem) {
+			consumable = 'Berry';
+			consumableClass = 'berry';
+		} else if (item.isGem || isSingleUse) {
+			consumable = 'Consumable';
+			consumableClass = 'consumable';
+		}
+		
 		if (Search.urlRoot) attrs += ' href="' + Search.urlRoot + 'items/' + id + '" data-target="push"';
-		var buf = '<li class="result"><a' + attrs + ' data-entry="item|' + BattleLog.escapeHTML(item.name) + '">';
+		var buf = '<li class="result itemrow"><a' + attrs + ' data-entry="item|' + BattleLog.escapeHTML(item.name) + '">';
 
 		// icon
 		buf += '<span class="col itemiconcol">';
@@ -489,16 +547,42 @@
 		if (matchLength) {
 			name = name.substr(0, matchStart) + '<b>' + name.substr(matchStart, matchLength) + '</b>' + name.substr(matchStart + matchLength);
 		}
-		buf += '<span class="col namecol">' + name + '</span> ';
+		buf += '<span class="col itemnamecol">' + name + '</span> ';
+
+		// classification buttons container
+		buf += '<span class="col itemclasscontainer">';
+		
+		// classification
+		var fragileEmpty = classification ? '' : ' empty';
+		var fragileTag = classification ? ' data-tag="' + classification.toLowerCase() + '"' : '';
+		buf += '<span class="itemclasscol ' + classificationClass + fragileEmpty + '"' + fragileTag + '>' + (classification || '\u2014') + '</span>';
+
+		// consumable
+		var consumableEmpty = consumable ? '' : ' empty';
+		var consumableTag = consumable ? ' data-tag="' + consumable.toLowerCase().replace(' ', '') + '"' : '';
+		buf += '<span class="itemconsumecol ' + consumableClass + consumableEmpty + '"' + consumableTag + '>' + (consumable || '\u2014') + '</span>';
+		
+		buf += '</span> ';
 
 		// error
 		if (errorMessage) {
 			buf += errorMessage + '</a></li>';
 			return buf;
 		}
-
-		// desc
-		buf += '<span class="col itemdesccol">' + BattleLog.escapeHTML(item.shortDesc) + '</span> ';
+		// desc - split into main and fragile descriptions
+		var fullDesc = item.shortDesc || '';
+		var mainDesc = fullDesc;
+		var fragileDesc = '';
+		
+		// Extract fragility-related text
+		var fragileMatch = fullDesc.match(/\. (Fragile[^.]*\.|Volatile[^.]*\.)/);
+		if (fragileMatch) {
+			fragileDesc = fragileMatch[1];
+			mainDesc = fullDesc.replace(fragileMatch[0], '.');
+		}
+		
+		buf += '<span class="col itemdesccol">' + BattleLog.escapeHTML(mainDesc) + '</span> ';
+		buf += '<span class="col fragiledesccol">' + BattleLog.escapeHTML(fragileDesc) + '</span> ';
 
 		buf += '</a></li>';
 
@@ -905,6 +989,28 @@ Search.prototype.renderFlagRow = function (flag, matchStart, matchLength, errorM
 		return buf;
 	};
 
+	Search.prototype.renderItemClassRow = function (itemclass, matchStart, matchLength, errorMessage) {
+		var attrs = '';
+		var buf = '<li class="result"><a' + attrs + ' data-entry="itemclass|' + BattleLog.escapeHTML(itemclass.name) + '">';
+
+		// name
+		var name = itemclass.name;
+		if (matchLength) {
+			name = name.substr(0, matchStart) + '<b>' + name.substr(matchStart, matchLength) + '</b>' + name.substr(matchStart + matchLength);
+		}
+		buf += '<span class="col namecol">' + name + '</span> ';
+
+		// error
+		if (errorMessage) {
+			buf += errorMessage + '</a></li>';
+			return buf;
+		}
+
+		buf += '</a></li>';
+
+		return buf;
+	};
+
 	Search.gen = 9;
 	Search.renderRow = Search.prototype.renderRow;
 	Search.renderPokemonRow = Search.prototype.renderPokemonRow;
@@ -919,6 +1025,7 @@ Search.prototype.renderFlagRow = function (flag, matchStart, matchLength, errorM
 	Search.renderFlagRow = Search.prototype.renderFlagRow;
 	Search.renderEggGroupRow = Search.prototype.renderEggGroupRow;
 	Search.renderTierRow = Search.prototype.renderTierRow;
+	Search.renderItemClassRow = Search.prototype.renderItemClassRow;
 
 	exports.BattleSearch = Search;
 
