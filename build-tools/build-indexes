@@ -1378,6 +1378,21 @@ process.stdout.write("Building `data/pokedex.js`... ");
 
 {
 	const Pokedex = requireNoCache('../caches/pokemon-showdown/dist/data/pokedex.js').Pokedex;
+	
+	// Load custom mod pokedex to preserve ability set system (0, 1, H, S)
+	try {
+		const modPokedex = requireNoCache('../caches/pokemon-showdown/dist/data/mods/gen9indigostarstorm/pokedex.js').Pokedex;
+		for (const id in modPokedex) {
+			if (Pokedex[id] && modPokedex[id].abilities) {
+				// Preserve all ability slots from the mod (0, 1, H, S)
+				Pokedex[id].abilities = modPokedex[id].abilities;
+			}
+		}
+		console.log(`Merged ${Object.keys(modPokedex).length} Pokemon from gen9indigostarstorm mod`);
+	} catch (e) {
+		console.log('(No gen9indigostarstorm mod pokedex found, using base data)');
+	}
+	
 	for (const id in Pokedex) {
 		const entry = Pokedex[id];
 		if (Dex.data.FormatsData[id]) {

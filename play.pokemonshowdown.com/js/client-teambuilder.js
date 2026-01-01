@@ -1251,9 +1251,9 @@
 					buf += '<br><button type="button" class="teratype" name="teraType" value="' + BattleLog.escapeHTML(teraType) + '" style="background: none; border: none; padding: 0; cursor: pointer; width: 20px; height: 20px; margin-left: 8px; position: relative; top: 6px;">';
 					buf += '<img src="' + Dex.resourcePrefix + 'sprites/types/Tera' + teraType + '.png" alt="' + teraType + '" style="width: 20px; height: 20px; object-fit: contain; display: block; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5));" />';
 					buf += '</button>';
-					buf += '<span style="position: relative; left: 20px; top: 12px; pointer-events: none; display: inline-flex; flex-direction: column; vertical-align: top; text-align: right;">';
+					buf += '<span style="position: absolute; left: 159px; top: 64px; pointer-events: none; display: flex; flex-direction: column; align-items: flex-end; width: 60px;">';
+					buf += '<span style="font-size: 9px; margin-right: 2px;">' + (species.heightm || 0) + ' m</span>';
 					buf += '<span style="font-size: 9px;">' + (species.weightkg || 0) + ' kg</span>';
-					buf += '<span style="font-size: 9px;">' + (species.heightm || 0) + ' m</span>';
 					buf += '</span>';
 				}
 			}
@@ -1324,19 +1324,15 @@
 			// Check if Pokemon has H or S abilities
 			var hasHiddenOrS = !!(species.abilities['H'] || species.abilities['S']);
 			
-			// Always ensure abilities match the ability set
+			// Always sync abilities with the current ability set
 			if (!set.abilitySet || set.abilitySet === 1) {
 				// Set 1: Regular abilities (slot 0 and 1)
-				if (!set.ability || !set.ability2) {
-					set.ability = species.abilities['0'] || '';
-					set.ability2 = species.abilities['1'] || '';
-				}
+				set.ability = species.abilities['0'] || '';
+				set.ability2 = species.abilities['1'] || '';
 			} else {
 				// Set 2: Hidden ability and S ability
-				if (!set.ability || !set.ability2) {
-					set.ability = species.abilities['H'] || '';
-					set.ability2 = species.abilities['S'] || '';
-				}
+				set.ability = species.abilities['H'] || '';
+				set.ability2 = species.abilities['S'] || '';
 			}
 			
 			var buttonStyle, buttonClass, buttonName, buttonText;
@@ -2251,42 +2247,57 @@
 			var buf = '';
 			var set = this.curSet;
 			var species = this.curTeam.dex.species.get(this.curSet.species);
+			var abilitySet = set.abilitySet || 1;
+			console.log('[DEBUG] set.abilitySet:', set.abilitySet, 'abilitySet:', abilitySet, 'species:', species.name);
 			
 			buf += '<div class="resultheader"><h3>Abilities</h3></div>';
 			buf += '<ul class="utilichart">';
 			
-			// Show all abilities with descriptions
-			if (species.abilities['0']) {
-				var ability0 = this.curTeam.dex.abilities.get(species.abilities['0']);
-				var abilityId0 = toID(species.abilities['0']);
-				console.log('Ability 0 ID:', abilityId0, 'Available:', abilityId0 in this.abilityDescriptions);
-				var abilityName0 = (ability0.name || species.abilities['0']).split(' ').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); }).join(' ');
-				var desc0 = this.abilityDescriptions[abilityId0] || ability0.shortDesc || '';
-				buf += '<li class="result"><a><span class="col namecol">' + abilityName0 + '</span> <span class="col abilitydesccol">' + BattleLog.escapeHTML(desc0) + '</span></a></li>';
-			}
-			
-			if (species.abilities['1'] && species.abilities['1'] !== species.abilities['0']) {
-				var ability1 = this.curTeam.dex.abilities.get(species.abilities['1']);
-				var abilityId1 = toID(species.abilities['1']);
-				var abilityName1 = (ability1.name || species.abilities['1']).split(' ').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); }).join(' ');
-				var desc1 = this.abilityDescriptions[abilityId1] || ability1.shortDesc || '';
-				buf += '<li class="result"><a><span class="col namecol">' + abilityName1 + '</span> <span class="col abilitydesccol">' + BattleLog.escapeHTML(desc1) + '</span></a></li>';
-			}
-			
-			if (species.abilities['H'] && species.abilities['H'] !== species.abilities['0'] && species.abilities['H'] !== species.abilities['1']) {
-				var abilityH = this.curTeam.dex.abilities.get(species.abilities['H']);
-				var abilityIdH = toID(species.abilities['H']);
-				var abilityNameH = (abilityH.name || species.abilities['H']).split(' ').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); }).join(' ');
-				var descH = this.abilityDescriptions[abilityIdH] || abilityH.shortDesc || '';
-				buf += '<li class="result"><a><span class="col namecol">' + abilityNameH + '</span> <span class="col abilitydesccol">' + BattleLog.escapeHTML(descH) + '</span></a></li>';
-			}
-			
-			if (species.abilities['S'] && species.abilities['S'] !== species.abilities['0'] && species.abilities['S'] !== species.abilities['1'] && species.abilities['S'] !== species.abilities['H']) {
-				var abilityS = this.curTeam.dex.abilities.get(species.abilities['S']);
-				var abilityIdS = toID(species.abilities['S']);
-				var abilityNameS = (abilityS.name || species.abilities['S']).split(' ').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); }).join(' ');
-				var descS = this.abilityDescriptions[abilityIdS] || abilityS.shortDesc || '';
-				buf += '<li class="result"><a><span class="col namecol">' + abilityNameS + '</span> <span class="col abilitydesccol">' + BattleLog.escapeHTML(descS) + '</span></a></li>';
+			// Show abilities based on current ability set
+			if (abilitySet === 1) {
+				// Ability Set 1: Show slot 0 and slot 1
+				console.log('[DEBUG ABILITIES] Set 1 - abilities[0]:', species.abilities['0'], 'abilities[1]:', species.abilities['1']);
+				if (species.abilities['0']) {
+					var ability0 = this.curTeam.dex.abilities.get(species.abilities['0']);
+					var abilityId0 = toID(species.abilities['0']);
+					console.log('Ability 0 ID:', abilityId0, 'Available:', abilityId0 in this.abilityDescriptions);
+					var abilityName0 = (ability0.name || species.abilities['0']).split(' ').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); }).join(' ');
+					var desc0 = this.abilityDescriptions[abilityId0] || ability0.shortDesc || '';
+					var curClass0 = (toID(set.ability) === abilityId0 || toID(set.ability2) === abilityId0) ? 'cur' : '';
+					console.log('[DEBUG] Ability 0 cur class:', curClass0, 'set.ability:', set.ability, 'set.ability2:', set.ability2);
+					buf += '<li class="result"><a class="' + curClass0 + '" data-entry="ability|' + BattleLog.escapeHTML(species.abilities['0']) + '" data-slot="ability"><span class="col namecol">' + abilityName0 + '</span> <span class="col abilitydesccol">' + BattleLog.escapeHTML(desc0) + '</span></a></li>';
+				}
+				
+				console.log('[DEBUG ABILITIES] Checking ability 1 - exists:', !!species.abilities['1'], 'different:', species.abilities['1'] !== species.abilities['0']);
+				if (species.abilities['1'] && species.abilities['1'] !== species.abilities['0']) {
+					var ability1 = this.curTeam.dex.abilities.get(species.abilities['1']);
+					var abilityId1 = toID(species.abilities['1']);
+					console.log('[DEBUG ABILITIES] Adding ability 1:', species.abilities['1'], 'abilityId1:', abilityId1);
+					var abilityName1 = (ability1.name || species.abilities['1']).split(' ').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); }).join(' ');
+					var desc1 = this.abilityDescriptions[abilityId1] || ability1.shortDesc || '';
+					var curClass1 = (toID(set.ability) === abilityId1 || toID(set.ability2) === abilityId1) ? 'cur' : '';
+					console.log('[DEBUG] Ability 1 cur class:', curClass1, 'set.ability:', set.ability, 'set.ability2:', set.ability2);
+					buf += '<li class="result"><a class="' + curClass1 + '" data-entry="ability|' + BattleLog.escapeHTML(species.abilities['1']) + '" data-slot="ability2"><span class="col namecol">' + abilityName1 + '</span> <span class="col abilitydesccol">' + BattleLog.escapeHTML(desc1) + '</span></a></li>';
+				}
+			} else {
+				// Ability Set 2: Show slot H and slot S
+				if (species.abilities['H']) {
+					var abilityH = this.curTeam.dex.abilities.get(species.abilities['H']);
+					var abilityIdH = toID(species.abilities['H']);
+					var abilityNameH = (abilityH.name || species.abilities['H']).split(' ').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); }).join(' ');
+					var descH = this.abilityDescriptions[abilityIdH] || abilityH.shortDesc || '';
+					var curClassH = (toID(set.ability) === abilityIdH || toID(set.ability2) === abilityIdH) ? ' cur' : '';
+					buf += '<li class="result"><a class="' + curClassH + '" data-entry="ability|' + BattleLog.escapeHTML(species.abilities['H']) + '" data-slot="ability"><span class="col namecol">' + abilityNameH + '</span> <span class="col abilitydesccol">' + BattleLog.escapeHTML(descH) + '</span></a></li>';
+				}
+				
+				if (species.abilities['S'] && species.abilities['S'] !== species.abilities['H']) {
+					var abilityS = this.curTeam.dex.abilities.get(species.abilities['S']);
+					var abilityIdS = toID(species.abilities['S']);
+					var abilityNameS = (abilityS.name || species.abilities['S']).split(' ').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); }).join(' ');
+					var descS = this.abilityDescriptions[abilityIdS] || abilityS.shortDesc || '';
+					var curClassS = (toID(set.ability) === abilityIdS || toID(set.ability2) === abilityIdS) ? ' cur' : '';
+					buf += '<li class="result"><a class="' + curClassS + '" data-entry="ability|' + BattleLog.escapeHTML(species.abilities['S']) + '" data-slot="ability2"><span class="col namecol">' + abilityNameS + '</span> <span class="col abilitydesccol">' + BattleLog.escapeHTML(descS) + '</span></a></li>';
+				}
 			}
 			
 			buf += '</ul>';
@@ -2803,11 +2814,16 @@
 			var i = +$li.attr('value');
 			var set = this.curSetList[i];
 			
+			console.log('[DEBUG TOGGLE] Before - i:', i, 'set:', set, 'set.abilitySet:', set ? set.abilitySet : 'null');
+			
 			if (!set) return;
 			// Toggle between 1 and 2
 			var currentSet = set.abilitySet || 1;
 			var newSet = currentSet === 1 ? 2 : 1;
 			set.abilitySet = newSet;
+			
+			console.log('[DEBUG TOGGLE] After - currentSet:', currentSet, 'newSet:', newSet, 'set.abilitySet:', set.abilitySet);
+			console.log('[DEBUG TOGGLE] this.curSet === set:', this.curSet === set, 'this.curSet:', this.curSet);
 
 			// Update button display and styling
 			var $btn = $(e.currentTarget);
@@ -2843,6 +2859,11 @@
 			// Update ability input fields
 			$li.find('input[name=ability]').val(set.ability);
 			$li.find('input[name=ability2]').val(set.ability2);
+
+			// Update the ability display panel if this is the current set
+			if (this.curSet === set) {
+				this.updateAbilitySetsForm();
+			}
 
 			this.save();
 		},
@@ -3071,6 +3092,7 @@
 			teraType: 'type'
 		},
 		chartClick: function (e) {
+			console.log('[CHART CLICK] Starting, target:', e.currentTarget);
 			if (this.search.addFilter(e.currentTarget)) {
 				var curChart = this.$('input[name=' + this.curChartName + ']');
 				// if we were searching for the filter, remove it
@@ -3081,6 +3103,28 @@
 			}
 			var entry = $(e.currentTarget).data('entry');
 			var val = entry.slice(entry.indexOf("|") + 1);
+			console.log('[CHART CLICK] Entry:', entry, 'Val:', val);
+			
+			// Check if this is an ability with a specific slot
+			var slot = $(e.currentTarget).data('slot');
+			console.log('[CHART CLICK] Slot:', slot);
+			if (slot === 'ability' || slot === 'ability2') {
+				// Set the ability in the correct slot
+				console.log('[CHART CLICK] Setting ability slot:', slot, 'to value:', val);
+				console.log('[CHART CLICK] Before - set.ability:', this.curSet.ability, 'set.ability2:', this.curSet.ability2);
+				if (slot === 'ability') {
+					this.curSet.ability = val;
+					this.$('input[name=ability]').val(val);
+				} else {
+					this.curSet.ability2 = val;
+					this.$('input[name=ability2]').val(val);
+				}
+				console.log('[CHART CLICK] After - set.ability:', this.curSet.ability, 'set.ability2:', this.curSet.ability2);
+				this.updateAbilitySetsForm();
+				this.save();
+				return;
+			}
+			
 			if (this.curChartType === 'move' && e.currentTarget.className === 'cur') {
 				// clicked a move, remove it if we already have it
 				var moves = [];
@@ -3318,6 +3362,10 @@
 				break;
 			case 'ability':
 				this.curSet.ability = val;
+				if (selectNext) this.$('input[name=move1]').select();
+				break;
+			case 'ability2':
+				this.curSet.ability2 = val;
 				if (selectNext) this.$('input[name=move1]').select();
 				break;
 			case 'move1':
