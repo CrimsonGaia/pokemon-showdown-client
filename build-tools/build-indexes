@@ -15,9 +15,9 @@ child_process.execSync('git clone https://github.com/CrimsonGaia/pokemon-showdow
 }
 
 process.stdout.write("Syncing data from Git repository... ");
-child_process.execSync('git pull', { cwd: 'caches/pokemon-showdown' });
-child_process.execSync('npm run build', { cwd: 'caches/pokemon-showdown' });
-console.log("DONE");
+// child_process.execSync('git pull', { cwd: 'caches/pokemon-showdown' });
+// child_process.execSync('npm run build', { cwd: 'caches/pokemon-showdown' });
+console.log("SKIPPED (using local build)");
 
 const Dex = require('../caches/pokemon-showdown/dist/sim/dex').Dex;
 const CompoundWordNames = require('../caches/pokemon-showdown/dist/data/aliases').CompoundWordNames;
@@ -1461,10 +1461,42 @@ process.stdout.write("Building `data/moves,items,abilities,typechart,learnsets.j
 
 {
 	const Abilities = requireNoCache('../caches/pokemon-showdown/dist/data/abilities.js').Abilities;
+	
+	// Merge mod abilities
+	try {
+		const modAbilities = requireNoCache('../caches/pokemon-showdown/dist/data/mods/gen9indigostarstorm/abilities.js').Abilities;
+		console.log('DEBUG: Loaded mod abilities, runaway exists?', !!modAbilities.runaway);
+		if (modAbilities.runaway) {
+			console.log('DEBUG: Mod runaway:', JSON.stringify(modAbilities.runaway, null, 2));
+		}
+		for (const id in modAbilities) {
+			if (!Abilities[id]) {
+				Abilities[id] = modAbilities[id];
+			} else {
+				// Merge properties from mod into base
+				Object.assign(Abilities[id], modAbilities[id]);
+			}
+			if (id === 'runaway') {
+				console.log('DEBUG: After merge, runaway:', JSON.stringify(Abilities[id], null, 2));
+			}
+		}
+	} catch (e) {
+		// Mod abilities file might not exist or not be built yet
+		console.log('Note: Could not load mod abilities:', e.message);
+	}
+	
 	for (const id in Abilities) {
 		const ability = Dex.abilities.get(Abilities[id].name);
-		if (ability.desc) Abilities[id].desc = ability.desc;
-		if (ability.shortDesc) Abilities[id].shortDesc = ability.shortDesc;
+		// Only use Dex descriptions if the ability doesn't already have them (preserve mod descriptions)
+		if (id === 'runaway') {
+			console.log('DEBUG runaway BEFORE:', JSON.stringify({desc: Abilities[id].desc, shortDesc: Abilities[id].shortDesc}, null, 2));
+			console.log('DEBUG Dex ability:', JSON.stringify({desc: ability.desc, shortDesc: ability.shortDesc}, null, 2));
+		}
+		if (ability.desc && !Abilities[id].desc) Abilities[id].desc = ability.desc;
+		if (ability.shortDesc && !Abilities[id].shortDesc) Abilities[id].shortDesc = ability.shortDesc;
+		if (id === 'runaway') {
+			console.log('DEBUG runaway AFTER:', JSON.stringify({desc: Abilities[id].desc, shortDesc: Abilities[id].shortDesc}, null, 2));
+		}
 	}
 	const buf = 'exports.BattleAbilities = ' + es3stringify(Abilities) + ';';
 	fs.writeFileSync('play.pokemonshowdown.com/data/abilities.js', buf);

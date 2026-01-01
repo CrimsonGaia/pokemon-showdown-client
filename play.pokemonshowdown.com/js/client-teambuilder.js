@@ -2260,9 +2260,9 @@
 				if (species.abilities['0']) {
 					var ability0 = this.curTeam.dex.abilities.get(species.abilities['0']);
 					var abilityId0 = toID(species.abilities['0']);
-					console.log('Ability 0 ID:', abilityId0, 'Available:', abilityId0 in this.abilityDescriptions);
+					console.log('Ability 0 ID:', abilityId0, 'Available:', abilityId0 in BattleAbilities);
 					var abilityName0 = (ability0.name || species.abilities['0']).split(' ').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); }).join(' ');
-					var desc0 = this.abilityDescriptions[abilityId0] || ability0.shortDesc || '';
+					var desc0 = (BattleAbilities[abilityId0] && BattleAbilities[abilityId0].shortDesc) || ability0.shortDesc || '';
 					var curClass0 = (toID(set.ability) === abilityId0 || toID(set.ability2) === abilityId0) ? 'cur' : '';
 					console.log('[DEBUG] Ability 0 cur class:', curClass0, 'set.ability:', set.ability, 'set.ability2:', set.ability2);
 					buf += '<li class="result"><a class="' + curClass0 + '" data-entry="ability|' + BattleLog.escapeHTML(species.abilities['0']) + '" data-slot="ability"><span class="col namecol">' + abilityName0 + '</span> <span class="col abilitydesccol">' + BattleLog.escapeHTML(desc0) + '</span></a></li>';
@@ -2274,7 +2274,7 @@
 					var abilityId1 = toID(species.abilities['1']);
 					console.log('[DEBUG ABILITIES] Adding ability 1:', species.abilities['1'], 'abilityId1:', abilityId1);
 					var abilityName1 = (ability1.name || species.abilities['1']).split(' ').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); }).join(' ');
-					var desc1 = this.abilityDescriptions[abilityId1] || ability1.shortDesc || '';
+					var desc1 = (BattleAbilities[abilityId1] && BattleAbilities[abilityId1].shortDesc) || ability1.shortDesc || '';
 					var curClass1 = (toID(set.ability) === abilityId1 || toID(set.ability2) === abilityId1) ? 'cur' : '';
 					console.log('[DEBUG] Ability 1 cur class:', curClass1, 'set.ability:', set.ability, 'set.ability2:', set.ability2);
 					buf += '<li class="result"><a class="' + curClass1 + '" data-entry="ability|' + BattleLog.escapeHTML(species.abilities['1']) + '" data-slot="ability2"><span class="col namecol">' + abilityName1 + '</span> <span class="col abilitydesccol">' + BattleLog.escapeHTML(desc1) + '</span></a></li>';
@@ -2285,7 +2285,7 @@
 					var abilityH = this.curTeam.dex.abilities.get(species.abilities['H']);
 					var abilityIdH = toID(species.abilities['H']);
 					var abilityNameH = (abilityH.name || species.abilities['H']).split(' ').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); }).join(' ');
-					var descH = this.abilityDescriptions[abilityIdH] || abilityH.shortDesc || '';
+					var descH = (BattleAbilities[abilityIdH] && BattleAbilities[abilityIdH].shortDesc) || abilityH.shortDesc || '';
 					var curClassH = (toID(set.ability) === abilityIdH || toID(set.ability2) === abilityIdH) ? ' cur' : '';
 					buf += '<li class="result"><a class="' + curClassH + '" data-entry="ability|' + BattleLog.escapeHTML(species.abilities['H']) + '" data-slot="ability"><span class="col namecol">' + abilityNameH + '</span> <span class="col abilitydesccol">' + BattleLog.escapeHTML(descH) + '</span></a></li>';
 				}
@@ -2294,7 +2294,7 @@
 					var abilityS = this.curTeam.dex.abilities.get(species.abilities['S']);
 					var abilityIdS = toID(species.abilities['S']);
 					var abilityNameS = (abilityS.name || species.abilities['S']).split(' ').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); }).join(' ');
-					var descS = this.abilityDescriptions[abilityIdS] || abilityS.shortDesc || '';
+					var descS = (BattleAbilities[abilityIdS] && BattleAbilities[abilityIdS].shortDesc) || abilityS.shortDesc || '';
 					var curClassS = (toID(set.ability) === abilityIdS || toID(set.ability2) === abilityIdS) ? ' cur' : '';
 					buf += '<li class="result"><a class="' + curClassS + '" data-entry="ability|' + BattleLog.escapeHTML(species.abilities['S']) + '" data-slot="ability2"><span class="col namecol">' + abilityNameS + '</span> <span class="col abilitydesccol">' + BattleLog.escapeHTML(descS) + '</span></a></li>';
 				}
