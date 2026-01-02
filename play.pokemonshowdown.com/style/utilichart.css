@@ -24,6 +24,10 @@
 .utilichart li:has(.itemclasscontainer) > a {
 	height: 60px;
 }
+/* Ability rows need taller height for descriptions */
+.utilichart li:has(.abilitydesccol) > a {
+	height: 60px;
+}
 .utilichart .filter,
 .searchboxwrapper .filter {
 	padding:1px 3px;
@@ -64,8 +68,12 @@
 .utilichart li.result.itemrow {
 	height: 60px;
 }
+.utilichart li.result.abilityrow {
+	height: 60px;
+}
 .utilichart li.result {
 	border-bottom: 1px solid rgba(0,0,0,0.15);
+	margin-bottom: 2px;
 }
 .message .utilichart .result, .chat .utilichart .result, .notice .utilichart .result {
 	height: auto;
@@ -103,6 +111,12 @@
 	height: 29px;
 	font-size: 9pt;
 	color: #444444;
+	margin-left: 4px;
+}
+.utilichart .namecol,
+.utilichart .typecol,
+.utilichart .categorycol {
+	margin-left: 0;
 }
 .utilichart .iconcol {
 	padding-top: 3px;
@@ -196,6 +210,8 @@
 	display: flex;
 	align-items: center;
 	padding-top: 0;
+	padding-left: 4px;
+	margin-left: 9px;
 }
 .utilichart .itemnamecol {
 	height: 60px;
@@ -338,18 +354,22 @@
 	white-space: nowrap;
 }
 .utilichart .movenamecol {
-	padding-top: 6px;
 	height: 30px;
 	width: 140px;
 	color: #000000;
 	font-size: 10pt;
+	display: flex;
+	align-items: center;
+	padding-top: 0;
 }
 .utilichart .shortmovenamecol {
-	padding-top: 6px;
 	height: 30px;
 	width: 112px;
 	color: #000000;
 	font-size: 10pt;
+	display: flex;
+	align-items: center;
+	padding-top: 0;
 }
 .utilichart .tagcol {
 	padding-top: 6px;
@@ -380,10 +400,10 @@
 	top: 1px;
 }
 .utilichart .flagssortcol {
-	width: 132px;
+	width: 116px;
 }
 .utilichart .flagcol {
-	width: 132px;
+	width: 116px;
 	height: 48px !important;
 	font-size: 7pt;
 	font-weight: bold;
@@ -590,11 +610,10 @@
 .utilichart .itemdesccol,
 .utilichart .abilitydesccol,
 .utilichart .movedesccol {
-	white-space: nowrap;
+	white-space: normal;
 	padding-top: 8px;
 	font-size: 8pt;
 	width: 488px;
-	height: 28px;
 	overflow: hidden;
 	color: #777777;
 	display: flex;
@@ -603,9 +622,23 @@
 }
 .utilichart .movedesccol {
 	width: 284px;
+	height: auto;
+}
+.utilichart .itemdesccol,
+.utilichart .abilitydesccol {
+	height: 60px;
 }
 .utilichart .itemdesccol {
 	width: 420px;
+	height: 60px;
+	white-space: normal;
+	overflow: visible;
+	line-height: 1.4;
+	padding: 4px 8px 4px 0;
+	align-items: flex-start;
+}
+.utilichart .abilitydesccol {
+	width: 488px;
 	height: 60px;
 	white-space: normal;
 	overflow: visible;
@@ -644,6 +677,7 @@
 	padding: 30 0 30 0;
 	text-align: center;
 	height: 20px;
+	margin-left: 4px;
 }
 .utilichart .sortcol.cur {
 	font-weight: bold;
@@ -676,23 +710,27 @@
 	width: 24px;
 	text-align: right;
 }
-.utilichart .movenamesortcol {
-	width: 155px;
+.utilichart .sortcol.movenamecol {
+	width: 140px;
+	margin-left: 9px;
 }
-.utilichart .movetypesortcol {
-	width: 35px;
+.utilichart .sortcol.typecol {
+	width: 46px;
+	margin-left: 4px;
 }
-.utilichart .flagsortcol {
+.utilichart .sortcol.catcol {
+	width: 52px;
+	margin-left: 4px;
+}
+.utilichart .sortcol.flagssortcol {
 	width: 116px;
 }
-.utilichart .powersortcol {
+.utilichart .sortcol.labelcol {
 	width: 38px;
 }
-.utilichart .accuracysortcol {
-	width: 47px;
+.utilichart .sortcol.widelabelcol {
+	width: 50px;
 }
-.utilichart .ppsortcol {
-	width: 38px;
+.utilichart .sortcol.pplabelcol {
+	width: 25px;
 }
-
-

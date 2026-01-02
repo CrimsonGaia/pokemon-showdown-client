@@ -1466,8 +1466,8 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 		} else if (this.dex.gen < 9) {
 			table = table[`gen${this.dex.gen}`];
 		}
-		console.log('[DEBUG] BattleItemSearch final check - table:', !!table, 'items:', !!table?.items, 'formatType:', this.formatType);
-		if (!table || !table.items) return [];
+		console.log('[DEBUG] BattleItemSearch final check - table:', !!table, 'items:', !!table?.items, 'itemSet:', !!table?.itemSet, 'formatType:', this.formatType);
+		if (!table || (!table.items && !table.itemSet)) return [];
 		if (!table.itemSet) {
 			table.itemSet = table.items.map((r: any) => {
 				if (typeof r === 'string') {

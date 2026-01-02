@@ -1567,6 +1567,20 @@ process.stdout.write("Building `data/moves,items,abilities,typechart,learnsets.j
 		console.log('Note: Could not load mod abilities:', e.message);
 	}
 	
+	// Load mod text descriptions
+	try {
+		const modAbilitiesText = requireNoCache('../caches/pokemon-showdown/dist/data/mods/gen9indigostarstorm/text/abilities.js').AbilitiesText;
+		console.log('DEBUG: Loaded mod abilities text, count:', Object.keys(modAbilitiesText).length);
+		for (const id in modAbilitiesText) {
+			if (Abilities[id]) {
+				if (modAbilitiesText[id].desc) Abilities[id].desc = modAbilitiesText[id].desc;
+				if (modAbilitiesText[id].shortDesc) Abilities[id].shortDesc = modAbilitiesText[id].shortDesc;
+			}
+		}
+	} catch (e) {
+		console.log('Note: Could not load mod abilities text:', e.message);
+	}
+	
 	for (const id in Abilities) {
 		const ability = Dex.abilities.get(Abilities[id].name);
 		// Only use Dex descriptions if the ability doesn't already have them (preserve mod descriptions)

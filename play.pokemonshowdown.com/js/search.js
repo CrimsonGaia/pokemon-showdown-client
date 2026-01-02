@@ -411,12 +411,12 @@
 		buf += '<button class="sortcol movenamecol' + (this.sortCol === 'name' ? ' cur' : '') + '" data-sort="name">Name</button>';
 		buf += '<button class="sortcol typecol' + (this.sortCol === 'type' ? ' cur' : '') + '" data-sort="type">Type</button>';
 		buf += '<button class="sortcol catcol' + (this.sortCol === 'category' ? ' cur' : '') + '" data-sort="category">Category</button>';
-		buf += '<button class="sortcol flagssortcol' + (this.sortCol === 'flag' ? ' cur' : '') + '" data-sort="flag" style="margin-left: 6px;">Flags</button>';
-		buf += '<button class="sortcol labelcol' + (this.sortCol === 'power' ? ' cur' : '') + '" data-sort="power" style="margin-left: 6px;">Power</button>';
+		buf += '<button class="sortcol flagssortcol' + (this.sortCol === 'flag' ? ' cur' : '') + '" data-sort="flag" style="margin-left: 12px;">Flags</button>';
+		buf += '<button class="sortcol labelcol' + (this.sortCol === 'power' ? ' cur' : '') + '" data-sort="power" style="margin-left: 0;">Power</button>';
 		buf += '<button class="sortcol widelabelcol' + (this.sortCol === 'accuracy' ? ' cur' : '') + '" data-sort="accuracy">Accuracy</button>';
-		buf += '<button class="sortcol labelcol' + (this.sortCol === 'crit' ? ' cur' : '') + '" data-sort="crit">Crit</button>';
-		buf += '<button class="sortcol pplabelcol' + (this.sortCol === 'pp' ? ' cur' : '') + '" data-sort="pp">PP</button>';
-		buf += '<span style="margin: 0 2px; color: #999;">|</span>';
+		buf += '<button class="sortcol labelcol' + (this.sortCol === 'crit' ? ' cur' : '') + '" data-sort="crit" style="margin-left: 0;">Crit</button>';
+		buf += '<button class="sortcol pplabelcol' + (this.sortCol === 'pp' ? ' cur' : '') + '" data-sort="pp" style="margin-left: 0;">PP</button>';
+		buf += '<span style="margin: 0 5px; color: #999;">|</span>';
 		var categoryDisplay = Dex.prefs('categorydisplay') || 'icons';
 		buf += '<label style="font-size: 9px; display: inline-flex; align-items: center; vertical-align: middle;">';
 		buf += '<span style="margin-right: 1px; line-height: 1;">Category Icons:</span>';
@@ -425,7 +425,7 @@
 		buf += '<option value="text"' + (categoryDisplay === 'text' ? ' selected' : '') + '>Text</option>';
 		buf += '<option value="both"' + (categoryDisplay === 'both' ? ' selected' : '') + '>Both</option>';
 		buf += '</select></label>';
-		buf += '<span style="margin: 0 2px; color: #999;">|</span>';
+		buf += '<span style="margin: 0 5px; color: #999;">|</span>';
 		var flagIconsChecked = Dex.prefs('flagicons') !== false;
 		buf += '<label style="font-size: 9px; cursor: pointer; display: inline-flex; align-items: center; vertical-align: middle; margin-right: 4px;">';
 		buf += '<span style="line-height: 1; margin-right: 2px;">Flag Icons</span><input type="checkbox" id="flag-icons-toggle" style="margin: 0; vertical-align: middle;"' + (flagIconsChecked ? ' checked' : '') + '></label>';
@@ -782,7 +782,7 @@
 		// render flags as textual labels (escaped), showing truthy keys from move.flags
 		// but exclude implementation/internal flags from display.
 		var HIDDEN_FLAGS = new Set(['allyanim', 'bypasssub', 'cantusetwice', 'charge', 'defrost', 'distance', 'failcopycat', 'failencore', 'failinstruct', 'failmefirst', 'failmimic', 'futuremove', 'gravity', 'metronome', 'mirror', 'mustpressure', 'noassist', 'noparentalbond', 'nonsky', 'nosketch', 'nosleeptalk', 'pledgecombo', 'protect', 'recharge', 'reflectable', 'snatch']);
-		var flagsHtml = '&mdash;';
+		var flagsHtml = '';
 		if (move.flags && typeof move.flags === 'object') {
 			var flagKeys = Object.keys(move.flags).filter(function (k) { return move.flags[k]; });
 			// filter out hidden/internal flags
@@ -887,7 +887,7 @@
 
 		// flags
 		var HIDDEN_FLAGS = new Set(['allyanim', 'bypasssub', 'charge', 'defrost', 'distance', 'failinstruct', 'gravity', 'mirror', 'nonsky', 'nosketch', 'protect', 'recharge', 'reflectable', 'snatch']);
-		var innerFlagsHtml = '&mdash;';
+		var innerFlagsHtml = '';
 		if (move.flags && typeof move.flags === 'object') {
 			var innerFlagKeys = Object.keys(move.flags).filter(function (k) { return move.flags[k]; });
 			innerFlagKeys = innerFlagKeys.filter(function (k) { return !HIDDEN_FLAGS.has(k); });

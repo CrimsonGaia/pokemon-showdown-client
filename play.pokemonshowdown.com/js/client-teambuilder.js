@@ -2268,7 +2268,7 @@
 					var desc0 = (BattleAbilities[abilityId0] && BattleAbilities[abilityId0].shortDesc) || ability0.shortDesc || '';
 					var curClass0 = (toID(set.ability) === abilityId0 || toID(set.ability2) === abilityId0) ? 'cur' : '';
 					console.log('[DEBUG] Ability 0 cur class:', curClass0, 'set.ability:', set.ability, 'set.ability2:', set.ability2);
-					buf += '<li class="result"><a class="' + curClass0 + '" data-entry="ability|' + BattleLog.escapeHTML(species.abilities['0']) + '" data-slot="ability"><span class="col namecol">' + abilityName0 + '</span> <span class="col abilitydesccol">' + BattleLog.escapeHTML(desc0) + '</span></a></li>';
+					buf += '<li class="result abilityrow"><a class="' + curClass0 + '" data-entry="ability|' + BattleLog.escapeHTML(species.abilities['0']) + '" data-slot="ability"><span class="col namecol">' + abilityName0 + '</span> <span class="col abilitydesccol">' + BattleLog.escapeHTML(desc0) + '</span></a></li>';
 				}
 				
 				console.log('[DEBUG ABILITIES] Checking ability 1 - exists:', !!species.abilities['1'], 'different:', species.abilities['1'] !== species.abilities['0']);
@@ -2280,7 +2280,7 @@
 					var desc1 = (BattleAbilities[abilityId1] && BattleAbilities[abilityId1].shortDesc) || ability1.shortDesc || '';
 					var curClass1 = (toID(set.ability) === abilityId1 || toID(set.ability2) === abilityId1) ? 'cur' : '';
 					console.log('[DEBUG] Ability 1 cur class:', curClass1, 'set.ability:', set.ability, 'set.ability2:', set.ability2);
-					buf += '<li class="result"><a class="' + curClass1 + '" data-entry="ability|' + BattleLog.escapeHTML(species.abilities['1']) + '" data-slot="ability2"><span class="col namecol">' + abilityName1 + '</span> <span class="col abilitydesccol">' + BattleLog.escapeHTML(desc1) + '</span></a></li>';
+					buf += '<li class="result abilityrow"><a class="' + curClass1 + '" data-entry="ability|' + BattleLog.escapeHTML(species.abilities['1']) + '" data-slot="ability2"><span class="col namecol">' + abilityName1 + '</span> <span class="col abilitydesccol">' + BattleLog.escapeHTML(desc1) + '</span></a></li>';
 				}
 			} else {
 				// Ability Set 2: Show slot H and slot S
@@ -2290,7 +2290,7 @@
 					var abilityNameH = (abilityH.name || species.abilities['H']).split(' ').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); }).join(' ');
 					var descH = (BattleAbilities[abilityIdH] && BattleAbilities[abilityIdH].shortDesc) || abilityH.shortDesc || '';
 					var curClassH = (toID(set.ability) === abilityIdH || toID(set.ability2) === abilityIdH) ? ' cur' : '';
-					buf += '<li class="result"><a class="' + curClassH + '" data-entry="ability|' + BattleLog.escapeHTML(species.abilities['H']) + '" data-slot="ability"><span class="col namecol">' + abilityNameH + '</span> <span class="col abilitydesccol">' + BattleLog.escapeHTML(descH) + '</span></a></li>';
+					buf += '<li class="result abilityrow"><a class="' + curClassH + '" data-entry="ability|' + BattleLog.escapeHTML(species.abilities['H']) + '" data-slot="ability"><span class="col namecol">' + abilityNameH + '</span> <span class="col abilitydesccol">' + BattleLog.escapeHTML(descH) + '</span></a></li>';
 				}
 				
 				if (species.abilities['S'] && species.abilities['S'] !== species.abilities['H']) {
@@ -2299,7 +2299,7 @@
 					var abilityNameS = (abilityS.name || species.abilities['S']).split(' ').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); }).join(' ');
 					var descS = (BattleAbilities[abilityIdS] && BattleAbilities[abilityIdS].shortDesc) || abilityS.shortDesc || '';
 					var curClassS = (toID(set.ability) === abilityIdS || toID(set.ability2) === abilityIdS) ? ' cur' : '';
-					buf += '<li class="result"><a class="' + curClassS + '" data-entry="ability|' + BattleLog.escapeHTML(species.abilities['S']) + '" data-slot="ability2"><span class="col namecol">' + abilityNameS + '</span> <span class="col abilitydesccol">' + BattleLog.escapeHTML(descS) + '</span></a></li>';
+					buf += '<li class="result abilityrow"><a class="' + curClassS + '" data-entry="ability|' + BattleLog.escapeHTML(species.abilities['S']) + '" data-slot="ability2"><span class="col namecol">' + abilityNameS + '</span> <span class="col abilitydesccol">' + BattleLog.escapeHTML(descS) + '</span></a></li>';
 				}
 			}
 			
@@ -3274,7 +3274,8 @@
 				wasIncomplete = true;
 				$target.removeClass('incomplete');
 			}
-			if (this.curChartName === name) return;
+			// Always update chart to refresh results, even if same field
+			// Remove early return that prevents refresh
 			if (!this.curSet) {
 				var i = +$target.closest('li').prop('value');
 				this.curSet = this.curSetList[i];
@@ -3291,6 +3292,8 @@
 		chartChange: function (e, selectNext) {
 			var name = e.currentTarget.name;
 			if (this.curChartName !== name) return;
+			// Clear qName on blur to force refresh when refocusing
+			this.search.qName = null;
 			var id = toID(e.currentTarget.value);
 			if (id in BattleAliases) id = toID(BattleAliases[id]);
 			var val = '';
