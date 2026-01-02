@@ -149,6 +149,9 @@
 			'input .evslider': 'statSlide',
 			// ability set
 			'click button[name=abilitySetToggle]': 'abilitySetChange',
+			// affinity/aversion
+			'click .affinity-flag-icon': 'affinityFlagClick',
+			'click .aversion-flag-icon': 'aversionFlagClick',
 			// teambuilder events
 			'click .utilichart a': 'chartClick',
 			'keydown .chartinput': 'chartKeydown',
@@ -1396,9 +1399,9 @@
 						if (i >= 9) style += ' top: -31px; left: 26px;';
 						else if (i >= 6) style += ' top: -21px;';
 						else if (i >= 3) style += ' top: -10px; left: 26px;';
-						style += ' ' + filter;
+						style += ' ' + filter + ' cursor: pointer;';
 						
-						buf += Dex.getFlagIcon(flagData.flag).replace('<img', '<img style="' + style + '"');
+						buf += Dex.getFlagIcon(flagData.flag).replace('<img', '<img class="affinity-flag-icon" data-flag="' + BattleLog.escapeHTML(flagData.flag) + '" style="' + style + '"');
 					}
 					buf += '</div></div>';
 					buf += '</div>';
@@ -1421,9 +1424,9 @@
 						if (i >= 9) style += ' top: -31px; left: 26px;';
 						else if (i >= 6) style += ' top: -21px;';
 						else if (i >= 3) style += ' top: -10px; left: 26px;';
-						style += ' ' + filter;
+						style += ' ' + filter + ' cursor: pointer;';
 						
-						buf += Dex.getFlagIcon(flagData.flag).replace('<img', '<img style="' + style + '"');
+						buf += Dex.getFlagIcon(flagData.flag).replace('<img', '<img class="aversion-flag-icon" data-flag="' + BattleLog.escapeHTML(flagData.flag) + '" style="' + style + '"');
 					}
 					buf += '</div></div>';
 					buf += '</div>';
@@ -3074,6 +3077,59 @@
 			}
 			if (!set) return;
 			app.addPopup(TeraTypePopup, { curSet: set, index: i, room: this });
+		},
+		affinityFlagClick: function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+			var flagId = $(e.currentTarget).data('flag');
+			if (!flagId) return;
+			this.filterMovesByFlag(flagId);
+		},
+		aversionFlagClick: function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+			var flagId = $(e.currentTarget).data('flag');
+			if (!flagId) return;
+			this.filterMovesByFlag(flagId);
+		},
+		filterMovesByFlag: function (flagId) {
+			// Find the first empty move slot, or use move1 if all are filled
+			var $moveInput = null;
+			for (var i = 1; i <= 4; i++) {
+				var $input = this.$('input[name=move' + i + ']');
+				if (!$input.val() || $input.val().trim() === '') {
+					$moveInput = $input;
+					break;
+				}
+			}
+			// If all slots are filled, use move1
+			if (!$moveInput) {
+				$moveInput = this.$('input[name=move1]');
+			}
+			
+			// Focus the move input
+			$moveInput.focus();
+			
+			// Wait for the chart to update, then add the filter
+			var self = this;
+			setTimeout(function () {
+				// Remove any existing flag filters first
+				if (self.search.engine.filters) {
+					var newFilters = [];
+					for (var i = 0; i < self.search.engine.filters.length; i++) {
+						if (self.search.engine.filters[i][0] !== 'flag') {
+							newFilters.push(self.search.engine.filters[i]);
+						}
+					}
+					self.search.engine.filters = newFilters;
+					self.search.filters = newFilters;
+				}
+				
+				// Add the new flag filter
+				self.search.engine.addFilter(['flag', flagId]);
+				self.search.filters = self.search.engine.filters;
+				self.search.find('');
+			}, 50);
 		},
 		/*********************************************************
 		 * Set charts
