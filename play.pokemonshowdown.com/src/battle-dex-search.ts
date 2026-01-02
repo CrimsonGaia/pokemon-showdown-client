@@ -888,7 +888,7 @@ abstract class BattleTypedSearch<T extends SearchType> {
 		if (this.formatType === 'letsgo') table = table['gen7letsgo'];
 		if (this.formatType === 'bw1') table = table['gen5bw1'];
 		if (this.formatType === 'rs') table = table['gen3rs'];
-		if (this.formatType === 'indigostarstorm') table = table['gen9indigostarstorm'];
+		if (this.formatType === 'indigostarstorm') table = table['gen9indigostarstorm'] || table;
 		if (table && table.learnsets && speciesid in table.learnsets) return speciesid;
 		const species = this.dex.species.get(speciesid);
 		if (!species.exists) return '' as ID;
@@ -897,7 +897,7 @@ abstract class BattleTypedSearch<T extends SearchType> {
 		if (typeof species.battleOnly === 'string' && species.battleOnly !== species.baseSpecies) {
 			baseLearnsetid = toID(species.battleOnly);
 		}
-		if (baseLearnsetid in table.learnsets) return baseLearnsetid;
+		if (table && table.learnsets && baseLearnsetid in table.learnsets) return baseLearnsetid;
 		return '' as ID;
 	}
 	protected nextLearnsetid(learnsetid: ID, speciesid: ID, checkingMoves = false) {
@@ -951,15 +951,25 @@ abstract class BattleTypedSearch<T extends SearchType> {
 				genChar = 'p';
 			}
 		}
+		console.log('[DEBUG canLearn]', {speciesid, moveid, gen, genChar, formatType: this.formatType});
 		let learnsetid = this.firstLearnsetid(speciesid);
+		console.log('[DEBUG canLearn] firstLearnsetid:', learnsetid);
 		while (learnsetid) {
 			let table = BattleTeambuilderTable;
 			if (this.formatType?.startsWith('bdsp')) table = table['gen8bdsp'];
 			if (this.formatType === 'letsgo') table = table['gen7letsgo'];
 			if (this.formatType === 'bw1') table = table['gen5bw1'];
 			if (this.formatType === 'rs') table = table['gen3rs'];
-			if (this.formatType === 'indigostarstorm') table = table['gen9indigostarstorm'];
+			if (this.formatType === 'indigostarstorm') table = table['gen9indigostarstorm'] || table;
+			if (!table || !table.learnsets) {
+				console.log('[DEBUG canLearn] No table or learnsets');
+				break;
+			}
 			let learnset = table.learnsets[learnsetid];
+			console.log('[DEBUG canLearn] learnset for', learnsetid, ':', learnset ? Object.keys(learnset).slice(0, 5) : 'undefined');
+			if (learnset && moveid in learnset) {
+				console.log('[DEBUG canLearn] Move found!', moveid, 'data:', learnset[moveid], 'checking for genChar:', genChar);
+			}
 			const eggMovesOnly = this.eggMovesOnly(learnsetid, speciesid);
 			if (learnset && (moveid in learnset) && (!this.format.startsWith('tradebacks') ? learnset[moveid].includes(genChar) :
 				learnset[moveid].includes(genChar) || (learnset[moveid].includes(`${gen + 1}`) && move.gen === gen)) &&
@@ -1875,11 +1885,14 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 		if (this.formatType === 'letsgo') lsetTable = lsetTable['gen7letsgo'];
 		if (this.formatType === 'bw1') lsetTable = lsetTable['gen5bw1'];
 		if (this.formatType === 'rs') lsetTable = lsetTable['gen3rs'];
+		if (this.formatType === 'indigostarstorm') lsetTable = lsetTable['gen9indigostarstorm'] || lsetTable;
 		if (this.formatType?.startsWith('ssdlc1')) lsetTable = lsetTable['gen8dlc1'];
 		if (this.formatType?.startsWith('predlc')) lsetTable = lsetTable['gen9predlc'];
 		if (this.formatType?.startsWith('svdlc1')) lsetTable = lsetTable['gen9dlc1'];
+		console.log('[DEBUG getMovesList] formatType:', this.formatType, 'has learnsets?', !!lsetTable?.learnsets);
 		while (learnsetid) {
 			let learnset = lsetTable.learnsets[learnsetid];
+			console.log('[DEBUG getMovesList] learnsetid:', learnsetid, 'has learnset?', !!learnset, 'move count:', learnset ? Object.keys(learnset).length : 0);
 			if (learnset) {
 				for (let moveid in learnset) {
 					let learnsetEntry = learnset[moveid];

@@ -379,10 +379,14 @@
 	position: relative;
 	top: 1px;
 }
+.utilichart .flagssortcol {
+	width: 132px;
+}
 .utilichart .flagcol {
 	width: 132px;
 	height: 48px !important;
 	font-size: 7pt;
+	font-weight: bold;
 	position: relative;
 	box-sizing: border-box;
 	margin-top: -6px;

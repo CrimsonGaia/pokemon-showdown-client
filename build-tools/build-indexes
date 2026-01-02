@@ -611,6 +611,7 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 			BattleTeambuilderTable.ubersUUBans = ubersUUBans;
 			BattleTeambuilderTable.monotypeBans = monotypeBans;
 			BattleTeambuilderTable.formatSlices = formatSlices;
+			BattleTeambuilderTable.learnsets = {}; // Initialize learnsets for gen 9
 		} else if (isBW1 || isRS) {
 			BattleTeambuilderTable[gen] = {};
 			BattleTeambuilderTable[gen].overrideTier = overrideTier;
@@ -1202,12 +1203,43 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 		}
 	}
 
+	// Create nested structure for mod learnsets
+	BattleTeambuilderTable['gen9indigostarstorm'] = {};
+	BattleTeambuilderTable['gen9indigostarstorm'].learnsets = {};
+	
+	// Merge mod learnsets into BattleTeambuilderTable['gen9indigostarstorm'].learnsets
+	try {
+		const modLearnsets = requireNoCache('../caches/pokemon-showdown/dist/data/mods/gen9indigostarstorm/learnsets.js').Learnsets;
+		console.log('DEBUG: Merging mod learnsets into teambuilder table, count:', Object.keys(modLearnsets).length);
+		for (const id in modLearnsets) {
+			const modLearnset = modLearnsets[id].learnset;
+			if (!modLearnset) continue;
+			BattleTeambuilderTable['gen9indigostarstorm'].learnsets[id] = {};
+			
+			// Merge mod moves into the teambuilder learnsets
+			for (const moveid in modLearnset) {
+				const gens = modLearnset[moveid].map(x => Number(x[0]));
+				const minGen = Math.min(...gens);
+				BattleTeambuilderTable['gen9indigostarstorm'].learnsets[id][moveid] = '0123456789'.slice(minGen);
+				if (gens.indexOf(9) >= 0 && modLearnset[moveid].some(x => x[0] === '9' && x !== '9V')) {
+					BattleTeambuilderTable['gen9indigostarstorm'].learnsets[id][moveid] += 'a';
+				}
+				if (gens.indexOf(9) >= 0 && modLearnset[moveid].some(x => x === '9E')) {
+					BattleTeambuilderTable['gen9indigostarstorm'].learnsets[id][moveid] += 'e';
+				}
+			}
+		}
+		console.log('DEBUG: gen9indigostarstorm.learnsets populated, pokemon count:', Object.keys(BattleTeambuilderTable['gen9indigostarstorm'].learnsets).length);
+	} catch (e) {
+		console.log('Note: Could not load mod learnsets for teambuilder table:', e.message);
+	}
+
 	// Client relevant data that should be overridden by past gens and mods
 	const overrideSpeciesKeys = [
 		'abilities', 'baseStats', 'cosmeticFormes', 'isNonstandard', 'requiredItems', 'types', 'unreleasedHidden',
 	];
 	const overrideMoveKeys = [
-		'accuracy', 'basePower', 'category', 'desc', 'flags', 'isNonstandard', 'pp', 'priority', 'shortDesc', 'target', 'type',
+		'accuracy', 'basePower', 'category', 'critRatio', 'desc', 'flags', 'isNonstandard', 'pp', 'priority', 'shortDesc', 'target', 'type',
 	];
 	const overrideAbilityKeys = ['desc', 'flags', 'isNonstandard', 'rating', 'shortDesc'];
 	const overrideItemKeys = ['desc', 'fling', 'isNonstandard', 'naturalGift', 'shortDesc'];
@@ -1324,9 +1356,59 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 
 		const overrideMoveData = {};
 		BattleTeambuilderTable[mod].overrideMoveData = overrideMoveData;
+		
+		// Load raw move descriptions from TypeScript source file
+		let rawMoveDescriptions = {};
+		if (mod === 'gen9indigostarstorm') {
+			try {
+				// Read from the actual pokemon-showdown repo, not the cached version
+				const movesSource = fs.readFileSync('../pokemon-showdown/data/mods/' + mod + '/moves.ts', 'utf8');
+				// Parse move entries - find all move IDs and their desc/shortDesc
+				// Use a regex that captures move name, then separately find desc and shortDesc
+				const moveStartRegex = /\t(\w+):\s*\{/g;
+				let match;
+				while ((match = moveStartRegex.exec(movesSource)) !== null) {
+					const moveid = match[1];
+					const moveStart = match.index;
+					// Find the end of this move entry by counting braces
+					let braceCount = 0;
+					let i = movesSource.indexOf('{', moveStart);
+					let moveEnd = i;
+					while (i < movesSource.length) {
+						if (movesSource[i] === '{') braceCount++;
+						else if (movesSource[i] === '}') {
+							braceCount--;
+							if (braceCount === 0) {
+								moveEnd = i;
+								break;
+							}
+						}
+						i++;
+					}
+					const moveContent = movesSource.substring(moveStart, moveEnd);
+					// Extract desc and shortDesc from this move
+					const descMatch = /desc:\s*"([^"]+)"/.exec(moveContent);
+					const shortDescMatch = /shortDesc:\s*"([^"]+)"/.exec(moveContent);
+					if (descMatch && shortDescMatch) {
+						rawMoveDescriptions[moveid] = {
+							desc: descMatch[1],
+							shortDesc: shortDescMatch[1]
+						};
+					}
+				}
+			} catch (e) {
+				// Silently fail if we can't load raw descriptions
+			}
+		}
+		
 		for (const id in modData.Moves) {
-			const modEntry = modDex.moves.get(id);
+			let modEntry = modDex.moves.get(id);
 			const parentEntry = parentDex.moves.get(id);
+			
+			// If we have raw descriptions, create a modified copy with them
+			if (rawMoveDescriptions[id]) {
+				modEntry = {...modEntry, desc: rawMoveDescriptions[id].desc, shortDesc: rawMoveDescriptions[id].shortDesc};
+			}
 			for (const key of overrideMoveKeys) {
 				if (key === 'category' && modDex.gen <= 3) continue;
 				if (JSON.stringify(modEntry[key]) !== JSON.stringify(parentEntry[key])) {
@@ -1548,6 +1630,23 @@ process.stdout.write("Building `data/moves,items,abilities,typechart,learnsets.j
 
 {
 	const Learnsets = requireNoCache('../caches/pokemon-showdown/dist/data/learnsets.js').Learnsets;
+	
+	// Merge mod learnsets
+	try {
+		const modLearnsets = requireNoCache('../caches/pokemon-showdown/dist/data/mods/gen9indigostarstorm/learnsets.js').Learnsets;
+		console.log('DEBUG: Loaded mod learnsets, count:', Object.keys(modLearnsets).length);
+		for (const id in modLearnsets) {
+			if (!Learnsets[id]) {
+				Learnsets[id] = modLearnsets[id];
+			} else {
+				// Merge learnsets - mod moves should override/add to vanilla
+				Object.assign(Learnsets[id].learnset || {}, modLearnsets[id].learnset || {});
+			}
+		}
+	} catch (e) {
+		console.log('Note: Could not load mod learnsets:', e.message);
+	}
+	
 	const buf = 'exports.BattleLearnsets = ' + es3stringify(Learnsets) + ';';
 	fs.writeFileSync('play.pokemonshowdown.com/data/learnsets.js', buf);
 	fs.writeFileSync('play.pokemonshowdown.com/data/learnsets.json', JSON.stringify(Learnsets));

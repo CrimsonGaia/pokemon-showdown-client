@@ -1118,8 +1118,6 @@ export class Item implements Effect {
 	readonly naturalGift: { basePower: number, type: TypeName };
 	readonly isPokeball: boolean;
 	readonly itemUser?: readonly string[];
-	readonly isFragile: boolean;
-	readonly isMildlyFragile: boolean;
 	readonly isFragile?: boolean;
 	readonly isMildlyFragile?: boolean;
 
