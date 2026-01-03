@@ -67,6 +67,7 @@ export class BattleScene implements BattleSceneStub {
 	$fx: JQuery = null!;
 	$leftbar: JQuery = null!;
 	$rightbar: JQuery = null!;
+	$battleteambar: JQuery = null!;
 	$turn: JQuery = null!;
 	$messagebar: JQuery = null!;
 	$delay: JQuery = null!;
@@ -149,7 +150,9 @@ export class BattleScene implements BattleSceneStub {
 		///////////////
 
 		this.$frame.empty();
+		this.$battleteambar = $('<div class="battleteambar" role="complementary" aria-label="Team Preview"></div>');
 		this.$battle = $('<div class="innerbattle"></div>');
+		this.$frame.append(this.$battleteambar);
 		this.$frame.append(this.$battle);
 
 		this.$bg = $('<div class="backdrop" style="background-image:url(' + Dex.resourcePrefix + this.backdropImage + ');display:block;opacity:0.8"></div>');
@@ -637,6 +640,17 @@ export class BattleScene implements BattleSceneStub {
 		}
 		return BattleLog.escapeHTML(name);
 	}
+	getTeamBarHTML(side: Side, isP1: boolean): string {
+		let html = '';
+		for (let i = 0; i < side.pokemon.length; i++) {
+			const pokemon = side.pokemon[i];
+			const status = pokemon.fainted ? ' fainted' : (pokemon.status ? ' status' : '');
+			const iconStyle = Dex.getPokemonIcon(pokemon);
+			html += `<span class="picon battleteambar-sprite${status}" style="${iconStyle}"></span>`;
+		}
+		return html;
+	}
+
 	getSidebarHTML(side: Side, posStr: string): string {
 		let noShow = this.battle.hardcoreMode && this.battle.gen < 7;
 
@@ -782,6 +796,17 @@ export class BattleScene implements BattleSceneStub {
 	updateSidebars() {
 		this.updateLeftSidebar();
 		this.updateRightSidebar();
+		this.updateTeamBar();
+	}
+	updateTeamBar() {
+		const p1Side = this.battle.nearSide;
+		const p2Side = this.battle.farSide;
+		const p1HTML = this.getTeamBarHTML(p1Side, true);
+		const p2HTML = this.getTeamBarHTML(p2Side, false);
+		this.$battleteambar.html(
+			`<div class="battleteambar-p1">${p1HTML}</div>` +
+			`<div class="battleteambar-p2">${p2HTML}</div>`
+		);
 	}
 	updateStatbars() {
 		for (const side of this.battle.sides) {

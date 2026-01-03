@@ -1599,9 +1599,9 @@ p.or:after {
 }
 .ps-room .battle-controls {
 	position: absolute;
-	top: 370px;
+	top: 440px;
 	left: 0;
-	width: 840px;
+	width: 640px;
 	background: #EEF2F5;
 }
 .ps-room .ally-pokemon {
