@@ -1232,14 +1232,26 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 		} else if (this.formatType === 'indigostarstorm') {
 			table = table['gen9indigostarstorm'];
 			console.log('[DEBUG] Loading gen9indigostarstorm table, table exists:', !!table, 'has tiers:', !!table?.tiers, 'has formatSlices:', !!table?.formatSlices, 'slice keys:', Object.keys(table?.formatSlices || {}));
+			// Fallback to gen9 if gen9indigostarstorm doesn't exist
+			if (!table) {
+				console.log('[DEBUG] gen9indigostarstorm table not found, falling back to gen9');
+				table = tableData['gen9'];
+			}
 		}
 
-		if (!table.tierSet) {
-			table.tierSet = table.tiers.map((r: any) => {
-				if (typeof r === 'string') return ['pokemon', r];
-				return [r[0], r[1]];
-			});
-			table.tiers = null;
+		if (!table || !table.tierSet) {
+			if (table && table.tiers) {
+				table.tierSet = table.tiers.map((r: any) => {
+					if (typeof r === 'string') return ['pokemon', r];
+					return [r[0], r[1]];
+				});
+				table.tiers = null;
+			} else {
+				// If table doesn't have tiers, create an empty tierSet
+				console.log('[DEBUG] Table has no tiers, creating empty tierSet');
+				if (!table) table = {};
+				table.tierSet = [];
+			}
 		}
 		let tierSet: SearchRow[] = table.tierSet;
 		let slices: { [k: string]: number } = table.formatSlices;

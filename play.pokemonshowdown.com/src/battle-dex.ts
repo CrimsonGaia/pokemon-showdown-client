@@ -1076,13 +1076,13 @@ export class ModdedDex {
 
 			for (let i = Dex.gen - 1; i >= this.gen; i--) {
 				const table = window.BattleTeambuilderTable[`gen${i}`];
-				if (id in table.overrideMoveData) {
+				if (table && table.overrideMoveData && id in table.overrideMoveData) {
 					Object.assign(data, table.overrideMoveData[id]);
 				}
 			}
 			if (this.modid !== `gen${this.gen}`) {
 				const table = window.BattleTeambuilderTable[this.modid];
-				if (id in table.overrideMoveData) {
+				if (table && table.overrideMoveData && id in table.overrideMoveData) {
 					Object.assign(data, table.overrideMoveData[id]);
 				}
 			}
@@ -1109,13 +1109,13 @@ export class ModdedDex {
 
 			for (let i = Dex.gen - 1; i >= this.gen; i--) {
 				const table = window.BattleTeambuilderTable[`gen${i}`];
-				if (id in table.overrideFlagData) {
+				if (table && table.overrideFlagData && id in table.overrideFlagData) {
 					Object.assign(data, table.overrideFlagData[id]);
 				}
 			}
 			if (this.modid !== `gen${this.gen}`) {
 				const table = window.BattleTeambuilderTable[this.modid];
-				if (id in table.overrideFlagData) {
+				if (table && table.overrideFlagData && id in table.overrideFlagData) {
 					Object.assign(data, table.overrideFlagData[id]);
 				}
 			}
@@ -1139,13 +1139,13 @@ export class ModdedDex {
 
 			for (let i = Dex.gen - 1; i >= this.gen; i--) {
 				const table = window.BattleTeambuilderTable[`gen${i}`];
-				if (id in table.overrideItemData) {
+				if (table && table.overrideItemData && id in table.overrideItemData) {
 					Object.assign(data, table.overrideItemData[id]);
 				}
 			}
 			if (this.modid !== `gen${this.gen}`) {
 				const table = window.BattleTeambuilderTable[this.modid];
-				if (id in table.overrideItemData) {
+				if (table && table.overrideItemData && id in table.overrideItemData) {
 					Object.assign(data, table.overrideItemData[id]);
 				}
 			}
