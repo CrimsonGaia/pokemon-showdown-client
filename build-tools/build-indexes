@@ -73,6 +73,9 @@ console.log(`Merged descriptions for ${Object.keys(ItemsText).length} items`);
 	index = index.concat(['physical', 'special', 'status'].map(x => toID(x) + ' category'));
 	index = index.concat(['bind', 'bite', 'bullet', 'bomb', 'contact', 'crash', 'dance', 'drain', 'explosive', 'heal', 'powder', 'pulse', 'punch', 'slice', 'sound', 'wind', 'airborne', 'aura', 'beam', 'breath', 'claw', 'crush', 'kick', 'launch', 'light', 'lunar', 'magic', 'pierce', 'shadow', 'solar', 'spin', 'sweep', 'throw', 'weapon', 'wing',
 	].map(x => toID(x) + ' flag'));
+	// Pokemon tags (for filtering by legendary, mythical, paradox, etc.)
+	index = index.concat(['mega', 'powerhouse', 'legendary', 'restrictedlegendary', 'mythical', 'restrictedmythical', 'paradox', 'restrictedparadox', 'sublegendary',
+	].map(x => toID(x) + ' flag'));
 	index = index.concat([
 		'monster', 'water1', 'bug', 'flying', 'field', 'fairy', 'grass', 'humanlike', 'water3', 'mineral', 'amorphous', 'water2', 'ditto', 'dragon', 'undiscovered',
 	].map(x => toID(x) + ' egggroup'));

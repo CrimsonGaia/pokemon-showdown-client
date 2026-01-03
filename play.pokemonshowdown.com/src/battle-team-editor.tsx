@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Teambuilder team editor, extracted from the rest of the Preact
  * client so that it can be used in isolation.
  *

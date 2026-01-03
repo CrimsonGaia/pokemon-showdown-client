@@ -1255,8 +1255,8 @@
 					buf += '<img src="' + Dex.resourcePrefix + 'sprites/types/Tera' + teraType + '.png" alt="' + teraType + '" style="width: 20px; height: 20px; object-fit: contain; display: block; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5));" />';
 					buf += '</button>';
 					buf += '<span style="position: absolute; left: 159px; top: 64px; pointer-events: none; display: flex; flex-direction: column; align-items: flex-end; width: 60px;">';
-					buf += '<span style="font-size: 9px; margin-right: 2px;">' + (species.heightm || 0) + ' m</span>';
-					buf += '<span style="font-size: 9px;">' + (species.weightkg || 0) + ' kg</span>';
+					buf += '<span style="font-size: 9px; margin-right: 2px;"></span>';
+					buf += '<span style="font-size: 9px;"></span>';
 					buf += '</span>';
 				}
 			}
@@ -1288,7 +1288,7 @@
 						genderButton = '<button type="button" class="textbox genderToggle" name="genderToggle" data-value="F" style="width: 40px; font-weight: bold; font-size: 12px; cursor: pointer; padding: 1.5px 0; height: 18px; background: linear-gradient(to left, rgba(255, 100, 150, 0.3) 50%, transparent 50%); text-align: right; padding-right: 6px;"><span style="position: relative; top: -1.5px; left: 1px; color: #ff0055ff;">♀</span></button>';
 					}
 				}
-				buf += '<div style="display: flex; align-items: center; gap: 7px; position: relative; top: 19px; left: 1px;"><label style="font-size: 10px;">Gender</label>' + genderButton + '</div>';
+				buf += '<div style="display: flex; align-items: center; gap: 7px; position: relative; top: 14px; left: 1px;"><label style="font-size: 10px;">Gender</label>' + genderButton + '</div>';
 			}
 			buf += '</div>';
 			if (this.curTeam.gen > 1) {
@@ -1356,7 +1356,13 @@
 			}
 			
 			buf += '<div class="setcol setcol-ability" style="align-content: end; position: relative; top: -5px;">'; ;
-			buf += '<div class="setcell" style="position: relative; top: -8px; left: 2px;"><label style="font-size: 10px;">Level</label><input type="number" name="level" class="textbox" value="' + (set.level || 100) + '" min="1" max="100" style="width: 40px;" /></div>';
+			// level
+			buf += '<div class="setcell" style="position: relative; top: -6px; left: 40px; display: inline-block;"><label style="font-size: 9px;">Level</label><input type="number" name="level" class="textbox" value="' + (set.level || 100) + '" min="1" max="100" style="width: 30px; height: 16px; font-size: 9px;" /></div>';
+			// size
+			buf += '<div class="setcell" style="position: relative; top: -6px; left: 30px; display: inline-block; margin-left: 13px;"><label style="font-size: 9px;">Size</label><select name="size" class="textbox" style="width: 24px; height: 19px; padding-left: 2px; font-size: 9px; appearance: none; -webkit-appearance: none; -moz-appearance: none; padding-right: 2px; text-align: center;"><option value="XS"' + (set.size === 'XS' ? ' selected' : '') + '>XS</option><option value="S"' + (set.size === 'S' ? ' selected' : '') + '>S</option><option value="M"' + (!set.size || set.size === 'M' ? ' selected' : '') + '>M</option><option value="L"' + (set.size === 'L' ? ' selected' : '') + '>L</option><option value="XL"' + (set.size === 'XL' ? ' selected' : '') + '>XL</option></select></div>';
+			// height/weight
+			buf += '<div class="setcell" style="position: relative; top: -4px; left: 30px; display: inline-block; margin-left: 13px;"><div style="font-size: 9px; display: flex; gap: 8px;"><span>' + (species.heightm || 0) + ' m</span><span>' + (species.weightkg || 0) + ' kg</span></div></div>';
+			//ability set
 			buf += '<div class="setcell">';
 			buf += '<div style="display: flex; align-items: end; gap: 6px;"><label style="margin: 0;">Ability Set</label><button type="button" class="textbox' + buttonClass + '"' + buttonName + ' data-value="' + abilitySet + '" style="' + buttonStyle + '">' + buttonText + '</button></div>';
 			buf += '</div>';
@@ -1369,6 +1375,7 @@
 			buf += '</div>';
 		}
 		
+
 			if (!set.moves) set.moves = [];
 			buf += '<div class="setcol setcol-moves"><div class="setcell"><label>Moves</label>';
 			buf += '<input type="text" name="move1" class="textbox chartinput" value="' + BattleLog.escapeHTML(set.moves[0]) + '" autocomplete="off" /></div>';
