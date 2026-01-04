@@ -20,7 +20,8 @@
       {
         "ignore": [
           "backdrop-filter",
-          "image-rendering: -moz-crisp-edges"
+          "image-rendering: -moz-crisp-edges",
+          "-webkit-overflow-scrolling"
         ]
       }
     ]

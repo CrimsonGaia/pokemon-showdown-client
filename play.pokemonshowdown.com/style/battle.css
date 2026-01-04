@@ -370,6 +370,20 @@ License: GPLv2
 	padding: 0;
 	margin: 0;
 	line-height: 30px;
+	position: relative;
+}
+.battleteambar-sprite .itemicon {
+	position: absolute;
+	top: -2px;
+	right: -2px;
+	width: 24px;
+	height: 24px;
+	display: inline-block;
+	image-rendering: pixelated;
+	transform: scale(0.5);
+	transform-origin: top right;
+	z-index: 2;
+	pointer-events: none;
 }
 .battleteambar-sprite.fainted {
 	opacity: 0.3;

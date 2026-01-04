@@ -646,34 +646,56 @@ export class BattleScene implements BattleSceneStub {
 			const pokemon = side.pokemon[i];
 			const status = pokemon.fainted ? ' fainted' : (pokemon.status ? ' status' : '');
 			const iconStyle = Dex.getPokemonIcon(pokemon);
-			html += `<span class="picon battleteambar-sprite${status}" style="${iconStyle}"></span>`;
+			
+			// Add item icon if item is revealed
+			let itemIconHTML = '';
+			if (pokemon.item && pokemon.item !== '(exists)') {
+				const itemIconStyle = Dex.getItemIcon(pokemon.item);
+				itemIconHTML = `<span class="itemicon" style="${itemIconStyle}"></span>`;
+			}
+			
+			html += `<span class="picon battleteambar-sprite${status}" style="${iconStyle}">${itemIconHTML}</span>`;
 		}
 		return html;
 	}
 
 	getSidebarHTML(side: Side, posStr: string): string {
 		let noShow = this.battle.hardcoreMode && this.battle.gen < 7;
+		
+		// Check if this is an ISL format
+		const isISLFormat = this.battle.tier?.toLowerCase().includes('indigostarstorm') || 
+		                    this.battle.tier?.toLowerCase().includes('isl');
 
-		let speciesOverage = this.battle.speciesClause ? Infinity : Math.max(side.pokemon.length - side.totalPokemon, 0);
+		// Filter to only show Pokemon that have been revealed (have ident)
+		const revealedPokemon = side.pokemon.filter(p => p.ident);
+		
+		// In ISL formats, only show revealed Pokemon. In other formats, show all Pokemon.
+		const pokemonToShow = isISLFormat ? revealedPokemon : side.pokemon;
+
+		let speciesOverage = this.battle.speciesClause ? Infinity : Math.max(pokemonToShow.length - side.totalPokemon, 0);
 		const sidebarIcons: (
 			['pokemon' | 'pokemon-illusion', number] | ['unrevealed' | 'empty' | 'pseudo-zoroark', null]
 		)[] = [];
 		const speciesTable: string[] = [];
 		let zoroarkRevealed = false;
 		let hasIllusion = false;
+		
+		// Build list of icons for revealed Pokemon
 		if (speciesOverage) {
-			for (let i = 0; i < side.pokemon.length; i++) {
-				const species = side.pokemon[i].getBaseSpecies().baseSpecies;
+			for (let i = 0; i < pokemonToShow.length; i++) {
+				const species = pokemonToShow[i].getBaseSpecies().baseSpecies;
 				if (speciesOverage && speciesTable.includes(species)) {
 					for (const sidebarIcon of sidebarIcons) {
-						if (side.pokemon[sidebarIcon[1]!].getBaseSpecies().baseSpecies === species) {
+						if (pokemonToShow[sidebarIcon[1]!].getBaseSpecies().baseSpecies === species) {
 							sidebarIcon[0] = 'pokemon-illusion';
 						}
 					}
 					hasIllusion = true;
 					speciesOverage--;
 				} else {
-					sidebarIcons.push(['pokemon', i]);
+					// Store the actual index in side.pokemon array
+					const actualIndex = side.pokemon.indexOf(pokemonToShow[i]);
+					sidebarIcons.push(['pokemon', actualIndex]);
 					speciesTable.push(species);
 					if (['Zoroark', 'Zorua'].includes(species)) {
 						zoroarkRevealed = true;
@@ -681,13 +703,17 @@ export class BattleScene implements BattleSceneStub {
 				}
 			}
 		} else {
-			for (let i = 0; i < side.pokemon.length; i++) {
-				sidebarIcons.push(['pokemon', i]);
+			for (let i = 0; i < pokemonToShow.length; i++) {
+				const actualIndex = side.pokemon.indexOf(pokemonToShow[i]);
+				sidebarIcons.push(['pokemon', actualIndex]);
 			}
 		}
 		if (!zoroarkRevealed && hasIllusion && sidebarIcons.length < side.totalPokemon) {
 			sidebarIcons.push(['pseudo-zoroark', null]);
 		}
+		
+		// Fill remaining slots with unrevealed/empty icons
+		// In ISL, show empty slots for unrevealed Pokemon up to totalPokemon (usually 6)
 		while (sidebarIcons.length < side.totalPokemon) {
 			sidebarIcons.push(['unrevealed', null]);
 		}
