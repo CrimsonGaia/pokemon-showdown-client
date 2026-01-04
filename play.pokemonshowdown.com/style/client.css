@@ -7,12 +7,16 @@ html, body {
 	padding: 0;
 	height: 100%;
 	overflow: visible;
+	overflow-x: auto;
+	scroll-behavior: auto;
 }
 body {
 	color: white;
 	font-size: 11pt;
 	font-family: Verdana, Helvetica, Arial, sans-serif;
-
+	overflow-x: auto;
+	text-align: left;
+	
 	/* see https://pokemonshowdown.com/credits */
 	background: #344b6c url(../fx/client-bg-charizards.jpg) no-repeat left center fixed;
 	-webkit-background-size: cover;
@@ -377,11 +381,15 @@ summary:hover .expandbutton,
 	min-width: 860px;
 
 	border-left: 1px solid #AAAAAA;
-	margin-left: -1px;
+	margin-left: 0;
+}
+.ps-room.scrollable {
+	overflow-x: auto;
 }
 .ps-room.ps-room-right,
 .ps-room[data-side="right"] {
 	left: 860px !important;
+	width: auto;
 }
 .ps-room.ps-room-left,
 .ps-room[data-side="left"] {
@@ -391,10 +399,24 @@ summary:hover .expandbutton,
 /* Fallback: position even-indexed rooms to the right */
 .mainmenuwrapper > .ps-room:nth-child(even) {
 	left: 860px !important;
+	width: auto;
+}
+/* Force right-side rooms regardless of layout mode */
+body .mainmenuwrapper > .ps-room.ps-room-right,
+body .mainmenuwrapper > .ps-room[data-side="right"],
+body .mainmenuwrapper > .ps-room:nth-child(even) {
+	position: absolute !important;
+	left: 860px !important;
+	right: 0 !important;
+	width: auto !important;
 }
 .scrollable {
 	overflow: auto;
 	-webkit-overflow-scrolling: touch;
+}
+.ps-room.scrollable {
+	overflow-y: auto;
+	overflow-x: hidden;
 }
 .ps-room.ps-room-light {
 	background: rgba(242,247,250,.85);
@@ -610,6 +632,9 @@ p.or:after {
 .leftmenu {
 	padding: 40px 0 0 0;
 	width: 324px;
+	position: relative;
+	left: 0;
+	margin-left: 0;
 }
 .rightmenu {
 	position: absolute;
@@ -618,7 +643,7 @@ p.or:after {
 }
 .activitymenu {
 	position: absolute;
-	left: 325px;
+	left: 860px;
 	top: 40px;
 }
 .mainmenu {
@@ -637,6 +662,8 @@ p.or:after {
 .mainmenuwrapper {
 	position: relative;
 	min-height: 100%;
+	margin: 0;
+	padding-left: 10px;
 }
 .mainmenufooter {
 	position: absolute;
@@ -788,7 +815,6 @@ p.or:after {
 }
 
 .tiny-layout .leftmenu,
-.tiny-layout .rightmenu,
 .tiny-layout .activitymenu {
 	position: static;
 	top: 0;
@@ -804,11 +830,26 @@ p.or:after {
 .tiny-layout .activitymenu {
 	padding-bottom: 8px;
 }
+/* Force right menu and right panels to stay at 860px even in tiny layout */
+.tiny-layout .rightmenu {
+	position: absolute !important;
+	left: 860px !important;
+	width: auto !important;
+	top: 40px !important;
+	right: 25px !important;
+}
+.tiny-layout .ps-room-right,
+.tiny-layout .ps-room[data-side="right"],
+.tiny-layout .mainmenuwrapper > .ps-room:nth-child(even) {
+	position: absolute !important;
+	left: 860px !important;
+	width: auto !important;
+}
 
 .mainmessage {
 	display: block;
 	padding: 10px 15px;
-	margin: 30px 40px;
+	margin: 30px 10px 30px 10px;
 	max-width: 400px;
 	border-radius: 20px;
 
@@ -818,7 +859,7 @@ p.or:after {
 .menugroup {
 	display: block;
 	padding: 10px 0;
-	margin: 0 auto 30px auto;
+	margin: 0 0 30px 10px;
 	max-width: 270px;
 	border-radius: 20px;
 
@@ -933,6 +974,14 @@ p.or:after {
 	}
 	.rightmenu .menugroup .button {
 		width: 200px;
+	}
+	/* Override: force right panels to stay at 860px */
+	.ps-room-right,
+	.ps-room[data-side="right"],
+	.mainmenuwrapper > .ps-room:nth-child(even) {
+		position: absolute !important;
+		left: 860px !important;
+		width: auto !important;
 	}
 }
 
