@@ -2,8 +2,8 @@
 
 	this.MainMenuRoom = this.Room.extend({
 		type: 'mainmenu',
-		tinyWidth: 860,
-		bestWidth: 860,
+		tinyWidth: 870,
+		bestWidth: 870,
 		events: {
 			'keydown textarea': 'keyDown',
 			'keyup textarea': 'keyUp',

@@ -90,9 +90,9 @@
 	exports.TeambuilderRoom = exports.Room.extend({
 		type: 'teambuilder',
 		title: 'Teambuilder',
-		bestWidth: 850,
-		minWidth: 850,
-		maxWidth: 850,
+		bestWidth: 870,
+		minWidth: 870,
+		maxWidth: 870,
 		initialize: function () {
 			teams = Storage.teams;
 			// left menu
