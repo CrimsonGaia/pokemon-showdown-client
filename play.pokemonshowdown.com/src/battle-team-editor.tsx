@@ -1809,6 +1809,7 @@ class TeamWizard extends preact.Component<{
 		this.handleSetChange();
 		ev.preventDefault();
 	};
+	dex: any;
 	changeFocus(focus: TeamEditorState['innerFocus']) {
 		const { editor } = this.props;
 		editor.innerFocus = focus;

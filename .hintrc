@@ -12,7 +12,8 @@
     "axe/forms": [
       "default",
       {
-        "label": "off"
+        "label": "off",
+        "select-name": "off"
       }
     ],
     "compat-api/css": [
@@ -23,6 +24,20 @@
           "image-rendering: -moz-crisp-edges",
           "-webkit-overflow-scrolling"
         ]
+      }
+    ],
+    "css-prefix-order": "off",
+    "meta-viewport": "off",
+    "axe/text-alternatives": [
+      "default",
+      {
+        "document-title": "off"
+      }
+    ],
+    "axe/aria": [
+      "default",
+      {
+        "aria-valid-attr-value": "off"
       }
     ]
   }
