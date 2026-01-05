@@ -1023,15 +1023,16 @@ export class BattleScene implements BattleSceneStub {
 
 		if (this.battle.weather) {
 			const weatherNameTable: { [id: string]: string } = {
-				sunnyday: 'Sun',
-				desolateland: 'Intense Sun',
-				raindance: 'Rain',
-				primordialsea: 'Heavy Rain',
-				sandstorm: 'Sandstorm',
-				hail: 'Hail',
-				snowscape: 'Snow',
-				deltastream: 'Strong Winds',
-				turbulentwinds: 'Turbulent Winds',
+				   sunnyday: 'Sun',
+				   desolateland: 'Intense Sun',
+				   raindance: 'Rain',
+				   primordialsea: 'Heavy Rain',
+				   sandstorm: 'Sandstorm',
+				   hail: 'Hail',
+				   snowscape: 'Snow',
+				   deltastream: 'Strong Winds',
+				   turbulentwinds: 'Turbulent Winds',
+				   toxicterrain: 'Toxic Terrain',
 			};
 			weatherhtml = `${weatherNameTable[this.battle.weather] || this.battle.weather}`;
 			if (this.battle.weatherMinTimeLeft !== 0) {
