@@ -3,7 +3,6 @@ function Storage() {}
 Storage.initialize = function () {
 	if (window.nodewebkit) {
 		window.fs = require('fs');
-
 		this.initDirectory();
 		this.startLoggingChat = this.nwStartLoggingChat;
 		this.stopLoggingChat = this.nwStopLoggingChat;
@@ -23,10 +22,8 @@ Storage.safeJSON = function (callback) {
 /*********************************************************
  * Background
  *********************************************************/
-
 // Backgrounds are handled separately from other prefs because
 // they're server-specific and should be loaded faster
-
 Storage.bg = {
 	id: '',
 	changeCount: 0,
@@ -34,31 +31,17 @@ Storage.bg = {
 	// because doing this once was annoying
 	MENU_BUTTONS: 7,
 	set: function (bgUrl, bgid, noSave) {
-		if (!this.load(bgUrl, bgid)) {
-			this.extractMenuColors(bgUrl, bgid, noSave);
-		} else if (bgid) {
-			try {
-				localStorage.setItem('showdown_bg', bgUrl + '\n' + bgid);
-			} catch (e) {}
-		} else {
-			try {
-				localStorage.removeItem('showdown_bg');
-			} catch (e) {}
-		}
+		if (!this.load(bgUrl, bgid)) { this.extractMenuColors(bgUrl, bgid, noSave); } 
+		else if (bgid) { try { localStorage.setItem('showdown_bg', bgUrl + '\n' + bgid); } catch (e) {} } 
+		else { try { localStorage.removeItem('showdown_bg'); } catch (e) {} }
 	},
-	/**
-	 * Load a background. Returns true if hues were loaded, or false if
-	 * they still need to be extracted using Color Thief.
-	 */
+	// Load a background. Returns true if hues were loaded, or false if they still need to be extracted using Color Thief.
 	load: function (bgUrl, bgid, hues) {
 		this.id = bgid;
 		if (!bgid) {
-			if (location.host === 'smogtours.psim.us') {
-				bgid = 'shaymin';
-			} else if (location.host === Config.routes.client) {
-				bgid = ['horizon', 'ocean', 'waterfall', 'shaymin', 'charizards', 'psday'][Math.floor(Math.random() * 6)];
-			} else {
-				$(document.body).css({
+			if (location.host === 'smogtours.psim.us') { bgid = 'shaymin'; } 
+			else if (location.host === Config.routes.client) { bgid = ['horizon', 'ocean', 'waterfall', 'shaymin', 'charizards', 'psday'][Math.floor(Math.random() * 6)]; } 
+			else { $(document.body).css({
 					background: '',
 					'background-size': ''
 				});
@@ -67,26 +50,19 @@ Storage.bg = {
 			}
 			bgUrl = Dex.resourcePrefix + 'fx/client-bg-' + bgid + '.jpg';
 		}
-
 		// April Fool's 2016 - Digimon theme
 		// bgid = 'digimon';
 		// bgUrl = Dex.resourcePrefix + 'sprites/afd/digimonbg.jpg';
-
 		var background;
-		if (bgUrl.charAt(0) === '#') {
-			background = bgUrl;
-		} else if (bgid !== 'custom') {
-			background = '#546bac url(' + bgUrl + ') no-repeat left center fixed';
-		} else {
-			background = '#546bac url(' + bgUrl + ') no-repeat center center fixed';
-		}
+		if (bgUrl.charAt(0) === '#') { background = bgUrl; } 
+		else if (bgid !== 'custom') { background = '#546bac url(' + bgUrl + ') no-repeat left center fixed'; } 
+		else { background = '#546bac url(' + bgUrl + ') no-repeat center center fixed'; }
 		$(document.body).css({
 			background: background,
 			'background-size': 'cover'
 		});
 		var attrib = '';
 		this.changeCount++;
-
 		if (!hues) {
 			switch (bgid) {
 			case 'horizon':
@@ -127,9 +103,7 @@ Storage.bg = {
 			hues = [];
 			for (var i = 0; i < Storage.bg.MENU_BUTTONS; i++) hues.push(hs);
 		}
-		if (hues) {
-			this.loadHues(hues);
-		}
+		if (hues) { this.loadHues(hues); }
 		return !!hues;
 	},
 	loadHues: function (hues) {
@@ -149,28 +123,23 @@ Storage.bg = {
 		// We need the image object to load it on a canvas to detect the main color.
 		var img = new Image();
 		img.onload = function () {
-			// in case ColorThief throws from canvas,
-			// or localStorage throws
+			// in case ColorThief throws from canvas, or localStorage throws
 			try {
 				var colorThief = new ColorThief();
 				var colors = colorThief.getPalette(img, Storage.bg.MENU_BUTTONS);
 				window.colors = colors;
-
 				var hues = [];
 				if (!colors) {
 					hues = [];
 					for (var i = 0; i < Storage.bg.MENU_BUTTONS; i++) hues.push('0, 0%');
-				} else {
-					for (var i = 0; i < Storage.bg.MENU_BUTTONS; i++) {
+				} else { for (var i = 0; i < Storage.bg.MENU_BUTTONS; i++) {
 						var color = colors[i];
 						var hs = Storage.bg.getHueSat(color[0] / 255, color[1] / 255, color[2] / 255);
 						hues.unshift(hs);
 					}
 				}
 				Storage.bg.loadHues(hues);
-				if (!noSave && Storage.bg.changeCount === changeCount) {
-					localStorage.setItem('showdown_bg', bgUrl + '\n' + Storage.bg.id + '\n' + hues.join('\n'));
-				}
+				if (!noSave && Storage.bg.changeCount === changeCount) { localStorage.setItem('showdown_bg', bgUrl + '\n' + Storage.bg.id + '\n' + hues.join('\n')); }
 			} catch (e) {}
 		};
 		img.src = bgUrl;
@@ -181,9 +150,7 @@ Storage.bg = {
 		var h;
 		var s;
 		var l = (max + min) / 2;
-		if (max === min) {
-			return '0, 0%';
-		}
+		if (max === min) { return '0, 0%'; }
 		var d = max - min;
 		s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
 		switch (max) {
@@ -195,7 +162,6 @@ Storage.bg = {
 		return '' + (h * 360) + ',' + (s * 100) + '%';
 	}
 };
-
 try {
 	var bg = localStorage.getItem('showdown_bg').split('\n');
 	if (bg.length >= 2) {
@@ -203,70 +169,36 @@ try {
 		if (bg.length >= 7) Storage.bg.loadHues(bg.slice(2));
 	}
 } catch (e) {}
+if (!Storage.bg.id) { Storage.bg.load(); }
 
-if (!Storage.bg.id) {
-	Storage.bg.load();
-}
-
-/*********************************************************
- * Prefs
- *********************************************************/
-
-// Prefs are canonically stored in showdown_prefs in localStorage
-// in the origin https://play.pokemonshowdown.com
-
-// We try loading things from the origin, anyway, in case third-party
-// localStorage is banned, and since prefs are cached in other
-// places in certain cases.
-
+//region Prefs
+// Prefs are canonically stored in showdown_prefs in localStorage in the origin https://play.pokemonshowdown.com
+// We try loading things from the origin, anyway, in case third-party localStorage is banned, and since prefs are cached in other places in certain cases.
 Storage.origin = 'https://' + Config.routes.client;
-
 Storage.prefs = function (prop, value, save) {
-	if (value === undefined) {
-		// get preference
-		return this.prefs.data[prop];
-	}
-	// set preference
-	if (value === null) {
-		delete this.prefs.data[prop];
-	} else if (this.prefs.data[prop] === value && typeof value !== 'object') {
-		return false; // no need to save
-	} else {
-		this.prefs.data[prop] = value;
-	}
+	if (value === undefined) { return this.prefs.data[prop]; } // get preference
+	if (value === null) { delete this.prefs.data[prop]; } // set preference
+	else if (this.prefs.data[prop] === value && typeof value !== 'object') { return false; } // no need to save
+	else { this.prefs.data[prop] = value; }
 	if (save !== false) this.prefs.save();
 	return true;
 };
-
 Storage.prefs.data = {};
-try {
-	if (window.localStorage) {
-		Storage.prefs.data = JSON.parse(localStorage.getItem('showdown_prefs')) || {};
-	}
-} catch (e) {}
-
-Storage.prefs.save = function () {
-	try {
-		localStorage.setItem('showdown_prefs', JSON.stringify(this.data));
-	} catch (e) {}
+try { if (window.localStorage) { Storage.prefs.data = JSON.parse(localStorage.getItem('showdown_prefs')) || {}; } } 
+catch (e) {}
+Storage.prefs.save = function () { 
+	try { localStorage.setItem('showdown_prefs', JSON.stringify(this.data)); } 
+	catch (e) {} 
 };
-
 /**
- * Load trackers are loosely based on Promises, but very simplified.
- * Trackers are made with: let tracker = Dex.makeLoadTracker();
- * Pass callbacks like so: tracker(callback)
- * When tracker.load() is called, all callbacks are run.
- * If tracker.load() has already been called, tracker(callback) will
- * call the callback instantly.
+ * Load trackers are loosely based on Promises, but very simplified. Trackers are made with: let tracker = Dex.makeLoadTracker(); Pass callbacks like so: tracker(callback)
+ * When tracker.load() is called, all callbacks are run. If tracker.load() has already been called, tracker(callback) will call the callback instantly.
  */
 Storage.makeLoadTracker = function () {
 	/** @type {(callback: (this: C, value: T) => void, context: C) => LoadTracker) & {isLoaded: boolean, value: T | undefined, load: (value: T) => void, unload: () => void, callbacks: [(value: T) => void, C][]}} */
 	var tracker = function (callback, context) {
-		if (tracker.isLoaded) {
-			callback.call(context, tracker.value);
-		} else {
-			tracker.callbacks.push([callback, context]);
-		}
+		if (tracker.isLoaded) { callback.call(context, tracker.value); } 
+		else { tracker.callbacks.push([callback, context]); }
 		return tracker;
 	};
 	tracker.callbacks = [];
@@ -294,73 +226,51 @@ Storage.makeLoadTracker = function () {
 	};
 	return tracker;
 };
-
 Storage.whenPrefsLoaded = Storage.makeLoadTracker();
 Storage.whenTeamsLoaded = Storage.makeLoadTracker();
 Storage.whenAppLoaded = Storage.makeLoadTracker();
-
 var updatePrefs = function () {
 	var oldShowjoins = Storage.prefs('showjoins');
 	if (oldShowjoins !== undefined && typeof oldShowjoins !== 'object') {
 		var showjoins = {};
 		var serverShowjoins = { global: (oldShowjoins ? 1 : 0) };
 		var showroomjoins = Storage.prefs('showroomjoins');
-		for (var roomid in showroomjoins) {
-			serverShowjoins[roomid] = (showroomjoins[roomid] ? 1 : 0);
-		}
+		for (var roomid in showroomjoins) { serverShowjoins[roomid] = (showroomjoins[roomid] ? 1 : 0); }
 		Storage.prefs('showroomjoins', null);
 		showjoins[Config.server.id] = serverShowjoins;
 		Storage.prefs('showjoins', showjoins, true);
 	}
-
 	var isChrome64 = navigator.userAgent.includes(' Chrome/64.');
 	if (Storage.prefs('nogif') !== undefined) {
-		if (!isChrome64) {
-			Storage.prefs('nogif', null);
-		}
+		if (!isChrome64) { Storage.prefs('nogif', null); }
 	} else if (isChrome64) {
 		Storage.prefs('nogif', true);
-		Storage.whenAppLoaded(function () {
-			app.addPopupMessage('Your version of Chrome has a bug that makes animated GIFs freeze games sometimes, so certain animations have been disabled. Only some people have the problem, so you can experiment and enable them in the Options menu setting "Disable GIFs for Chrome 64 bug".');
-		});
+		Storage.whenAppLoaded(function () { app.addPopupMessage('Your version of Chrome has a bug that makes animated GIFs freeze games sometimes, so certain animations have been disabled. Only some people have the problem, so you can experiment and enable them in the Options menu setting "Disable GIFs for Chrome 64 bug".'); });
 	}
-
 	var colorSchemeQuerySupported = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').media !== 'not all';
-	if (Storage.prefs('theme') === 'system' && !colorSchemeQuerySupported) {
-		Storage.prefs('theme', null);
-	}
+	if (Storage.prefs('theme') === 'system' && !colorSchemeQuerySupported) { Storage.prefs('theme', null); }
 	if (Storage.prefs('dark') !== undefined) {
-		if (Storage.prefs('dark')) {
-			Storage.prefs('theme', 'dark');
-		}
+		if (Storage.prefs('dark')) { Storage.prefs('theme', 'dark');	}
 		Storage.prefs('dark', null);
 	}
 };
 Storage.whenPrefsLoaded(updatePrefs);
-
 Storage.initPrefs = function () {
 	Storage.loadTeams();
-	if (Config.testclient) {
-		return this.initTestClient();
-	} else if (location.protocol + '//' + location.hostname === Storage.origin) {
+	if (Config.testclient) { return this.initTestClient(); } 
+	else if (location.protocol + '//' + location.hostname === Storage.origin) {
 		// Same origin, everything can be kept as default
 		Config.server = Config.server || Config.defaultserver;
 		this.whenPrefsLoaded.load();
 		if (!window.nodewebkit) this.whenTeamsLoaded.load();
 		return;
 	}
-
-	// Cross-origin
-
+	//region Cross-origin
 	if (!('postMessage' in window)) {
 		// browser does not support cross-document messaging
-		return Storage.whenAppLoaded(function (app) {
-			app.trigger('init:unsupported');
-		});
+		return Storage.whenAppLoaded(function (app) { app.trigger('init:unsupported'); });
 	}
-
 	$(window).on('message', Storage.onMessage);
-
 	if (document.location.hostname !== Config.routes.client) {
 		$(
 			'<iframe src="https://' + Config.routes.client + '/crossdomain.php?host=' +
@@ -371,13 +281,9 @@ Storage.initPrefs = function () {
 		).appendTo('body');
 	} else {
 		Config.server = Config.server || Config.defaultserver;
-		$(
-			'<iframe src="https://' + Config.routes.client + '/crossprotocol.html?v1.2" style="display: none;"></iframe>'
-		).appendTo('body');
+		$('<iframe src="https://' + Config.routes.client + '/crossprotocol.html?v1.2" style="display: none;"></iframe>').appendTo('body');
 		setTimeout(function () {
-			// HTTPS may be blocked
-			// yes, this happens, blame Avast! and BitDefender and other antiviruses
-			// that feel a need to MitM HTTPS poorly
+			// HTTPS may be blocked. yes, this happens, blame Avast! and BitDefender and other antiviruses that feel a need to MitM HTTPS poorly
 			Storage.whenPrefsLoaded.load();
 			if (!Storage.whenTeamsLoaded.isLoaded) {
 				Storage.whenTeamsLoaded.error = 'stalled';
@@ -386,14 +292,12 @@ Storage.initPrefs = function () {
 		}, 2000);
 	}
 };
-
 Storage.crossOriginFrame = null;
 Storage.crossOriginRequests = {};
 Storage.crossOriginRequestCount = 0;
 Storage.onMessage = function ($e) {
 	var e = $e.originalEvent;
 	if (e.origin !== Storage.origin) return;
-
 	Storage.crossOriginFrame = e.source;
 	var data = e.data;
 	switch (data.charAt(0)) {
@@ -412,44 +316,29 @@ Storage.onMessage = function ($e) {
 		Storage.prefs.save = function () {
 			var prefData = JSON.stringify(this.data);
 			Storage.postCrossOriginMessage('P' + prefData);
-
 			// in Safari, cross-origin local storage is apparently treated as session
 			// storage, so mirror the storage in the current origin just in case
-			try {
-				localStorage.setItem('showdown_prefs', prefData);
-			} catch (e) {}
+			try { localStorage.setItem('showdown_prefs', prefData); } catch (e) {}
 		};
 		Storage.whenPrefsLoaded.load();
 		break;
 	case 't':
 		if (window.nodewebkit) return;
 		var oldTeams;
-		if (Storage.teams && Storage.teams.length) {
-			// Teams are still stored in the old location; merge them with the
-			// new teams.
-			oldTeams = Storage.teams;
-		}
+		if (Storage.teams && Storage.teams.length) { oldTeams = Storage.teams; } // Teams are still stored in the old location; merge them with the new teams.
 		Storage.loadPackedTeams(data.substr(1));
 		Storage.saveTeams = function () {
 			var packedTeams = Storage.packAllTeams(Storage.teams);
 			Storage.postCrossOriginMessage('T' + packedTeams);
-
-			// in Safari, cross-origin local storage is apparently treated as session
-			// storage, so mirror the storage in the current origin just in case
-			if (document.location.hostname === Config.routes.client) {
-				try {
-					localStorage.setItem('showdown_teams_local', packedTeams);
-				} catch (e) {}
-			}
+			// in Safari, cross-origin local storage is apparently treated as session storage, so mirror the storage in the current origin just in case
+			if (document.location.hostname === Config.routes.client) { try { localStorage.setItem('showdown_teams_local', packedTeams); } catch (e) {} }
 		};
 		if (oldTeams) {
 			Storage.teams = Storage.teams.concat(oldTeams);
 			Storage.saveTeams();
 			localStorage.removeItem('showdown_teams');
 		}
-		if (data === 'tnull' && !Storage.teams.length) {
-			Storage.loadPackedTeams(localStorage.getItem('showdown_teams_local'));
-		}
+		if (data === 'tnull' && !Storage.teams.length) { Storage.loadPackedTeams(localStorage.getItem('showdown_teams_local')); }
 		Storage.whenTeamsLoaded.load();
 		break;
 	case 'a':
@@ -460,16 +349,9 @@ Storage.onMessage = function ($e) {
 		}
 		if (!window.nodewebkit) {
 			// for whatever reason, Node-Webkit doesn't let us make remote
-			// Ajax requests or something. Oh well, making them direct
-			// isn't a problem, either.
-
-			try {
-				// I really hope this is a Chrome bug that this can fail
-				Storage.crossOriginFrame.postMessage("", Storage.origin);
-			} catch (e) {
-				return;
-			}
-
+			// Ajax requests or something. Oh well, making them direct isn't a problem, either.
+			try { Storage.crossOriginFrame.postMessage("", Storage.origin); } // I really hope this is a Chrome bug that this can fail
+			catch (e) { return; }
 			$.get = function (uri, data, callback, type) {
 				var idx = Storage.crossOriginRequestCount++;
 				Storage.crossOriginRequests[idx] = callback;
@@ -493,10 +375,8 @@ Storage.onMessage = function ($e) {
 	}
 };
 Storage.postCrossOriginMessage = function (data) {
-	try {
-		// I really hope this is a Chrome bug that this can fail
-		return Storage.crossOriginFrame.postMessage(data, Storage.origin);
-	} catch (err) {
+	try { return Storage.crossOriginFrame.postMessage(data, Storage.origin); } // I really hope this is a Chrome bug that this can fail
+	catch (err) {
 		Storage.whenPrefsLoaded.load();
 		if (!Storage.whenTeamsLoaded.isLoaded) {
 			Storage.whenTeamsLoaded.error = err;
@@ -505,59 +385,37 @@ Storage.postCrossOriginMessage = function (data) {
 	}
 	return false;
 };
-
-// Test client
-
+//region Test client
 Storage.initTestClient = function () {
 	Config.server = Config.server || Config.defaultserver;
 	Storage.whenTeamsLoaded.load();
-
 	var sid = null;
-	if (typeof POKEMON_SHOWDOWN_TESTCLIENT_KEY === 'string') {
-		sid = POKEMON_SHOWDOWN_TESTCLIENT_KEY.replace(/\%2C/g, ',');
-	}
-
+	if (typeof POKEMON_SHOWDOWN_TESTCLIENT_KEY === 'string') { sid = POKEMON_SHOWDOWN_TESTCLIENT_KEY.replace(/\%2C/g, ','); }
 	Storage.whenAppLoaded(function (app) {
 		var get = $.get;
 		$.get = function (uri, data, callback, type) {
-			if (type === 'html') {
-				uri += '&testclient';
-			}
+			if (type === 'html') { uri += '&testclient'; }
 			if (data) {
 				uri += '?testclient';
-				for (var i in data) {
-					uri += '&' + i + '=' + encodeURIComponent(data[i]);
-				}
+				for (var i in data) { uri += '&' + i + '=' + encodeURIComponent(data[i]); }
 			}
-			if (uri[0] === '/') { // relative URI
-				uri = Dex.resourcePrefix + uri.substr(1);
-			}
-
+			if (uri[0] === '/') { uri = Dex.resourcePrefix + uri.substr(1); } // relative URI
 			if (sid) {
 				data.sid = sid;
 				get(uri, data, callback, type);
-			} else {
-				app.addPopup(ProxyPopup, { uri: uri, callback: callback });
-			}
+			} else { app.addPopup(ProxyPopup, { uri: uri, callback: callback }); }
 		};
 		var post = $.post;
 		$.post = function (uri, data, callback, type) {
-			if (type === 'html') {
-				uri += '&testclient';
-			}
-			if (uri[0] === '/') { // relative URI
-				uri = Dex.resourcePrefix + uri.substr(1);
-			}
-
+			if (type === 'html') { uri += '&testclient'; }
+			if (uri[0] === '/') {  uri = Dex.resourcePrefix + uri.substr(1); } // relative URI
 			if (sid) {
 				data.sid = sid;
 				post(uri, data, callback, type);
 			} else {
 				var src = '<!DOCTYPE html><html><body><form action="' + BattleLog.escapeHTML(uri) + '" method="POST">';
 				src += '<input type="hidden" name="testclient">';
-				for (var i in data) {
-					src += '<input type=hidden name="' + i + '" value="' + BattleLog.escapeHTML(data[i]) + '">';
-				}
+				for (var i in data) { src += '<input type=hidden name="' + i + '" value="' + BattleLog.escapeHTML(data[i]) + '">'; }
 				src += '<input type=submit value="Please click this button first."></form></body></html>';
 				app.addPopup(ProxyPopup, { uri: "data:text/html;charset=UTF-8," + encodeURIComponent(src), callback: callback });
 			}
@@ -565,31 +423,14 @@ Storage.initTestClient = function () {
 		Storage.whenPrefsLoaded.load();
 	});
 };
-
-/*********************************************************
- * Teams
- *********************************************************/
-
-/**
- * Teams are normally loaded from `localStorage`.
- * If the client isn't running on `play.pokemonshowdown.com`, though,
- * teams are received from `crossdomain.php` instead.
- */
-
+//region Teams
+// Teams are normally loaded from `localStorage`. If the client isn't running on `play.pokemonshowdown.com`, though, teams are received from `crossdomain.php` instead.
 Storage.teams = null;
-
 Storage.loadTeams = function () {
-	if (window.nodewebkit) {
-		return;
-	}
+	if (window.nodewebkit) { return; }
 	this.teams = [];
-	try {
-		if (window.localStorage) {
-			Storage.loadPackedTeams(localStorage.getItem('showdown_teams'));
-		}
-	} catch (e) {}
+	try { if (window.localStorage) { Storage.loadPackedTeams(localStorage.getItem('showdown_teams')); } } catch (e) {}
 };
-
 /** returns false to add the team, true to not add it, 'rename' to add it under a diff name */
 Storage.compareTeams = function (serverTeam, localTeam) {
 	// if titles match exactly and mons are the same, assume they're the same team
@@ -606,53 +447,37 @@ Storage.compareTeams = function (serverTeam, localTeam) {
 			}
 		}
 	}
-	var sanitize = function (name) {
-		return (name || "").replace(/\s+\(server version\)/g, '').trim();
-	};
+	var sanitize = function (name) { return (name || "").replace(/\s+\(server version\)/g, '').trim(); };
 	var nameMatches = sanitize(serverTeam.name) === sanitize(localTeam.name);
-	if (!(nameMatches && serverTeam.format === localTeam.format)) {
-		return false;
-	}
-	// if it's been edited since, invalidate the team id on this one (count it as new)
-	// and load from server
+	if (!(nameMatches && serverTeam.format === localTeam.format)) { return false; }
+	// if it's been edited since, invalidate the team id on this one (count it as new) and load from server
 	if (mons.length !== otherMons.length || matches !== otherMons.length) return 'rename';
 	if (serverTeam.teamid === localTeam.teamid && localTeam.teamid) return true;
 	return true;
 };
-
 Storage.loadRemoteTeams = function (after) {
 	$.get(app.user.getActionPHP(), { act: 'getteams' }, Storage.safeJSON(function (data) {
-		if (data.actionerror) {
-			return app.addPopupMessage('Error loading uploaded teams: ' + data.actionerror);
-		}
+		if (data.actionerror) { return app.addPopupMessage('Error loading uploaded teams: ' + data.actionerror); }
 		for (var i = 0; i < data.teams.length; i++) {
 			var team = data.teams[i];
 			var matched = false;
 			for (var j = 0; j < Storage.teams.length; j++) {
 				var curTeam = Storage.teams[j];
 				var match = Storage.compareTeams(team, curTeam);
-				if (match === true) {
-					// prioritize locally saved teams over remote
-					// as so to not overwrite changes
+				if (match === true) { // prioritize locally saved teams over remote as so to not overwrite changes
 					matched = true;
 					break;
 				}
 				if (match === 'rename') {
 					delete curTeam.teamid;
-					if (!team.name.endsWith(' (server version)')) {
-						team.name += ' (server version)';
-					}
+					if (!team.name.endsWith(' (server version)')) { team.name += ' (server version)'; }
 				}
 			}
 			team.loaded = false;
-			if (!matched) {
-				// hack so that it shows up in the format selector list
+			if (!matched) { // hack so that it shows up in the format selector list
 				team.folder = '';
-				// team comes down from loginserver as comma-separated list of mons
-				// to save bandwidth
-				var mons = team.team.split(',').map(function (mon) {
-					return { species: mon };
-				});
+				// team comes down from loginserver as comma-separated list of mons to save bandwidth
+				var mons = team.team.split(',').map(function (mon) { return { species: mon }; });
 				team.team = Storage.packTeam(mons);
 				Storage.teams.unshift(team);
 			}
@@ -660,7 +485,6 @@ Storage.loadRemoteTeams = function (after) {
 		if (typeof after === 'function') after();
 	}));
 };
-
 Storage.loadPackedTeams = function (buffer) {
 	try {
 		this.teams = Storage.unpackAllTeams(buffer);
@@ -673,7 +497,6 @@ Storage.loadPackedTeams = function (buffer) {
 		});
 	}
 };
-
 Storage.saveTeams = function () {
 	try {
 		if (window.localStorage) {
@@ -681,44 +504,24 @@ Storage.saveTeams = function () {
 			Storage.cantSave = false;
 		}
 	} catch (e) {
-		if (e.code === DOMException.QUOTA_EXCEEDED_ERR) {
-			Storage.cantSave = true;
-		} else {
-			throw e;
-		}
+		if (e.code === DOMException.QUOTA_EXCEEDED_ERR) { Storage.cantSave = true; } 
+		else { throw e; }
 	}
 };
-
 Storage.getPackedTeams = function () {
 	var packedTeams = '';
-	try {
-		packedTeams = localStorage.getItem('showdown_teams');
-	} catch (e) {}
+	try { packedTeams = localStorage.getItem('showdown_teams'); } 
+	catch (e) {}
 	if (packedTeams) return packedTeams;
 	return Storage.packAllTeams(this.teams);
 };
-
-Storage.saveTeam = function () {
-	this.saveTeams();
-};
-
-Storage.deleteTeam = function () {
-	this.saveTeams();
-};
-
-Storage.saveAllTeams = function () {
-	this.saveTeams();
-};
-
+Storage.saveTeam = function () { this.saveTeams(); };
+Storage.deleteTeam = function () { this.saveTeams(); };
+Storage.saveAllTeams = function () { this.saveTeams(); };
 Storage.deleteAllTeams = function () {};
-
-/*********************************************************
- * Team importing and exporting
- *********************************************************/
-
+//region Team importing and exporting
 Storage.unpackAllTeams = function (buffer) {
 	if (!buffer) return [];
-
 	if (buffer.charAt(0) === '[' && $.trim(buffer).indexOf('\n') < 0) {
 		// old format
 		return JSON.parse(buffer).map(function (oldTeam) {
@@ -740,10 +543,8 @@ Storage.unpackAllTeams = function (buffer) {
 			};
 		});
 	}
-
 	return buffer.split('\n').map(Storage.unpackLine).filter(function (v) { return v; });
 };
-
 Storage.unpackLine = function (line) {
 	var leftBracketIndex = line.indexOf('[');
 	if (leftBracketIndex < 0) leftBracketIndex = 0;
@@ -768,7 +569,6 @@ Storage.unpackLine = function (line) {
 		iconCache: ''
 	};
 };
-
 Storage.packAllTeams = function (teams) {
 	return teams.map(function (team) {
 		return (
@@ -779,29 +579,22 @@ Storage.packAllTeams = function (teams) {
 		);
 	}).join('\n');
 };
-
 Storage.packTeam = function (team) {
 	var buf = '';
 	if (!team) return '';
-
 	var hasHP;
 	for (var i = 0; i < team.length; i++) {
 		var set = team[i];
 		if (buf) buf += ']';
-
 		// name
 		buf += set.name || set.species;
-
 		// species
 		var id = toID(set.species);
 		buf += '|' + (toID(set.name || set.species) === id ? '' : id);
-
 		// item
 		buf += '|' + toID(set.item);
-
 		// ability
 		buf += '|' + toID(set.ability);
-
 		// moves
 		buf += '|';
 		if (set.moves) for (var j = 0; j < set.moves.length; j++) {
@@ -810,62 +603,32 @@ Storage.packTeam = function (team) {
 			buf += (j ? ',' : '') + moveid;
 			if (moveid.substr(0, 11) === 'hiddenpower' && moveid.length > 11) hasHP = true;
 		}
-
 		// nature
 		buf += '|' + (set.nature || '');
-
 		// evs
 		var evs = '|';
-		if (set.evs) {
-			evs = '|' + (set.evs['hp'] || '') + ',' + (set.evs['atk'] || '') + ',' + (set.evs['def'] || '') + ',' + (set.evs['spa'] || '') + ',' + (set.evs['spd'] || '') + ',' + (set.evs['spe'] || '');
-		}
+		if (set.evs) { evs = '|' + (set.evs['hp'] || '') + ',' + (set.evs['atk'] || '') + ',' + (set.evs['def'] || '') + ',' + (set.evs['spa'] || '') + ',' + (set.evs['spd'] || '') + ',' + (set.evs['spe'] || ''); }
 		if (evs === '|,,,,,') {
 			buf += '|';
-			// doing it this way means packTeam doesn't need to be past-gen aware
-			if (set.evs['hp'] === 0) buf += '0';
-		} else {
-			buf += evs;
-		}
-
+			if (set.evs['hp'] === 0) buf += '0'; // doing it this way means packTeam doesn't need to be past-gen aware
+		} else { buf += evs; }
 		// gender
-		if (set.gender) {
-			buf += '|' + set.gender;
-		} else {
-			buf += '|';
-		}
-
+		if (set.gender) { buf += '|' + set.gender; } 
+		else { buf += '|'; }
 		// ivs
 		var ivs = '|';
-		if (set.ivs) {
-			ivs = '|' + (set.ivs['hp'] === 31 || set.ivs['hp'] === undefined ? '' : set.ivs['hp']) + ',' + (set.ivs['atk'] === 31 || set.ivs['atk'] === undefined ? '' : set.ivs['atk']) + ',' + (set.ivs['def'] === 31 || set.ivs['def'] === undefined ? '' : set.ivs['def']) + ',' + (set.ivs['spa'] === 31 || set.ivs['spa'] === undefined ? '' : set.ivs['spa']) + ',' + (set.ivs['spd'] === 31 || set.ivs['spd'] === undefined ? '' : set.ivs['spd']) + ',' + (set.ivs['spe'] === 31 || set.ivs['spe'] === undefined ? '' : set.ivs['spe']);
-		}
-		if (ivs === '|,,,,,') {
-			buf += '|';
-		} else {
-			buf += ivs;
-		}
-
+		if (set.ivs) { ivs = '|' + (set.ivs['hp'] === 31 || set.ivs['hp'] === undefined ? '' : set.ivs['hp']) + ',' + (set.ivs['atk'] === 31 || set.ivs['atk'] === undefined ? '' : set.ivs['atk']) + ',' + (set.ivs['def'] === 31 || set.ivs['def'] === undefined ? '' : set.ivs['def']) + ',' + (set.ivs['spa'] === 31 || set.ivs['spa'] === undefined ? '' : set.ivs['spa']) + ',' + (set.ivs['spd'] === 31 || set.ivs['spd'] === undefined ? '' : set.ivs['spd']) + ',' + (set.ivs['spe'] === 31 || set.ivs['spe'] === undefined ? '' : set.ivs['spe']); }
+		if (ivs === '|,,,,,') { buf += '|'; } 
+		else { buf += ivs; }
 		// shiny
-		if (set.shiny) {
-			buf += '|S';
-		} else {
-			buf += '|';
-		}
-
+		if (set.shiny) { buf += '|S'; } 
+		else { buf += '|'; }
 		// level
-		if (set.level && set.level !== 100) {
-			buf += '|' + set.level;
-		} else {
-			buf += '|';
-		}
-
+		if (set.level && set.level !== 100) { buf += '|' + set.level; } 
+		else { buf += '|'; }
 		// happiness
-		if (set.happiness !== undefined && set.happiness !== 255) {
-			buf += '|' + set.happiness;
-		} else {
-			buf += '|';
-		}
-
+		if (set.happiness !== undefined && set.happiness !== 255) { buf += '|' + set.happiness; } 
+		else { buf += '|'; }
 		if (set.pokeball || (set.hpType && !hasHP) || set.gigantamax || (set.dynamaxLevel !== undefined && set.dynamaxLevel !== 10) || set.teraType || set.ability2 || set.abilitySet) {
 			buf += ',' + (set.hpType || '');
 			buf += ',' + toID(set.pokeball);
@@ -876,59 +639,44 @@ Storage.packTeam = function (team) {
 			buf += ',' + (set.abilitySet || '');
 		}
 	}
-
 	return buf;
 };
-
 Storage.fastUnpackTeam = function (buf) {
 	if (!buf) return [];
-
 	var team = [];
 	var i = 0, j = 0;
-
 	while (true) {
 		var set = {};
 		team.push(set);
-
 		// name
 		j = buf.indexOf('|', i);
 		set.name = buf.substring(i, j);
 		i = j + 1;
-
 		// species
 		j = buf.indexOf('|', i);
 		var species = Dex.species.get(buf.substring(i, j) || set.name);
 		set.species = species.name;
 		i = j + 1;
-
 		// item
 		j = buf.indexOf('|', i);
 		set.item = buf.substring(i, j);
 		i = j + 1;
-
 		// ability
 		j = buf.indexOf('|', i);
 		var ability = buf.substring(i, j);
 		if (species.baseSpecies === 'Zygarde' && ability === 'H') ability = 'Power Construct';
 		set.ability = (species.abilities && ['', '0', '1', 'H', 'S'].includes(ability) ? species.abilities[ability] || '!!!ERROR!!!' : ability);
 		i = j + 1;
-
 		// moves
 		j = buf.indexOf('|', i);
 		set.moves = buf.substring(i, j).split(',');
 		i = j + 1;
-
 		// nature
 		j = buf.indexOf('|', i);
 		set.nature = buf.substring(i, j);
 		if (set.nature === 'undefined') set.nature = undefined;
-		if (set.nature) {
-			// BattleNatures is case sensitive, so if we don't do this
-			// sometimes stuff breaks. goody.
-			set.nature = set.nature.charAt(0).toUpperCase() + set.nature.slice(1);
-		}
+		if (set.nature) { set.nature = set.nature.charAt(0).toUpperCase() + set.nature.slice(1); } // BattleNatures is case sensitive, so if we don't do this sometimes stuff breaks. goody.
 		i = j + 1;
-
 		// evs
 		j = buf.indexOf('|', i);
 		if (j !== i) {
@@ -943,17 +691,13 @@ Storage.fastUnpackTeam = function (buf) {
 					spd: Number(evs[4]) || 0,
 					spe: Number(evs[5]) || 0
 				};
-			} else if (evstring === '0') {
-				set.evs = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
-			}
+			} else if (evstring === '0') { set.evs = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }; }
 		}
 		i = j + 1;
-
 		// gender
 		j = buf.indexOf('|', i);
 		if (i !== j) set.gender = buf.substring(i, j);
 		i = j + 1;
-
 		// ivs
 		j = buf.indexOf('|', i);
 		if (j !== i) {
@@ -968,25 +712,19 @@ Storage.fastUnpackTeam = function (buf) {
 			};
 		}
 		i = j + 1;
-
 		// shiny
 		j = buf.indexOf('|', i);
 		if (i !== j) set.shiny = true;
 		i = j + 1;
-
 		// level
 		j = buf.indexOf('|', i);
 		if (i !== j) set.level = parseInt(buf.substring(i, j), 10);
 		i = j + 1;
-
 		// happiness
 		j = buf.indexOf(']', i);
 		var misc = undefined;
-		if (j < 0) {
-			if (i < buf.length) misc = buf.substring(i).split(',', 8);
-		} else {
-			if (i !== j) misc = buf.substring(i, j).split(',', 8);
-		}
+		if (j < 0) { if (i < buf.length) misc = buf.substring(i).split(',', 8); } 
+		else { if (i !== j) misc = buf.substring(i, j).split(',', 8); }
 		if (misc) {
 			set.happiness = (misc[0] ? Number(misc[0]) : 255);
 			set.hpType = misc[1];
@@ -1000,60 +738,43 @@ Storage.fastUnpackTeam = function (buf) {
 		if (j < 0) break;
 		i = j + 1;
 	}
-
 	return team;
 };
-
 Storage.unpackTeam = function (buf) {
 	if (!buf) return [];
-
 	var team = [];
 	var i = 0, j = 0;
-
 	while (true) {
 		var set = {};
 		team.push(set);
-
 		// name
 		j = buf.indexOf('|', i);
 		set.name = buf.substring(i, j);
 		i = j + 1;
-
 		// species
 		j = buf.indexOf('|', i);
 		var species = Dex.species.get(buf.substring(i, j) || set.name);
 		set.species = species.name;
 		i = j + 1;
-
 		// item
 		j = buf.indexOf('|', i);
 		set.item = Dex.items.get(buf.substring(i, j)).name;
 		i = j + 1;
-
 		// ability
 		j = buf.indexOf('|', i);
 		var ability = Dex.abilities.get(buf.substring(i, j)).name;
 		set.ability = (species.abilities && ability in { '': 1, 0: 1, 1: 1, H: 1 } ? species.abilities[ability || '0'] : ability);
 		i = j + 1;
-
 		// moves
 		j = buf.indexOf('|', i);
-		set.moves = buf.substring(i, j).split(',').map(function (moveid) {
-			return Dex.moves.get(moveid).name;
-		});
+		set.moves = buf.substring(i, j).split(',').map(function (moveid) { return Dex.moves.get(moveid).name; });
 		i = j + 1;
-
 		// nature
 		j = buf.indexOf('|', i);
 		set.nature = buf.substring(i, j);
 		if (set.nature === 'undefined') set.nature = undefined;
-		if (set.nature) {
-			// BattleNatures is case sensitive, so if we don't do this
-			// sometimes stuff breaks. goody.
-			set.nature = set.nature.charAt(0).toUpperCase() + set.nature.slice(1);
-		}
+		if (set.nature) { set.nature = set.nature.charAt(0).toUpperCase() + set.nature.slice(1); } // BattleNatures is case sensitive, so if we don't do this sometimes stuff breaks. goody.
 		i = j + 1;
-
 		// evs
 		j = buf.indexOf('|', i);
 		if (j !== i) {
@@ -1068,9 +789,7 @@ Storage.unpackTeam = function (buf) {
 					spd: Number(evs[4]) || 0,
 					spe: Number(evs[5]) || 0
 				};
-			} else if (evstring === '0') {
-				set.evs = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
-			}
+			} else if (evstring === '0') { set.evs = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }; }
 		}
 		i = j + 1;
 
