@@ -1,7 +1,5 @@
 /**
- * Search
- * Code for searching for dex information, used by the Dex and
- * Teambuilder.
+ * Search code for searching for dex information, used by the Dex and Teambuilder.
  * Dependencies: battledata, search-index
  * Optional dependencies: pokedex, moves, items, abilities
  * @author Guangcong Luo <guangcongluo@gmail.com>
@@ -9,7 +7,6 @@
  */
 import { Dex, type ModdedDex, toID, type ID } from "./battle-dex";
 export type SearchType = ( 'pokemon' | 'type' | 'tier' | 'move' | 'flag' | 'item' | 'ability' | 'egggroup' | 'category' | 'article' | 'itemclass' );
-
 export type SearchRow = ( [SearchType, ID, number?, number?] | ['sortpokemon' | 'sortmove', ''] | ['header' | 'html', string] );
 type SearchFilter = [string, string];
 /** ID, SearchType, index (if alias), offset (if offset alias) */
@@ -20,15 +17,11 @@ declare const BattleTeambuilderTable: any;
 export class DexSearch {
 	query = '';
 	// Dex for the mod/generation to search.
-
 	dex: ModdedDex = Dex;
-
 	typedSearch: BattleTypedSearch<SearchType> | null = null;
-
 	results: SearchRow[] | null = null;
 	prependResults: SearchRow[] | null = null;
 	exactMatch = false;
-
 	static typeTable = {
 		pokemon: 1,
 		type: 2,
@@ -901,8 +894,7 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 	getBaseResults(): SearchRow[] {
 		const format = this.format;
 		if (!format) return this.getDefaultResults();
-		const isVGCOrBS = format.startsWith('battlespot') || format.startsWith('bss') ||
-			format.startsWith('battlestadium') || format.startsWith('vgc');
+		const isVGCOrBS = format.startsWith('battlespot') || format.startsWith('bss') || format.startsWith('battlestadium') || format.startsWith('vgc');
 		const isHackmons = format.includes('hackmons') || format.endsWith('bh');
 		let isDoublesOrBS = isVGCOrBS || this.formatType?.includes('doubles');
 		const dex = this.dex;
@@ -945,8 +937,6 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 			if (this.formatType.includes('doubles')) { table = table['gen9dlc1doubles']; } 
 			else if (this.formatType.includes('natdex')) { table = table['gen9dlc1natdex']; } 
 			else { table = table['gen9dlc1']; }
-		} else if (this.formatType === 'stadium') {
-			table = table[`gen${dex.gen}stadium${dex.gen > 1 ? dex.gen : ''}`];
 		} else if (this.formatType === 'indigostarstorm') {
 			table = table['gen9indigostarstorm'];
 			console.log('[DEBUG] Loading gen9indigostarstorm table, table exists:', !!table, 'has tiers:', !!table?.tiers, 'has formatSlices:', !!table?.formatSlices, 'slice keys:', Object.keys(table?.formatSlices || {}));
@@ -1344,7 +1334,6 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 		return results;
 	}
 	private moveIsNotUseless(id: ID, species: Dex.Species, moves: string[], set: Dex.PokemonSet | null) {
-		// IMPORTANT!
 		// Please do not mark moves as useless if there is any doubt whatsoever. I don't care if you think it's clutter or whatever. We are not in the
 		// business of taking sides in arguments, or making judgments about specific metagames. If it could potentially be useful in some metagame, it is not useless.
 		const dex = this.dex;
@@ -1553,9 +1542,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 		const isHackmons = (format.includes('hackmons') || format.endsWith('bh'));
 		const isSTABmons = (format.includes('stabmons') || format === 'staaabmons');
 		const isTradebacks = format.includes('tradebacks');
-		const regionBornLegality = dex.gen >= 6 &&
-			(/^battle(spot|stadium|festival)/.test(format) || format.startsWith('bss') ||
-				format.startsWith('vgc') || (dex.gen === 9 && this.formatType !== 'natdex'));
+		const regionBornLegality = dex.gen >= 6 && (/^battle(spot|stadium|festival)/.test(format) || format.startsWith('bss') || format.startsWith('vgc') || (dex.gen === 9 && this.formatType !== 'natdex'));
 		let learnsetid = this.firstLearnsetid(species.id);
 		let moves: string[] = [];
 		let sketchMoves: string[] = [];
@@ -1647,10 +1634,9 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 					}
 				}
 				let valid = false;
-				for (let type of moveTypes) {
-					if (speciesTypes.includes(type)) {
-						valid = true;
-						break;
+				for (let type of moveTypes) { if (speciesTypes.includes(type)) {
+					valid = true;
+					break;
 					}
 				}
 				if (valid) moves.push(id);
@@ -1748,6 +1734,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 		throw new Error("invalid sortcol");
 		}
 	}
+	//region Category Search                      
 	class BattleCategorySearch extends BattleTypedSearch<'category'> {
 		getTable() { return { physical: 1, special: 1, status: 1 }; }
 		getDefaultResults(reverseSort?: boolean): SearchRow[] {
