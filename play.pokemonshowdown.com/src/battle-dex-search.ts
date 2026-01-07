@@ -1510,10 +1510,8 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 			return abilityid === 'noguard' || (dex.gen < 4 && !moves.includes('thunderwave'));
 		}
 		if (this.isDoubles && BattleMoveSearch.GOOD_DOUBLES_MOVES.includes(id)) { return true; }
-
 		const move = dex.moves.get(id);
 		if (!move.exists) return true;
-		if ((move.status === 'slp' || id === 'yawn') && dex.gen === 9 && !this.formatType) { return false; }
 		if (move.category === 'Status') { return BattleMoveSearch.GOOD_STATUS_MOVES.includes(id); }
 		if (move.basePower < 75) { return BattleMoveSearch.GOOD_WEAK_MOVES.includes(id) || (abilityid === 'technician' && move.basePower === 60); }
 		if (id === 'skydrop') return true;
