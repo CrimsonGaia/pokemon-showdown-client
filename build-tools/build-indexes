@@ -7,8 +7,8 @@ const rootDir = path.resolve(__dirname, '..');
 process.chdir(rootDir);
 if (!fs.existsSync('caches/pokemon-showdown')) { child_process.execSync('git clone https://github.com/CrimsonGaia/pokemon-showdown.git', {  cwd: 'caches', }); }
 process.stdout.write("Syncing data from Git repository... ");
-// child_process.execSync('git pull', { cwd: 'caches/pokemon-showdown' });
-// child_process.execSync('npm run build', { cwd: 'caches/pokemon-showdown' });
+child_process.execSync('git pull', { cwd: 'caches/pokemon-showdown' });
+child_process.execSync('npm run build', { cwd: 'caches/pokemon-showdown' });
 console.log("SKIPPED (using local build)");
 const Dex = require('../caches/pokemon-showdown/dist/sim/dex').Dex;
 const CompoundWordNames = require('../caches/pokemon-showdown/dist/data/aliases').CompoundWordNames;
@@ -26,6 +26,7 @@ function requireNoCache(pathSpec) {
 }
 // Load custom mod data for search index
 process.stdout.write("Loading custom mod data... ");
+const modMovesData = requireNoCache('../caches/pokemon-showdown/dist/data/mods/gen9indigostarstorm/moves.js').Moves;
 const modItemsData = requireNoCache('../caches/pokemon-showdown/dist/data/mods/gen9indigostarstorm/items.js').Items;
 console.log("DONE");
 console.log(`Loaded ${Object.keys(modItemsData).length} items from mod data`);
@@ -114,6 +115,8 @@ console.log(`Merged descriptions for ${Object.keys(ItemsText).length} items`);
 	for (const id in Dex.data.Moves) {
 		const name = Dex.data.Moves[id].name;
 		generateAlias(id, name, 'move');
+		const modMoves = modMovesData[id] || {};
+		const desc = modMoves.shortDesc || item.shortDesc || move.desc || '';
 	}
 	let fragileCount = 0;
 	let volatileCount = 0;
@@ -1192,21 +1195,54 @@ process.stdout.write("Building `data/pokedex.js`... ");
 	fs.writeFileSync('play.pokemonshowdown.com/data/pokedex.json', JSON.stringify(Pokedex));
 }
 console.log("DONE");
-//region Build moves.js
-process.stdout.write("Building `data/moves,items,abilities,typechart,learnsets.js`...");
 
+// ---------- FORCE REBUILD FROM moves.ts BEFORE GENERATING moves.js ----------
+
+const path = require('path');
+
+// Load Dex compiled from moves.ts
+let Dex;
+try {
+  if (fs.existsSync(path.join(__dirname, '../dist/sim/dex.js'))) {
+    Dex = require('../dist/sim/dex.js').Dex;
+  } else {
+    Dex = require('../.output/src/sim/dex.js').Dex;
+  }
+} catch (e) {
+  console.error('Failed to load Dex:', e);
+}
+
+if (Dex) {
+  console.log('Refreshing move data from moves.ts…');
+
+  // overwrite the Moves object used later in the script
+  global.Moves = {};
+
+  for (const move of Dex.moves.all()) {
+    global.Moves[move.id] = move;
+  }
+
+  console.log('Move data refreshed. Proceeding to generate moves.js…');
+}
+
+//region Build moves.js
 {
-	const Moves = requireNoCache('../caches/pokemon-showdown/dist/data/moves.js').Moves;
+	// Build Moves directly from Dex (uses moves.ts, not cached JS)
+const Moves = {};
+for (const move of Dex.moves.all()) {
+	Moves[move.id] = move;
+}
 	// Load custom mod moves
-	const modItems = requireNoCache('../caches/pokemon-showdown/dist/data/mods/gen9indigostarstorm/moves.js').Moves;
+	const modMoves = requireNoCache('../caches/pokemon-showdown/dist/data/mods/gen9indigostarstorm/moves.js').Moves;
 	for (const id in Moves) {
 		const move = Dex.moves.get(Moves[id].name);
 		if (move.desc) Moves[id].desc = move.desc;
 		if (move.shortDesc) Moves[id].shortDesc = move.shortDesc;
 		if (move.basePowerCallback) Moves[id].basePowerCallback = true;
 		// Check custom mod first
-		if (modItems[id]) {	if (modItems[id].shortDesc) Items[id].shortDesc = modItems[id].shortDesc; }
-		
+		if (modMove) {
+    Moves[id] = modMove;
+}
 	}
 	const buf = 'exports.BattleMovedex = ' + es3stringify(Moves) + ';';
 	fs.writeFileSync('play.pokemonshowdown.com/data/moves.js', buf);
