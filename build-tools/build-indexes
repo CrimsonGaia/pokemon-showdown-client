@@ -111,6 +111,21 @@ function writeBattleExport(outPath, exportName, data) {
   ensureDir(path.dirname(outPath));
   fs.writeFileSync(outPath, buf);
 }
+function writeBattleModData(outPath, modid, key, data) {
+  if (!data || typeof data !== 'object') {
+    throw new Error(`Refusing to write ${outPath}: mod export ${modid}.${key} is not an object`);
+  }
+  const buf =
+    `exports.BattleModData = exports.BattleModData || Object.create(null);\n` +
+    `exports.BattleModData['${modid}'] = exports.BattleModData['${modid}'] || Object.create(null);\n` +
+    `exports.BattleModData['${modid}']['${key}'] = ` + es3stringify(data) + `;\n`;
+
+  if (!buf || buf.includes('undefined')) {
+    throw new Error(`Serialization failed for ${outPath} (BattleModData['${modid}']['${key}'])`);
+  }
+  ensureDir(path.dirname(outPath));
+  fs.writeFileSync(outPath, buf);
+}
 
 function cloneObjTable(src) {
   const out = {};
@@ -928,6 +943,32 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 		}
 	}
 	BattleTeambuilderTable['gen9indigostarstorm'].overrideSpeciesData = islOverrideSpeciesData;
+	// ---- Load overlay patches for battle-dex real-time overrides ----
+try {
+  const modDir = path.join('play.pokemonshowdown.com', 'data', 'mods', MOD_ID);
+
+  const readPatch = (name) => {
+    const p = path.join(modDir, `${name}.json`);
+    if (!fs.existsSync(p)) return null;
+    return JSON.parse(fs.readFileSync(p, 'utf8'));
+  };
+
+  const movesPatch = readPatch('moves');
+  const itemsPatch = readPatch('items');
+  const abilitiesPatch = readPatch('abilities');
+
+  if (movesPatch) BattleTeambuilderTable[MOD_ID].overrideMoveData = movesPatch;
+  if (itemsPatch) BattleTeambuilderTable[MOD_ID].overrideItemData = itemsPatch;
+  if (abilitiesPatch) BattleTeambuilderTable[MOD_ID].overrideAbilityData = abilitiesPatch;
+
+  console.log(
+    `DEBUG: teambuilder overrides loaded: moves=${movesPatch ? Object.keys(movesPatch).length : 0}, ` +
+    `items=${itemsPatch ? Object.keys(itemsPatch).length : 0}, ` +
+    `abilities=${abilitiesPatch ? Object.keys(abilitiesPatch).length : 0}`
+  );
+} catch (e) {
+  console.log('Note: Could not attach mod override*Data patches to teambuilder table:', e.message);
+}
 	console.log(`Built ${Object.keys(islOverrideSpeciesData).length} species overrides for gen9indigostarstorm`);
 	// Debug: Check a few entries
 	if (islOverrideSpeciesData['bulbasaur']) { console.log('DEBUG: bulbasaur override:', JSON.stringify(islOverrideSpeciesData['bulbasaur'])); }
@@ -1012,9 +1053,9 @@ process.stdout.write("Building `data/pokedex.js` (base) + mod overlay... ");
     if (Object.keys(diff).length) patch[id] = diff;
   }
 
-  ensureDir(MOD_OUT_DIR);
-  writeBattleExport(path.join(MOD_OUT_DIR, 'pokedex.js'), 'BattlePokedex', patch);
-  fs.writeFileSync(path.join(MOD_OUT_DIR, 'pokedex.json'), JSON.stringify(patch));
+  	ensureDir(MOD_OUT_DIR);
+ 	writeBattleModData(path.join(MOD_OUT_DIR, 'pokedex.js'), MOD_ID, 'Pokedex', patch);
+  	fs.writeFileSync(path.join(MOD_OUT_DIR, 'pokedex.json'), JSON.stringify(patch));
 
   console.log(`Built ${Object.keys(patch).length} ${MOD_ID} pokedex overlay entries`);
 }
@@ -1072,7 +1113,7 @@ console.log("DONE");
   const movesPatch = buildPatchTable(baseMovesTable, modMovesFull, movePatchKeys);
 
   ensureDir(MOD_OUT_DIR);
-  writeBattleExport(path.join(MOD_OUT_DIR, 'moves.js'), 'BattleMovedex', movesPatch);
+  writeBattleModData(path.join(MOD_OUT_DIR, 'moves.js'), MOD_ID, 'Movedex', movesPatch);
   fs.writeFileSync(path.join(MOD_OUT_DIR, 'moves.json'), JSON.stringify(movesPatch));
 
   console.log(`Built ${Object.keys(movesPatch).length} ${MOD_ID} move overlay entries`);
@@ -1122,7 +1163,7 @@ console.log("DONE");
   const itemsPatch = buildPatchTable(Items, modItemsFull, itemPatchKeys);
 
   ensureDir(MOD_OUT_DIR);
-  writeBattleExport(path.join(MOD_OUT_DIR, 'items.js'), 'BattleItems', itemsPatch);
+  writeBattleModData(path.join(MOD_OUT_DIR, 'items.js'), MOD_ID, 'Items', itemsPatch);
 
   console.log(`Built ${Object.keys(itemsPatch).length} ${MOD_ID} item overlay entries`);
 }
@@ -1168,7 +1209,7 @@ console.log("DONE");
   const abilitiesPatch = buildPatchTable(Abilities, modAbilitiesFull, abilityPatchKeys);
 
   ensureDir(MOD_OUT_DIR);
-  writeBattleExport(path.join(MOD_OUT_DIR, 'abilities.js'), 'BattleAbilities', abilitiesPatch);
+  writeBattleModData(path.join(MOD_OUT_DIR, 'abilities.js'), MOD_ID, 'Abilities', abilitiesPatch);
 
   console.log(`Built ${Object.keys(abilitiesPatch).length} ${MOD_ID} ability overlay entries`);
 }
@@ -1264,7 +1305,7 @@ console.log("DONE");
   }
 
   ensureDir(MOD_OUT_DIR);
-  writeBattleExport(path.join(MOD_OUT_DIR, 'learnsets.js'), 'BattleLearnsets', learnsetsPatch);
+  writeBattleModData(path.join(MOD_OUT_DIR, 'learnsets.js'), MOD_ID, 'Learnsets', learnsetsPatch);
   fs.writeFileSync(path.join(MOD_OUT_DIR, 'learnsets.json'), JSON.stringify(learnsetsPatch));
 
   console.log(`Built ${Object.keys(learnsetsPatch).length} ${MOD_ID} learnset overlay entries`);
