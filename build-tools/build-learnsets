@@ -17,8 +17,33 @@ const fs = require('fs');
 const thisFile = __filename;
 const thisDir = __dirname;
 const rootDir = path.resolve(thisDir, '../play.pokemonshowdown.com');
+const repoRoot = path.resolve(thisDir, '..');
 
-const Dex = require('../caches/pokemon-showdown/dist/sim/dex').Dex;
+// Use local pokemon-showdown server (same approach as build-indexes)
+const SERVER_PATH = process.env.PS_SERVER_PATH
+  ? path.resolve(process.env.PS_SERVER_PATH)
+  : (
+      fs.existsSync(path.resolve(repoRoot, '..', 'pokemon-showdown'))
+        ? path.resolve(repoRoot, '..', 'pokemon-showdown')
+        : path.resolve(repoRoot, 'pokemon-showdown')
+    );
+
+// Ensure server dist exists
+if (
+  !fs.existsSync(path.join(SERVER_PATH, 'dist', 'sim', 'dex.js')) &&
+  !fs.existsSync(path.join(SERVER_PATH, 'dist', 'sim', 'dex'))
+) {
+  throw new Error(
+    `pokemon-showdown server dist not found at: ${path.join(SERVER_PATH, 'dist')}\n` +
+    `Build the server first (e.g. npm run build in the server repo), or set PS_SERVER_PATH.`
+  );
+}
+let Dex;
+try {
+  Dex = require(path.join(SERVER_PATH, 'dist', 'sim', 'dex')).Dex;
+} catch {
+  Dex = require(path.join(SERVER_PATH, 'dist', 'sim', 'dex.js')).Dex;
+}
 const toID = Dex.toID;
 
 function updateLearnsets(callback) {

@@ -6,7 +6,32 @@ const path = require("path");
 process.chdir(path.resolve(__dirname, '../play.pokemonshowdown.com'));
 const imageSize = require('image-size');
 
-const Dex = require('./../caches/pokemon-showdown/dist/sim/dex').Dex;
+// ---- local server dex loader (no caches/) ----
+const repoRoot = path.resolve(__dirname, '..'); // pokemon-showdown-client repo root
+const SERVER_PATH = process.env.PS_SERVER_PATH
+  ? path.resolve(process.env.PS_SERVER_PATH)
+  : (
+      fs.existsSync(path.resolve(repoRoot, '..', 'pokemon-showdown'))
+        ? path.resolve(repoRoot, '..', 'pokemon-showdown')
+        : path.resolve(repoRoot, 'pokemon-showdown')
+    );
+
+if (
+  !fs.existsSync(path.join(SERVER_PATH, 'dist', 'sim', 'dex.js')) &&
+  !fs.existsSync(path.join(SERVER_PATH, 'dist', 'sim', 'dex'))
+) {
+  throw new Error(
+    `pokemon-showdown server dist not found at: ${path.join(SERVER_PATH, 'dist')}\n` +
+    `Build the server first or set PS_SERVER_PATH.`
+  );
+}
+
+let Dex;
+try {
+  Dex = require(path.join(SERVER_PATH, 'dist', 'sim', 'dex')).Dex;
+} catch {
+  Dex = require(path.join(SERVER_PATH, 'dist', 'sim', 'dex.js')).Dex;
+}
 const toID = Dex.toID;
 
 process.stdout.write("Updating animated sprite dimensions... ");
