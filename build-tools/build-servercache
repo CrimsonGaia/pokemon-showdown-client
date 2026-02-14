@@ -1,0 +1,140 @@
+#!/usr/bin/env node
+/**
+ * Sync the built client webroot into the server cache folder.
+ *
+ * Copies contents of:
+ *   ./play.pokemonshowdown.com/
+ * into:
+ *   <server repo>/server/static/
+ *
+ * Usage:
+ *   node build-servercache
+ *
+ * Env:
+ *   PS_SERVER_PATH   Path to pokemon-showdown server repo (default: ../pokemon-showdown)
+ *   PS_CACHE_DELETE  Set to "0" to NOT delete files removed from client output (default: delete enabled)
+ */
+
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+
+const repoRoot = path.resolve(__dirname, '..');
+
+const SERVER_PATH = process.env.PS_SERVER_PATH
+  ? path.resolve(process.env.PS_SERVER_PATH)
+  : path.resolve(repoRoot, '..', 'pokemon-showdown');
+
+const SRC_DIR = path.resolve(repoRoot, 'play.pokemonshowdown.com');
+const DEST_DIR = path.resolve(SERVER_PATH, 'server', 'static');
+
+const DO_DELETE = process.env.PS_CACHE_DELETE !== '0';
+
+function ensureDir(dir) {
+  fs.mkdirSync(dir, {recursive: true});
+}
+
+function statSafe(p) {
+  try { return fs.statSync(p); } catch { return null; }
+}
+
+function sameEnough(srcStat, dstStat) {
+  if (!dstStat) return false;
+  if (srcStat.size !== dstStat.size) return false;
+  // tolerate filesystem timestamp resolution differences
+  return Math.abs(srcStat.mtimeMs - dstStat.mtimeMs) < 2000;
+}
+
+function isIgnored(rel) {
+  const parts = rel.split(path.sep);
+
+  // always ignore dev junk
+  if (parts.includes('.git') || parts.includes('node_modules')) return true;
+
+  // ignore sprite assets (huge)
+  if (parts[0] === 'sprites') return true;
+
+  return false;
+}
+
+
+function walkFiles(root, cb, base = root) {
+  const entries = fs.readdirSync(root, {withFileTypes: true});
+  for (const ent of entries) {
+    const abs = path.join(root, ent.name);
+    const rel = path.relative(base, abs);
+    if (isIgnored(rel)) continue;
+
+    if (ent.isDirectory()) walkFiles(abs, cb, base);
+    else if (ent.isFile()) cb(abs, rel);
+  }
+}
+
+function collectFileSet(root) {
+  const s = new Set();
+  if (!fs.existsSync(root)) return s;
+  walkFiles(root, (_abs, rel) => s.add(rel), root);
+  return s;
+}
+
+function copyFile(absSrc, absDst, srcStat) {
+  ensureDir(path.dirname(absDst));
+  fs.copyFileSync(absSrc, absDst);
+  fs.utimesSync(absDst, srcStat.atime, srcStat.mtime);
+  console.log(`[copy] ${path.relative(SRC_DIR, absSrc)} -> ${path.relative(DEST_DIR, absDst)}`);
+}
+
+function syncDirs(srcDir, destDir) {
+  ensureDir(destDir);
+
+  // Copy new/changed
+  walkFiles(srcDir, (absSrc, rel) => {
+    const absDst = path.join(destDir, rel);
+    const srcStat = fs.statSync(absSrc);
+    const dstStat = statSafe(absDst);
+
+    if (!sameEnough(srcStat, dstStat)) {
+      copyFile(absSrc, absDst, srcStat);
+    }
+  }, srcDir);
+
+  // Delete removed (mirror)
+  if (DO_DELETE && fs.existsSync(destDir)) {
+    const srcSet = collectFileSet(srcDir);
+    const dstSet = collectFileSet(destDir);
+
+    for (const rel of dstSet) {
+      if (!srcSet.has(rel)) {
+        const absDst = path.join(destDir, rel);
+        fs.unlinkSync(absDst);
+        console.log(`[del]  ${path.relative(DEST_DIR, absDst)}`);
+      }
+    }
+  }
+}
+
+function main() {
+  if (!fs.existsSync(SRC_DIR)) {
+    console.error(`Client output folder not found: ${SRC_DIR}`);
+    console.error(`Run "node build full" first.`);
+    process.exit(1);
+  }
+  if (!fs.existsSync(SERVER_PATH)) {
+    console.error(`Server repo not found: ${SERVER_PATH}`);
+    console.error(`Set PS_SERVER_PATH to the correct path.`);
+    process.exit(1);
+  }
+  if (!fs.existsSync(path.join(SERVER_PATH, 'server', 'static'))) {
+    console.error(`Server cache folder not found: ${path.join(SERVER_PATH, 'server', 'static')}`);
+    process.exit(1);
+  }
+
+  console.log(`Syncing client cache:`);
+  console.log(`  src : ${SRC_DIR}`);
+  console.log(`  dest: ${DEST_DIR}`);
+  syncDirs(SRC_DIR, DEST_DIR);
+  console.log(`Sync complete.`);
+}
+
+main();

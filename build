@@ -76,4 +76,13 @@ if (full) {
 	} catch (e) {
 		console.error(e);
 	}
+
+	// Last step: sync built client output into the server cache
+	try {
+		console.log('Syncing server cache (server/static)...');
+		execSync(`node ./build-tools/build-servercache`, options);
+	} catch (e) {
+		console.error('Cache sync failed:', e);
+		process.exitCode = 1;
+	}
 }

@@ -1,0 +1,5 @@
+:8080 {
+  root * ../play.pokemonshowdown.com
+  file_server
+  header Cache-Control "no-store"
+}

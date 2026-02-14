@@ -22,10 +22,10 @@ child_process.execSync('npm run build', {
 console.log("DONE");
 //
 //loadmod data
-function loadModData(path, kind) {
+function loadModData(relPath, kind) {
   let mod;
   try {
-    mod = require(path);
+    mod = requireServer(relPath);
   } catch {
     return null;
   }
@@ -33,20 +33,20 @@ function loadModData(path, kind) {
   if (!mod) return null;
 
   switch (kind) {
-  case 'abilities':
-    return mod.BattleAbilities || mod.Abilities || null;
+    case 'abilities':
+      return mod.BattleAbilities || mod.Abilities || mod.default || null;
 
-  case 'abilitiesText':
-    return mod.AbilitiesText || mod || null;
+    case 'abilitiesText':
+      return mod.AbilitiesText || mod.default || mod || null;
 
-  case 'moves':
-    return mod.BattleMovedex || mod.Moves || null;
+    case 'moves':
+      return mod.BattleMovedex || mod.Moves || mod.default || null;
 
-  case 'movesText':
-    return mod.MovesText || mod || null;
+    case 'movesText':
+      return mod.MovesText || mod.default || mod || null;
 
-  default:
-    throw new Error(`Unknown mod data kind: ${kind}`);
+    default:
+      throw new Error(`Unknown mod data kind: ${kind}`);
   }
 }
 
@@ -73,9 +73,12 @@ function es3stringify(obj) {
       (['return', 'new', 'delete'].includes(key) ? fullMatch : `${key}:`)
   );
 }
-function requireNoCache(pathSpec) {
-	delete require.cache[require.resolve(pathSpec)];
-	return require(pathSpec);
+function requireNoCache(...args) {
+  const pathSpec =
+    args.length === 1 ? args[0] : path.join(args[0], args[1]);
+
+  delete require.cache[require.resolve(pathSpec)];
+  return require(pathSpec);
 }
 
 // -----------------------------
@@ -1222,9 +1225,18 @@ console.log("DONE");
 
 //region Build typechart.js
 {
-	const TypeChart = requireNoCache(SERVER_PATH,'dist/data/typechart.js').TypeChart;
-	const buf = 'exports.BattleTypeChart = ' + es3stringify(TypeChart) + ';';
-	fs.writeFileSync('play.pokemonshowdown.com/data/typechart.js', buf);
+  console.log('Building `data/typechart.js` from server output...');
+
+  const serverTypechartModule = requireServer('dist/data/typechart.js');
+  const TypeChart = pickExport(serverTypechartModule, ['TypeChart', 'BattleTypeChart', 'default']);
+
+  if (!TypeChart || typeof TypeChart !== 'object') {
+    throw new Error('Server dist/data/typechart.js did not export TypeChart');
+  }
+
+  writeBattleExport(path.join(CLIENT_DATA_DIR, 'typechart.js'), 'BattleTypeChart', TypeChart);
+
+  console.log('DONE building typechart.js');
 }
 
 
@@ -1233,9 +1245,18 @@ console.log("DONE");
 
 //region Build aliases.js
 {
-	const Aliases = requireNoCache(SERVER_PATH,'dist/data/aliases.js').Aliases;
-	const buf = 'exports.BattleAliases = ' + es3stringify(Aliases) + ';';
-	fs.writeFileSync('play.pokemonshowdown.com/data/aliases.js', buf);
+  console.log('Building `data/aliases.js` from server output...');
+
+  const serverAliasesModule = requireServer('dist/data/aliases.js');
+  const Aliases = pickExport(serverAliasesModule, ['Aliases', 'BattleAliases', 'default']);
+
+  if (!Aliases || typeof Aliases !== 'object') {
+    throw new Error('Server dist/data/aliases.js did not export Aliases');
+  }
+
+  writeBattleExport(path.join(CLIENT_DATA_DIR, 'aliases.js'), 'BattleAliases', Aliases);
+
+  console.log('DONE building aliases.js');
 }
 
 
@@ -1244,20 +1265,43 @@ console.log("DONE");
 
 //region Build formats-data.js
 {
-	const FormatsData = requireNoCache(SERVER_PATH,'dist/data/formats-data.js').FormatsData;
-	const buf = 'exports.BattleFormatsData = ' + es3stringify(FormatsData) + ';';
-	fs.writeFileSync('play.pokemonshowdown.com/data/formats-data.js', buf);
-}
+  console.log('Building `data/formats-data.js` from server output...');
 
+  const serverFDModule = requireServer('dist/data/formats-data.js');
+  const FormatsData = pickExport(serverFDModule, ['BattleFormatsData', 'FormatsData', 'default']);
+
+  if (!FormatsData || typeof FormatsData !== 'object') {
+    throw new Error('Server dist/data/formats-data.js did not export FormatsData/BattleFormatsData');
+  }
+
+  writeBattleExport(path.join(CLIENT_DATA_DIR, 'formats-data.js'), 'BattleFormatsData', FormatsData);
+  fs.writeFileSync(path.join(CLIENT_DATA_DIR, 'formats-data.json'), JSON.stringify(FormatsData));
+
+  console.log(`DONE building formats-data.js (${Object.keys(FormatsData).length} entries)`);
+}
 
 
 
 
 //region Build formats.js
 {
-	const Formats = requireNoCache(SERVER_PATH,'dist/config/formats.js').Formats;
-	const buf = 'exports.Formats = ' + es3stringify(Formats) + ';';
-	fs.writeFileSync('play.pokemonshowdown.com/data/formats.js', buf);
+  console.log('Building `data/formats.js` from server output...');
+
+  const serverFormatsModule = requireServer('dist/config/formats.js');
+  const Formats = pickExport(serverFormatsModule, ['Formats', 'default']);
+
+  if (!Formats || typeof Formats !== 'object') {
+    throw new Error('Server dist/config/formats.js did not export Formats');
+  }
+
+  writeBattleExport(path.join(CLIENT_DATA_DIR, 'formats.js'), 'Formats', Formats);
+  fs.writeFileSync(path.join(CLIENT_DATA_DIR, 'formats.json'), JSON.stringify(Formats));
+
+  // helpful smoke check: look for your mod format id/name
+  const asString = JSON.stringify(Formats);
+  console.log('formats.js contains "indigostarstorm"?', asString.includes('indigostarstorm'));
+
+  console.log(`DONE building formats.js (${Array.isArray(Formats) ? Formats.length : Object.keys(Formats).length} entries)`);
 }
 
 
