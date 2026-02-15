@@ -890,6 +890,65 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 	BattleTeambuilderTable['gen9indigostarstorm'].tiers = islTiers;
 	BattleTeambuilderTable['gen9indigostarstorm'].overrideTier = islOverrideTier;
 	BattleTeambuilderTable['gen9indigostarstorm'].formatSlices = islFormatSlices;
+	// Build item list for gen9indigostarstorm from the mod Dex (separate from vanilla)
+console.log('Building item list for gen9indigostarstorm...');
+{
+	const islDex = Dex.mod('gen9indigostarstorm');
+	const itemIDs = Object.keys(islDex.data.Items);
+	itemIDs.sort();
+
+	const greatItems = [['header', "Popular items"]];
+	const goodItems = [['header', "Items"]];
+	const specificItems = [['header', "Pok\u00e9mon-specific items"]];
+	const poorItems = [['header', "Usually useless items"]];
+	const badItems = [['header', "Useless items"]];
+	const unreleasedItems = [];
+
+	for (const id of itemIDs) {
+		const item = islDex.items.get(id);
+		if (!item || !item.exists) continue;
+
+		// Keep this simple: if you want everything available in the mod format,
+		// don't filter by gen here (your mod is still gen9-based anyway).
+		if (item.isNonstandard) {
+			unreleasedItems.push(id);
+			continue;
+		}
+
+		// same buckets as PS, simplified
+		switch (id) {
+		case 'choiceband':
+		case 'choicespecs':
+		case 'eviolite':
+		case 'leftovers':
+		case 'lifeorb':
+		case 'choicescarf':
+		case 'assaultvest':
+		case 'focussash':
+		case 'powerherb':
+		case 'rockyhelmet':
+		case 'covertcloak':
+		case 'clearamulet':
+		case 'weaknesspolicy':
+		case 'heavydutyboots':
+		case 'loadeddice':
+			greatItems.push(id);
+			break;
+		default:
+			if (item.megaStone || item.itemUser || item.zMove || item.onPlate || item.onDrive || item.onMemory) {
+				specificItems.push(id);
+			} else {
+				goodItems.push(id);
+			}
+		}
+	}
+
+	const islItems = [];
+	islItems.push(...greatItems, ...goodItems, ...specificItems, ...poorItems, ...badItems, ...unreleasedItems);
+
+	BattleTeambuilderTable['gen9indigostarstorm'].items = islItems;
+	console.log('Built', islItems.length, 'item entries for gen9indigostarstorm');
+}
 	console.log(`Built ${islTiers.length} tier entries for gen9indigostarstorm`);
 	// Build gen9indigostarstorm learnsets from the RAW mod Learnsets table (file-backed).
 // Do NOT copy vanilla learnsets first; removals must take effect.
