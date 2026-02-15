@@ -401,6 +401,7 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 {
 	const BattleTeambuilderTable = {};
 	let buf = '// DO NOT EDIT - automatically built with build-tools/build-indexes\n\n';
+	const MODS = ['gen9indigostarstorm'];
 	const GENS = [9, 8, 7, 6, 5, 4, 3, 2, 1];
 	const DOUBLES = GENS.filter(x => x > 2).map(num => -num);
 	const VGC = GENS.filter(x => x > 3).map(num => -num - 0.5);
@@ -409,6 +410,7 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 	const STADIUM = [2.04, 1.04];
 	const NATDEX = [9.1, 8.1];
 	const OTHER = [9.9, 9.6, 9.4, 9.2, -9.4, 8.6, 8.4, 8.2, 8.1, -8.4, -8.6, 7.1, 5.1, 3.1];
+	
 	// process.stdout.write("\n  ");
 	for (const genIdent of [...GENS, ...DOUBLES, ...VGC, ...NFE, ...STADIUM, ...OTHER, ...NATDEX, ...LC]) {
 		const isMetBattle = ('' + genIdent).endsWith('.2');
@@ -509,11 +511,8 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 				if (nd35Pokes.exists && !Dex.formats.getRuleTable(nd35Pokes).isBannedSpecies(species)) { thirtyfivePokes[species.id] = 1; }
 			}
 		}
-		try {
-			nonstandardMoves.push(...Object.keys(Dex.data.Moves).filter(id => {
-				return bMove.isNonstandard !== move.isNonstandard;
-			}));
-		} catch (e) { } // Mod doesn't exist, skip
+		// NOTE: nonstandardMoves logic removed here (it referenced undefined bMove/move).
+		// Keep nonstandardMoves as [] unless you implement it properly later.
 		const tiers = [];
 		const items = [];
 		const formatSlices = {};
@@ -892,29 +891,58 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 	BattleTeambuilderTable['gen9indigostarstorm'].overrideTier = islOverrideTier;
 	BattleTeambuilderTable['gen9indigostarstorm'].formatSlices = islFormatSlices;
 	console.log(`Built ${islTiers.length} tier entries for gen9indigostarstorm`);
-	// First, copy all base Gen 9 learnsets to gen9indigostarstorm
-	console.log('DEBUG: Copying base Gen 9 learnsets to gen9indigostarstorm...');
-	for (const id in learnsets) { BattleTeambuilderTable['gen9indigostarstorm'].learnsets[id] = {...learnsets[id]}; }
-	console.log('DEBUG: Copied', Object.keys(BattleTeambuilderTable['gen9indigostarstorm'].learnsets).length, 'base Gen 9 learnsets');
-	// Then merge mod-specific learnsets (overrides) into BattleTeambuilderTable['gen9indigostarstorm'].learnsets
-	try {
-		const islLearnsets = islDex.data.Learnsets || {};
-		console.log( 'DEBUG: Merging mod learnsets into teambuilder table, count:', Object.keys(islLearnsets).length );
-		for (const id in islLearnsets) {
-  		const modLearnset = islLearnsets[id].learnset;
-  		if (!modLearnset) continue;
-  		if (!BattleTeambuilderTable['gen9indigostarstorm'].learnsets[id]) { BattleTeambuilderTable['gen9indigostarstorm'].learnsets[id] = {}; }
-  		for (const moveid in modLearnset) {
-  		const gens = modLearnset[moveid].map(x => Number(x[0]));
-    	const minGen = Math.min(...gens);
-    	let entry = '0123456789'.slice(minGen);
-    	if (gens.includes(9) && modLearnset[moveid].some(x => x[0] === '9' && x !== '9V')) entry += 'a';
-    	if (gens.includes(9) && modLearnset[moveid].some(x => x === '9E')) entry += 'e';
-    	BattleTeambuilderTable['gen9indigostarstorm'].learnsets[id][moveid] = entry;
-  		}
+	// Build gen9indigostarstorm learnsets from the RAW mod Learnsets table (file-backed).
+// Do NOT copy vanilla learnsets first; removals must take effect.
+try {
+	console.log('DEBUG: Building gen9indigostarstorm.learnsets from islDex.data.Learnsets');
+	BattleTeambuilderTable['gen9indigostarstorm'].learnsets = {};
+
+	const islLearnsetsTable = (islDex.data && islDex.data.Learnsets) ? islDex.data.Learnsets : {};
+	console.log('DEBUG: isl Learnsets keys:', Object.keys(islLearnsetsTable).length);
+
+	for (const id in islLearnsetsTable) {
+		const entry = islLearnsetsTable[id];
+		const learnset = entry && entry.learnset;
+		if (!learnset) continue;
+
+		const out = {};
+		for (const moveid in learnset) {
+			const sources = learnset[moveid];
+			if (!sources || !sources.length) continue;
+
+			// sources look like: ["9L1","9M","9E", ...] (or sometimes arrays; normalize defensively)
+			const src = (Array.isArray(sources) ? sources : [sources])
+				.map(x => Array.isArray(x) ? x[0] : x)
+				.filter(x => typeof x === 'string');
+
+			const gens = src.map(s => Number(s.charAt(0))).filter(n => !isNaN(n));
+			if (!gens.length) continue;
+
+			const minGen = Math.min(...gens);
+			let packed = '0123456789'.slice(minGen);
+
+			// keep behavior consistent with your base learnset packing
+			if (gens.includes(6)) packed += 'p';
+			if (gens.includes(9) && src.some(s => s.charAt(0) === '9' && s !== '9V')) packed += 'a';
+			if (gens.includes(9) && src.includes('9E')) packed += 'e';
+
+			out[moveid] = packed;
+		}
+
+		BattleTeambuilderTable['gen9indigostarstorm'].learnsets[id] = out;
 	}
-	console.log('DEBUG: gen9indigostarstorm.learnsets final count:', Object.keys(BattleTeambuilderTable['gen9indigostarstorm'].learnsets).length);
-	} catch (e) { console.log('Note: Could not load mod learnsets for teambuilder table:', e.message); }
+
+	console.log('DEBUG: gen9indigostarstorm.learnsets species count:',
+		Object.keys(BattleTeambuilderTable['gen9indigostarstorm'].learnsets).length
+	);
+	console.log('DEBUG: has poltchageistartisan?',
+		('poltchageistartisan' in BattleTeambuilderTable['gen9indigostarstorm'].learnsets),
+		'move count:',
+		Object.keys(BattleTeambuilderTable['gen9indigostarstorm'].learnsets.poltchageistartisan || {}).length
+	);
+} catch (e) {
+	console.log('Note: Could not build mod learnsets from islDex.data.Learnsets:', e && e.message ? e.message : e);
+}
 	// Client relevant data that should be overridden by past gens and mods
 	const overrideSpeciesKeys = ['abilities', 'baseStats', 'cosmeticFormes', 'isNonstandard', 'requiredItems', 'types', 'unreleasedHidden',];
 	const overrideMoveKeys = ['accuracy', 'basePower', 'category', 'critRatio', 'desc', 'flags', 'isNonstandard', 'pp', 'priority', 'shortDesc', 'target', 'type',];
@@ -946,31 +974,45 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 		}
 	}
 	BattleTeambuilderTable['gen9indigostarstorm'].overrideSpeciesData = islOverrideSpeciesData;
-	// ---- Load overlay patches for battle-dex real-time overrides ----
+	// ---- Build teambuilder override*Data directly from the mod Dex ----
+// (Your mod does NOT ship moves.json/items.json/abilities.json, so reading JSON will always do nothing.)
 try {
-  const modDir = path.join('play.pokemonshowdown.com', 'data', 'mods', MOD_ID);
+	// base gen9 vs modded gen9indigostarstorm
+	const baseGen9Dex = Dex.mod('gen9');
+	const islDex = Dex.mod(MOD_ID);
 
-  const readPatch = (name) => {
-    const p = path.join(modDir, `${name}.json`);
-    if (!fs.existsSync(p)) return null;
-    return JSON.parse(fs.readFileSync(p, 'utf8'));
-  };
+	// Build patch objects that only include changed keys (plus also supports entirely-new moves/items/abilities)
+	const islOverrideMoveData = buildPatchTable(
+		baseGen9Dex.data.Moves,
+		islDex.data.Moves,
+		overrideMoveKeys
+	);
 
-  const movesPatch = readPatch('moves');
-  const itemsPatch = readPatch('items');
-  const abilitiesPatch = readPatch('abilities');
+	const islOverrideItemData = buildPatchTable(
+		baseGen9Dex.data.Items,
+		islDex.data.Items,
+		overrideItemKeys
+	);
 
-  if (movesPatch) BattleTeambuilderTable[MOD_ID].overrideMoveData = movesPatch;
-  if (itemsPatch) BattleTeambuilderTable[MOD_ID].overrideItemData = itemsPatch;
-  if (abilitiesPatch) BattleTeambuilderTable[MOD_ID].overrideAbilityData = abilitiesPatch;
+	const islOverrideAbilityData = buildPatchTable(
+		baseGen9Dex.data.Abilities,
+		islDex.data.Abilities,
+		overrideAbilityKeys
+	);
 
-  console.log(
-    `DEBUG: teambuilder overrides loaded: moves=${movesPatch ? Object.keys(movesPatch).length : 0}, ` +
-    `items=${itemsPatch ? Object.keys(itemsPatch).length : 0}, ` +
-    `abilities=${abilitiesPatch ? Object.keys(abilitiesPatch).length : 0}`
-  );
+	// Attach to the teambuilder table so the client can override vanilla text/data
+	BattleTeambuilderTable[MOD_ID].overrideMoveData = islOverrideMoveData;
+	BattleTeambuilderTable[MOD_ID].overrideItemData = islOverrideItemData;
+	BattleTeambuilderTable[MOD_ID].overrideAbilityData = islOverrideAbilityData;
+
+	console.log(
+		`DEBUG: teambuilder overrides built from Dex: ` +
+		`moves=${Object.keys(islOverrideMoveData).length}, ` +
+		`items=${Object.keys(islOverrideItemData).length}, ` +
+		`abilities=${Object.keys(islOverrideAbilityData).length}`
+	);
 } catch (e) {
-  console.log('Note: Could not attach mod override*Data patches to teambuilder table:', e.message);
+	console.log('Note: Could not build mod override*Data patches from Dex:', e && e.message ? e.message : e);
 }
 	console.log(`Built ${Object.keys(islOverrideSpeciesData).length} species overrides for gen9indigostarstorm`);
 	// Debug: Check a few entries
@@ -1361,24 +1403,32 @@ console.log("DONE");
 
 //region Build text.js
 {
-	const textData = Dex.loadTextData();
-	const Text = textData.Default;
-	function assignData(id, entry) {
-		for (const key in entry) {
-			if (['name', 'desc', 'shortDesc'].includes(key)) continue;
-			const textEntry = Text[id] || (Text[id] = {});
-			if (key.startsWith('gen')) {
-				for (const modKey in entry[key]) {
-					if (['desc', 'shortDesc'].includes(key)) continue;
-					textEntry[modKey + 'Gen' + key.charAt(3)] = entry[key][modKey];
-				}
-			} else { textEntry[key] = entry[key]; }
-		}
-	}
-	for (const id in textData.Moves) assignData(id, textData.Moves[id]);
-	for (const id in textData.Abilities) assignData(id, textData.Abilities[id]);
-	for (const id in textData.Items) assignData(id, textData.Items[id]);
-	const buf = 'exports.BattleText = ' + es3stringify(Text) + ';';
-	fs.writeFileSync('play.pokemonshowdown.com/data/text.js', buf);
+	const textDataDefault = Dex.loadTextData();           // vanilla/root
+const textDataIndigo = Dex.loadTextData('gen9indigostarstorm'); // mod layer
+
+function buildTextTable(textData) {
+  const Text = {};
+  function assignData(id, entry) {
+    const out = Text[id] || (Text[id] = {});
+    for (const key in entry) {
+      if (key === 'name') continue;     // keep desc + shortDesc
+      out[key] = entry[key];
+    }
+  }
+  for (const id in textData.Moves) assignData(id, textData.Moves[id]);
+  for (const id in textData.Abilities) assignData(id, textData.Abilities[id]);
+  for (const id in textData.Items) assignData(id, textData.Items[id]);
+  return Text;
+}
+
+const out = {
+  Default: buildTextTable(textDataDefault.Default),
+  gen9indigostarstorm: buildTextTable(textDataIndigo.Default),
+};
+
+fs.writeFileSync(
+  'play.pokemonshowdown.com/data/text.js',
+  'exports.BattleText = ' + es3stringify(out) + ';'
+);
 }
 console.log("DONE");

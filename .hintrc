@@ -22,7 +22,9 @@
         "ignore": [
           "backdrop-filter",
           "image-rendering: -moz-crisp-edges",
-          "-webkit-overflow-scrolling"
+          "-webkit-overflow-scrolling",
+          "min-height: auto",
+          "scrollbar-width"
         ]
       }
     ],
