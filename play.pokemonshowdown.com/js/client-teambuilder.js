@@ -1306,7 +1306,7 @@
 					? 'width: 36px; font-weight: bold; font-size: 10.5px; cursor: pointer; padding: 1.5px 0; height: 18px; background: linear-gradient(to right, rgba(0, 255, 0, 0.3) 50%, transparent 50%); text-align: left; padding-left: 5.4px;'
 					: 'width: 36px; font-weight: bold; font-size: 10.5px; cursor: pointer; padding: 1.5px 0; height: 18px; background: linear-gradient(to left, rgba(0, 100, 255, 0.3) 50%, transparent 50%); text-align: right; padding-right: 5.4px;';
 				buttonClass = ' abilitySetToggle';
-				buttonName = ' name="abilitySetToggle"';
+				buttonName = ' name="abilitySetToggle" data-setindex="' + i + '"';
 				buttonText = abilitySet;
 			}
 			buf += '<div class="setcol setcol-ability" style="align-content: end; position: relative; top: -5px;">'; ;
@@ -2829,17 +2829,30 @@
 			}
 			this.save();
 		},
-		abilitySetChange: function () {
+		abilitySetChange: function (e) {
+  e.preventDefault();
+  e.stopPropagation();
+
+  var dex = this.curTeam && this.curTeam.dex;
+  if (!dex) return;
+
+  // Which set are we editing?
+  // - In set view: this.curSet exists
+  // - In team view: use data-setindex on the clicked button
   var set = this.curSet;
+  var setIndex = null;
+
+  if (!set) {
+    setIndex = parseInt(e.currentTarget.getAttribute('data-setindex') || '', 10);
+    if (!isNaN(setIndex) && this.curSetList && this.curSetList[setIndex]) {
+      set = this.curSetList[setIndex];
+    }
+  }
   if (!set) return;
 
-  var format = (this.curTeam && this.curTeam.format) || '';
-  var isISL = (format.includes('indigostarstorm') || format.toLowerCase().includes('isl'));
-  if (!isISL) return;
-
-  var dex = this.curTeam.dex;
+  // Read abilities from modded dex (this is the server-correct source)
   var species = dex.species.get(set.species);
-  var abilTable = (species && species.abilities) || {};
+  var abilTable = (species && species.abilities) ? species.abilities : {};
 
   function cleanAbilityName(x) {
     if (!x) return '';
@@ -2848,10 +2861,12 @@
     return x;
   }
 
+  // IMPORTANT: H/S must be uppercase
   var set1 = [cleanAbilityName(abilTable['0']), cleanAbilityName(abilTable['1'])].filter(Boolean);
   var set2 = [cleanAbilityName(abilTable['H']), cleanAbilityName(abilTable['S'])].filter(Boolean);
 
   var hasSet2 = !!set2.length;
+
   var cur = (set.abilitySet === 2 || set.abilitySet === '2') ? 2 : 1;
   var next = (cur === 1 && hasSet2) ? 2 : 1;
 
@@ -2861,12 +2876,46 @@
   set.ability = chosen[0] || '';
   set.ability2 = chosen[1] || '';
 
-  this.$('input[name=ability]').val(set.ability);
-  this.$('input[name=ability2]').val(set.ability2);
-  this.$('button[name=abilitySetToggle]').text('' + next);
+  // helper: update button visuals (gradient + alignment) to match renderSet style
+  function applyAbilitySetButtonStyle(btnEl, which) {
+    if (!btnEl) return;
+    if (which === 2) {
+      btnEl.style.background = 'linear-gradient(to left, rgba(0, 100, 255, 0.3) 50%, transparent 50%)';
+      btnEl.style.textAlign = 'right';
+      btnEl.style.paddingRight = '5.4px';
+      btnEl.style.paddingLeft = '';
+    } else {
+      btnEl.style.background = 'linear-gradient(to right, rgba(0, 100, 255, 0.3) 50%, transparent 50%)';
+      btnEl.style.textAlign = 'left';
+      btnEl.style.paddingLeft = '5.4px';
+      btnEl.style.paddingRight = '';
+    }
+  }
+
+  // Update THIS clicked button immediately (fixes "number changes but style doesn't")
+  e.currentTarget.textContent = '' + next;
+  applyAbilitySetButtonStyle(e.currentTarget, next);
+
+  // If we're in set view, also sync the left-panel inputs + ability chart
+  if (this.curSet === set) {
+    this.$('input[name=ability]').val(set.ability);
+    this.$('input[name=ability2]').val(set.ability2);
+
+    // There may be multiple abilitySetToggle buttons in the set view area;
+    // keep them consistent
+    var btns = this.$('button[name=abilitySetToggle]');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].textContent = '' + next;
+      applyAbilitySetButtonStyle(btns[i], next);
+    }
+
+    this.updateAbilitySetsForm();
+  } else {
+    // Team view: rerender the team list so the shown abilities update too
+    this.updateTeamView();
+  }
 
   this.curTeam.iconCache = '!';
-  this.updateAbilitySetsForm();
   this.save();
 },
 		ivSpreadChange: function (e) {
