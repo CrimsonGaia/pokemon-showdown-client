@@ -2,7 +2,7 @@
 	// this is a useful global
 	var teams;
 	//region Affinity/Aversion
-	var TypeAffinityAversion = {
+	exports.TypeAffinityAversion = {
 		bug: {
 			affinity: { binding: 5, bite: 5, claw: 5, dance: 5, drain: 5, sound: 5 },
 			aversion: { aura: 6, beam: 6, kick: 6 }
@@ -78,8 +78,9 @@
 		water: {
 			affinity: { beam: 5, bomb: 5, heal: 5, magic: 5, wind: 5 },
 			aversion: { breath: 6, crash: 6, drain: 6, explosive: 6, pierce: 6, slice: 6, weapon: 6 }
-		}
+		}	
 	};
+	var TypeAffinityAversion = exports.TypeAffinityAversion;
 	//region IS Type Overrides
 	var IndigoStarstormTypes = {
 		flygon: ["Bug", "Dragon"]
@@ -2163,6 +2164,9 @@
 			this.curChartType = 'details';
 			this.updateChart();
 		},
+
+
+		
 		//region Set stat form
 		plus: '',
 		minus: '',
