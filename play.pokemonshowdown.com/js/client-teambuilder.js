@@ -1206,100 +1206,62 @@
 			buf += '<div class="setchart-nickname" style="position: relative; padding-right: 320px;">';
 			buf += '<label>Nickname</label><input type="text" name="nickname" class="textbox" value="' + BattleLog.escapeHTML(set.name || '') + '" placeholder="' + BattleLog.escapeHTML(species.baseSpecies) + '" />';
 			// ---- Copy/Import/Move/Delete row (shrink-to-fit, pinned right) ----
-			buf += '<div class="setmenu" style="position:absolute; left: 115px; top: -1px; white-space:nowrap; width:auto;">' +	'<button name="copySet" style="padding: 1px 4px; font-size: 11px;"><i class="fa fa-files-o"></i>Copy</button> ' +
+			buf += '<div class="setmenu" style="position:absolute; right:0; top:0; white-space:nowrap; width:auto;">' +	'<button name="copySet" style="padding: 1px 4px; font-size: 11px;"><i class="fa fa-files-o"></i>Copy</button> ' +
 	'<button name="importSet" style="padding: 1px 4px; font-size: 11px;"><i class="fa fa-upload"></i>Import/Export</button> ' +
 	'<button name="moveSet" style="padding: 1px 4px; font-size: 11px;"><i class="fa fa-arrows"></i>Move</button> ' +
 	'<button name="deleteSet" style="padding: 1px 4px; font-size: 11px;"><i class="fa fa-trash"></i>Delete</button>' +
 '</div>';
 // ---- Form/Forme button OUTSIDE the box (next to Nickname) ----
-var dex = this.curTeam.dex;
-var baseSpecies = dex.species.get(species.baseSpecies);
+var baseSpecies = this.curTeam.dex.species.get(species.baseSpecies);
+var hasFormes = baseSpecies.otherFormes && baseSpecies.otherFormes.length;
+var hasForms = baseSpecies.cosmeticFormes && baseSpecies.cosmeticFormes.length;
+var hasAlt = hasFormes || hasForms;
 
-// "Real formes" = otherFormes that are NOT cosmetic (and NOT Mega/Gmax)
-var hasRealFormes = false;
-var eligibleAltCount = 0;
-
-// Build a fast lookup of cosmetic formes for this base species
-var cosmeticLookup = Object.create(null);
-if (baseSpecies.cosmeticFormes && baseSpecies.cosmeticFormes.length) {
-	for (var c = 0; c < baseSpecies.cosmeticFormes.length; c++) {
-		cosmeticLookup[toID(baseSpecies.cosmeticFormes[c])] = true;
-	}
-}
-
-if (baseSpecies.otherFormes && baseSpecies.otherFormes.length) {
-	for (var f = 0; f < baseSpecies.otherFormes.length; f++) {
-		var formeName = baseSpecies.otherFormes[f];
-		var formeId = toID(formeName);
-		var sp = dex.species.get(formeName);
-
-		if (!sp) continue;
-
-		// EXCLUDE Mega/Gmax ONLY for this forme UI
-		if (sp.isMega || sp.forme === 'Mega' || sp.forme === 'Gmax' || /-Mega(-[XY])?$/i.test(sp.name) || /-Gmax$/i.test(sp.name)) {
-			continue;
-		}
-
-		eligibleAltCount++;
-
-		// Treat as cosmetic if explicitly listed OR flagged cosmetic
-		var isCosmetic = !!cosmeticLookup[formeId] || !!(sp && (sp.isCosmeticForme || sp.isCosmetic));
-
-		if (!isCosmetic) { hasRealFormes = true; }
-	}
-}
-
-// "Cosmetic forms" = cosmeticFormes (and at least one exists after filtering)
-var hasCosmeticForms = false;
-if (baseSpecies.cosmeticFormes && baseSpecies.cosmeticFormes.length) {
-	for (var c2 = 0; c2 < baseSpecies.cosmeticFormes.length; c2++) {
-		var cfName = baseSpecies.cosmeticFormes[c2];
-		var cfSp = dex.species.get(cfName);
-		if (!cfSp) continue;
-		if (cfSp.isMega || cfSp.forme === 'Mega' || cfSp.forme === 'Gmax' || /-Mega(-[XY])?$/i.test(cfSp.name) || /-Gmax$/i.test(cfSp.name)) {
-			continue;
-		}
-		hasCosmeticForms = true;
-		eligibleAltCount++;
-		break;
-	}
-}
-
-// Only show the button if there is at least one eligible (non-mega/non-gmax) alt
-var hasAlt = eligibleAltCount > 0;
-
-// ---------- Level (ALWAYS visible) ----------
-buf += '<div style="position:absolute; left:118px; top:16px; display:flex; align-items:flex-end; gap:4px;">';
-buf += '<label style="font-size:10px; margin:0; position:relative; top:-4px;">Level</label>';
-buf += '<input type="number" name="level" class="textbox" value="' + (set.level || 100) + '" min="1" max="100" ' +
-       'style="width:32px; height:15px; font-size:10px; padding:1px 4px;" />';
-buf += '</div>';
-// ---- Shiny checkbox (ALWAYS show; in nickname row) ----
-if (this.curTeam.gen > 1) {
-	buf += '<div style="position:absolute; left: 204px; top: 22px; z-index:10; display:flex; align-items:center; gap:4px;">';
-	buf += '<label style="font-size:10px; margin:0; cursor:pointer; position:relative; top:-1px;">Shiny</label>';
-	buf += '<input type="checkbox" name="shiny" class="shiny-checkbox"' + (set.shiny ? ' checked' : '') +
-		' style="margin:0; cursor:pointer; width:12px; height:12px;" />';
-	buf += '</div>';
-}
 if (hasAlt) {
-	// Label: Forme (real formes exist) vs Form (cosmetic-only)
-	var ffLabel = hasRealFormes ? 'Forme' : 'Form';
+	// Label: "Formes" for real formes, "Forms" for cosmetic-only
+	var ffLabel = (hasForms && !hasFormes) ? 'Form' : 'Forme';
 
 	// Button text: everything after the first hyphen in set.species (e.g. "Poltchageist-Artisan" -> "Artisan")
 	var dash = set.species.indexOf('-');
 	var ffText = (dash >= 0 ? set.species.slice(dash + 1) : 'Base');
 
 	// Absolutely positioned so it DOES NOT push anything
-	buf += '<div style="position: absolute; left: 259px; top: 14px; display: flex; align-items: flex-end;">';
+	buf += '<div style="position: absolute; left: 122px; top: 14px; display: flex; align-items: flex-end;">';
 	buf += '<label style="font-size: 10px; margin: 0; position: relative; top: -3px;">' + ffLabel + '</label>';
 	buf += '<button type="button" class="textbox altform" name="altform" style="width: 90px; font-size: 10px; padding: 1px 4px; height: 18px; cursor: pointer; text-align: left;">' +
     BattleLog.escapeHTML(ffText) + '</button>';
+	// ---- Shiny checkbox next to Form button (NO overlap between sets) ----
+if (this.curTeam.gen > 1) {
+    buf += '<div style="position:absolute; left: 144px; top: 8px; z-index:10; display:flex; align-items:center; gap:4px;">';
+    buf += '<label style="font-size:10px; margin:0; cursor:pointer; position:relative; top:-1px;">Shiny</label>';
+    buf += '<input type="checkbox" name="shiny" class="shiny-checkbox"' + (set.shiny ? ' checked' : '') + ' style="margin:0; cursor:pointer; width:12px; height:12px;" />';
+    buf += '</div>';
+}
 	buf += '</div>';
 }
 
 buf += '</div>';
-			buf += '<div class="setchart" style="' + Dex.getTeambuilderSprite(set, this.curTeam.dex) + 'background-position-x: 20px; background-size: 96px 96px; overflow: hidden;">';
+			// --- sprite scaling based on Size (10% per tier, M=1.0) ---
+			// IMPORTANT: In PS, the sprite is a background image on `.setchart`, which spans the whole row.
+			// To prevent the sprite from visually overlapping the Pokemon field when it gets bigger,
+			// we keep the RIGHT edge fixed at the old 96px anchor (x = 20 + 96) so scaling grows left.
+			var __tierMap = {XS: -2, S: -1, M: 0, L: 1, XL: 2};
+			var __sizeKey = (set && set.size) ? set.size : 'M';
+			var __tier = (__tierMap[__sizeKey] !== undefined) ? __tierMap[__sizeKey] : 0;
+			var __basePx = 96;
+			var __spritePx = Math.round(__basePx * (1 + __tier * 0.10));
+			var __baseX = 20;
+			var __rightEdge = __baseX + __basePx;
+			var __spriteX = Math.round(__rightEdge - __spritePx) -10;
+			// Vertically center inside the original 96px box, then move up 10px.
+			var __spriteY = Math.round((__basePx - __spritePx) / 2) - 0;
+
+			buf += '<div class="setchart" style="' +
+				Dex.getTeambuilderSprite(set, this.curTeam.dex) +
+				'background-repeat:no-repeat; ' +
+				'background-size:' + __spritePx + 'px ' + __spritePx + 'px; ' +
+				'background-position:' + __spriteX + 'px ' + __spriteY + 'px; ' +
+				'overflow:hidden;">';
 			// icon
 			buf += '<div class="setcol setcol-icon" style="position: relative;">';
 			buf += '<div class="setcell-sprite" style="margin-left: 10px;"></div>';
@@ -1307,20 +1269,20 @@ buf += '</div>';
 			buf += '<div class="setcell setcell-pokemon"><label>Pok&eacute;mon</label><input type="text" name="pokemon" class="textbox chartinput" value="' + BattleLog.escapeHTML(set.species) + '" autocomplete="off" /></div></div>';
 			// details
 			buf += '<div class="setcol setcol-details"><div class="setrow">';
-			buf += '<div class="setcell setcell-details"><label style="position: relative; top: 6px;">Type';
+			buf += '<div class="setcell setcell-details"><label>Type';
 			// Type icons 
 			var types = species.types;
 			// Apply Indigo Starstorm type overrides
 			var isIndigoStarstorm = this.curTeam.format && (this.curTeam.format.includes('indigostarstorm') || this.curTeam.format.includes('isl'));
 			if (isIndigoStarstorm && IndigoStarstormTypes[toID(species.name)]) { types = IndigoStarstormTypes[toID(species.name)]; }
 			if (types) {
-				buf += '<span style="margin-left: 8px; vertical-align: middle; position: relative; ;">';
+				buf += '<span style="margin-left: 8px; vertical-align: middle; position: relative;">';
 				for (var i = 0; i < types.length; i++) buf += Dex.getTypeIcon(types[i]);
 				buf += '</span>';
 				// Tera Type icon below type icons
 				if (this.curTeam.gen === 9) {
 					var teraType = set.teraType || species.requiredTeraType || species.types[0];
-					buf += '<br><button type="button" class="teratype" name="teraType" value="' + BattleLog.escapeHTML(teraType) + '" style="background: none; border: none; padding: 0; cursor: pointer; width: 20px; height: 20px; margin-left: 8px; position: relative; top: 4px;">';
+					buf += '<br><button type="button" class="teratype" name="teraType" value="' + BattleLog.escapeHTML(teraType) + '" style="background: none; border: none; padding: 0; cursor: pointer; width: 20px; height: 20px; margin-left: 8px; position: relative; top: 6px;">';
 					buf += '<img src="' + Dex.resourcePrefix + 'sprites/types/Tera' + teraType + '.png" alt="' + teraType + '" style="width: 20px; height: 20px; object-fit: contain; display: block; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5));" />';
 					buf += '</button>';
 					buf += '<span style="position: absolute; left: 159px; top: 64px; pointer-events: none; display: flex; flex-direction: column; align-items: flex-end; width: 60px;">';
@@ -1405,39 +1367,23 @@ buf += '</div>';
 				buttonText = abilitySet;
 			}
 			buf += '<div class="setcol setcol-ability" style="align-content: end; position: relative; top: -5px;">'; ;
-			// height/weight + size
-var baseWeight = species.weightkg || 0;
-var baseHeight = species.heightm || 0;
-var sizeWeightModifier = species.sizeWeightModifier !== undefined ? species.sizeWeightModifier : 0.1;
-var sizeTiers = 0;
-var size = set.size || 'M';
-if (size === 'XS') sizeTiers = -2;
-else if (size === 'S') sizeTiers = -1;
-else if (size === 'L') sizeTiers = 1;
-else if (size === 'XL') sizeTiers = 2;
-
-var modifiedWeight = baseWeight * (1 + (sizeTiers * sizeWeightModifier));
-var modifiedHeight = baseHeight * (1 + (sizeTiers * sizeWeightModifier));
-
-// height (top) + weight (bottom), right-aligned
-buf += '<div class="setcell" style="position: relative; top: -6px; left: 60px; display: inline-block; margin-left: 6px;">' +
-	'<div style="font-size: 9px; display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1;">' +
-	'<span class="height-display">' + modifiedHeight.toFixed(1) + ' m</span>' +
-	'<span class="weight-display">' + modifiedWeight.toFixed(1) + ' kg</span>' +
-	'</div></div>';
-
-// Size label left of dropdown (no crazy offsets)
-buf += '<div class="setcell" style="position: relative; top: -25px; left: -10px; display: inline-block; margin-left: 13px;">' +
-	'<div style="display:flex; align-items:flex-end; gap:6px;">' +
-	'<label style="font-size: 10px; margin: 0; position: relative; top: -4px;">Size</label>' +
-	'<select name="size" class="textbox" style="width: 24px; height: 19px; padding-left: 2px; font-size: 9px; appearance: none; -webkit-appearance: none; -moz-appearance: none; padding-right: 2px; text-align: center;">' +
-	'<option value="XS"' + (set.size === 'XS' ? ' selected' : '') + '>XS</option>' +
-	'<option value="S"' + (set.size === 'S' ? ' selected' : '') + '>S</option>' +
-	'<option value="M"' + (!set.size || set.size === 'M' ? ' selected' : '') + '>M</option>' +
-	'<option value="L"' + (set.size === 'L' ? ' selected' : '') + '>L</option>' +
-	'<option value="XL"' + (set.size === 'XL' ? ' selected' : '') + '>XL</option>' +
-	'</select></div></div>';
-
+			// level
+			buf += '<div class="setcell" style="position: relative; top: -6px; left: 40px; display: inline-block;"><label style="font-size: 9px;">Level</label><input type="number" name="level" class="textbox" value="' + (set.level || 100) + '" min="1" max="100" style="width: 30px; height: 16px; font-size: 9px;" /></div>';
+			// size
+			buf += '<div class="setcell" style="position: relative; top: -6px; left: 30px; display: inline-block; margin-left: 13px;"><label style="font-size: 9px;">Size</label><select name="size" class="textbox" style="width: 24px; height: 19px; padding-left: 2px; font-size: 9px; appearance: none; -webkit-appearance: none; -moz-appearance: none; padding-right: 2px; text-align: center;"><option value="XS"' + (set.size === 'XS' ? ' selected' : '') + '>XS</option><option value="S"' + (set.size === 'S' ? ' selected' : '') + '>S</option><option value="M"' + (!set.size || set.size === 'M' ? ' selected' : '') + '>M</option><option value="L"' + (set.size === 'L' ? ' selected' : '') + '>L</option><option value="XL"' + (set.size === 'XL' ? ' selected' : '') + '>XL</option></select></div>';
+			// height/weight
+			var baseWeight = species.weightkg || 0;
+			var baseHeight = species.heightm || 0;
+			var sizeWeightModifier = species.sizeWeightModifier !== undefined ? species.sizeWeightModifier : 0.1;
+			var sizeTiers = 0;
+			var size = set.size || 'M';
+			if (size === 'XS') sizeTiers = -2;
+			else if (size === 'S') sizeTiers = -1;
+			else if (size === 'L') sizeTiers = 1;
+			else if (size === 'XL') sizeTiers = 2;
+			var modifiedWeight = baseWeight * (1 + (sizeTiers * sizeWeightModifier));
+			var modifiedHeight = baseHeight * (1 + (sizeTiers * sizeWeightModifier));
+			buf += '<div class="setcell" style="position: relative; top: -7px; left: 30px; display: inline-block; margin-left: 13px;"><div style="font-size: 9px; display: flex; gap: 8px;"><span class="height-display">' + modifiedHeight.toFixed(1) + ' m</span><span class="weight-display">' + modifiedWeight.toFixed(1) + ' kg</span></div></div>';
 			//ability set
 			buf += '<div class="setcell">';
 			buf += '<div style="display: flex; align-items: end; gap: 6px;"><label style="margin: 0;">Ability Set</label><button type="button" class="textbox' + buttonClass + '"' + buttonName + ' data-value="' + abilitySet + '" style="' + buttonStyle + '">' + buttonText + '</button></div>';
@@ -1777,10 +1723,21 @@ buf += '<div class="setcell" style="position: relative; top: -25px; left: -10px;
 			$setchart.attr('style', Dex.getTeambuilderSprite(set, this.curTeam.dex));
 		},
 		sizeChange: function (e) {
-			var $li = $(e.currentTarget).closest('li');
-			var i = +$li.attr('value');
-			var set = this.curSetList[i];
+			var $scope = $(e.currentTarget).closest('li');
+			var i = 0;
+			var set = null;
+
+			// Team list view -> we have a <li value="i">
+			if ($scope.length) {
+				i = +$scope.attr('value');
+				set = this.curSetList[i];
+			} else {
+				// Focused (single-Pokémon) view -> no <li>, use curSet
+				$scope = this.$el;
+				set = this.curSet;
+			}
 			if (!set) return;
+
 			var size = $(e.currentTarget).val();
 			if (size && ['XS', 'S', 'M', 'L', 'XL'].includes(size)) {
 				if (size !== 'M') { set.size = size; } 
@@ -1794,8 +1751,29 @@ buf += '<div class="setcell" style="position: relative; top: -25px; left: -10px;
 				var sizeTiers = {'XS': -2, 'S': -1, 'M': 0, 'L': 1, 'XL': 2}[size] || 0;
 				var modifiedWeight = baseWeight * (1 + (sizeTiers * sizeWeightModifier));
 				var modifiedHeight = baseHeight * (1 + (sizeTiers * sizeWeightModifier));
-				$li.find('.height-display').text(modifiedHeight.toFixed(1) + ' m');
-				$li.find('.weight-display').text(modifiedWeight.toFixed(1) + ' kg');
+				$scope.find('.height-display').text(modifiedHeight.toFixed(1) + ' m');
+				$scope.find('.weight-display').text(modifiedWeight.toFixed(1) + ' kg');
+
+				// Update sprite scale immediately (10% per tier) without overlapping the Pokemon field.
+				var tierMap = {XS: -2, S: -1, M: 0, L: 1, XL: 2};
+				var tier = (tierMap[size] !== undefined) ? tierMap[size] : 0;
+				var basePx = 96;
+				var spritePx = Math.round(basePx * (1 + tier * 0.10));
+				var baseX = 20;
+				var rightEdge = baseX + basePx;
+				var spriteX = Math.round(rightEdge - spritePx);
+				var spriteY = Math.round((basePx - spritePx) / 2) - 10;
+
+				var $setchart = $scope.find('.setchart').first();
+				if ($setchart.length) {
+					$setchart.attr('style',
+						Dex.getTeambuilderSprite(set, this.curTeam.dex) +
+						'background-repeat:no-repeat; ' +
+						'background-size:' + spritePx + 'px ' + spritePx + 'px; ' +
+						'background-position:' + spriteX + 'px ' + spriteY + 'px; ' +
+						'overflow:hidden;'
+					);
+				}
 			}
 		},
 		// clipboard
@@ -2944,19 +2922,19 @@ buf += '<div class="setcell" style="position: relative; top: -25px; left: -10px;
 			this.save();
 		},
 		formeToggleSelect: function (e) {
-	e.preventDefault();
-	e.stopPropagation();
+    e.preventDefault();
+    e.stopPropagation();
 
-	var set = this.curSet;
-	var i = 0;
-	if (!set) {
-		i = +$(e.currentTarget).closest('li').attr('value');
-		set = this.curSetList[i];
-	}
-	if (!set) return;
+    var set = this.curSet;
+    var i = 0;
+    if (!set) {
+        i = +$(e.currentTarget).closest('li').attr('value');
+        set = this.curSetList[i];
+    }
+    if (!set) return;
 
-	// Open the dedicated forme picker popup
-	app.addPopup(FormePopup, { curSet: set, index: i, room: this });
+    // Semimodal popup like Tera selector (NOT anchored)
+    app.addPopup(FormePopup, { curSet: set, index: i, room: this });
 },
 		abilitySetChange: function (e) {
   e.preventDefault();
@@ -3247,57 +3225,34 @@ buf += '<div class="setcell" style="position: relative; top: -25px; left: -10px;
 			$setchart.attr('style', Dex.getTeambuilderSprite(set, this.curTeam.dex));
 		},
 		altForm: function (e) {
-  e.preventDefault();
-  e.stopPropagation();
-
-  var set, i;
-
-  if (this.curSet) {
-    // focused (set) view
-    set = this.curSet;
-    i = this.curSetLoc;
-  } else {
-    // team list view
-    i = +$(e.currentTarget).closest('li').attr('value');
-    set = this.curSetList[i];
-  }
-
-  if (!set) return;
-
-  app.addPopup(FormePopup, {curSet: set, index: i, room: this});
-},
+			var set = this.curSet;
+			var i = 0;
+			if (!set) {
+				i = +$(e.currentTarget).closest('li').attr('value');
+				set = this.curSetList[i];
+			}
+			app.addPopup(AltFormPopup, { curSet: set, index: i, room: this });
+		},
 		formeToggleSelect: function (e) {
-  e.preventDefault();
-  e.stopPropagation();
-
-  var set, i;
-
-  if (this.curSet) {
-    set = this.curSet;
-    i = this.curSetLoc;
-  } else {
-    i = +$(e.currentTarget).closest('li').attr('value');
-    set = this.curSetList[i];
-  }
-
-  if (!set) return;
-
-  app.addPopup(FormePopup, {curSet: set, index: i, room: this});
-},
+			var set = this.curSet;
+			var i = 0;
+			if (!set) {
+				i = +$(e.currentTarget).closest('li').attr('value');
+				set = this.curSetList[i];
+			}
+			if (!set) return;
+			app.addPopup(AltFormPopup, { curSet: set, index: i, room: this });
+		},
 		teraTypeSelect: function (e) {
-  var set, i;
-
-  if (this.curSet) {
-    set = this.curSet;
-    i = this.curSetLoc;
-  } else {
-    i = +$(e.currentTarget).closest('li').attr('value');
-    set = this.curSetList[i];
-  }
-
-  if (!set) return;
-  app.addPopup(TeraTypePopup, {curSet: set, index: i, room: this});
-},
+			var set = this.curSet;
+			var i = 0;
+			if (!set) {
+				i = +$(e.currentTarget).closest('li').attr('value');
+				set = this.curSetList[i];
+			}
+			if (!set) return;
+			app.addPopup(TeraTypePopup, { curSet: set, index: i, room: this });
+		},
 		affinityFlagClick: function (e) {
 			e.preventDefault();
 			e.stopPropagation();
@@ -3950,32 +3905,10 @@ if (entry && entry.slice(0, 8) === 'ability|') {
 	// - cosmetic forms (cosmeticFormes)
 	var formeIds = [toID(baseSpecies.name)];
 	if (baseSpecies.otherFormes) {
-	for (var i = 0; i < baseSpecies.otherFormes.length; i++) {
-		var formeName = baseSpecies.otherFormes[i];
-		var sp = dex.species.get(formeName);
-
-		if (!sp) continue;
-
-		// 🚫 Skip battle-only formes (Mega/Gmax/etc)
-		if (
-			sp.isMega ||
-			sp.isPrimal ||
-			sp.isUltra ||
-			sp.forme === 'Mega' ||
-			sp.forme === 'Mega-X' ||
-			sp.forme === 'Mega-Y' ||
-			sp.forme === 'Primal' ||
-			sp.forme === 'Ultra' ||
-			sp.forme === 'Gmax' ||
-			sp.isGigantamax ||
-			sp.battleOnly
-		) {
-			continue;
+		for (var i = 0; i < baseSpecies.otherFormes.length; i++) {
+			formeIds.push(toID(baseSpecies.otherFormes[i]));
 		}
-
-		formeIds.push(toID(formeName));
 	}
-}
 	if (baseSpecies.cosmeticFormes) {
 		for (var j = 0; j < baseSpecies.cosmeticFormes.length; j++) {
 			formeIds.push(toID(baseSpecies.cosmeticFormes[j]));
@@ -3993,45 +3926,12 @@ if (entry && entry.slice(0, 8) === 'ability|') {
 	}
 
 	// Label header: "Formes" if real formes exist, else "Forms" (cosmetic-only)
-	var cosmeticLookup = Object.create(null);
-if (baseSpecies.cosmeticFormes && baseSpecies.cosmeticFormes.length) {
-	for (var c = 0; c < baseSpecies.cosmeticFormes.length; c++) {
-		cosmeticLookup[toID(baseSpecies.cosmeticFormes[c])] = true;
-	}
-}
+	var hasRealFormes = !!(baseSpecies.otherFormes && baseSpecies.otherFormes.length);
+	var headerLabel = hasRealFormes ? 'Formes' : 'Forms';
 
-var hasRealFormes = false;
-if (baseSpecies.otherFormes && baseSpecies.otherFormes.length) {
-	for (var f = 0; f < baseSpecies.otherFormes.length; f++) {
-		var formeName = baseSpecies.otherFormes[f];
-		var sp = dex.species.get(formeName);
-		if (!sp) continue;
-		// 🚫 EXCLUDE battle-only formes
-		if (
-			sp.isMega ||
-			sp.isPrimal ||
-			sp.isUltra ||
-			sp.forme === 'Mega' ||
-			sp.forme === 'Mega-X' ||
-			sp.forme === 'Mega-Y' ||
-			sp.forme === 'Primal' ||
-			sp.forme === 'Ultra' ||
-			sp.forme === 'Gmax' ||
-			sp.isGigantamax ||
-			sp.battleOnly
-		) { continue; }
-		var formeId = toID(formeName);
-		var isCosmetic =
-			!!cosmeticLookup[formeId] || !!(sp && (sp.isCosmeticForme || sp.isCosmetic));
-		if (!isCosmetic) {
-			hasRealFormes = true;
-			break;
-		}
-	}
-}
-var headerLabel = hasRealFormes ? 'Formes' : 'Forms';
 	var maxSpriteSize = 96;
 	var buf = '';
+
 	buf += '<p>Pick a ' + (hasRealFormes ? 'forme' : 'form') + ' or <button name="close" class="button">Cancel</button></p>';
 	buf += '<h2 style="margin: 6px 0 8px;">' + headerLabel + '</h2>';
 	buf += '<div class="formlist">';
@@ -4048,8 +3948,8 @@ var headerLabel = hasRealFormes ? 'Formes' : 'Forms';
 		// IMPORTANT: sprite filenames keep hyphens, but toID() removes them.
 		// Build sprite filename as: baseid + '-' + suffix (derived from toID form)
 		var spid = toID(sp.name);
-		var suffix = (spid.startsWith(baseId) ? spid.slice(baseId.length) : '');
-		var spriteId = baseId + (suffix ? '-' + suffix : '');
+		var suffix = (spid.startsWith(baseid) ? spid.slice(baseid.length) : '');
+		var spriteId = baseid + (suffix ? '-' + suffix : '');
 
 		var spriteData = Dex.getTeambuilderSpriteData(spriteId, dex);
 		var spriteSize = (spriteData.spriteDir === 'sprites/dex' ? 120 : 96);
@@ -4091,27 +3991,24 @@ var headerLabel = hasRealFormes ? 'Formes' : 'Forms';
 
 	this.close();
 
-// ----- Write back to the correct team slot -----
-var room = this.room;
+	// Ensure the room's list is updated (important when not focused on a single set)
+	this.room.curSetList[this.chartIndex] = this.curSet;
 
-// In focused view, the correct slot is curSetLoc.
-// In team view, use the index passed into the popup.
-var idx = (room.curSet ? room.curSetLoc : this.chartIndex);
+	// Refresh UI
+	if (this.room.curSet) {
+		this.room.updatePokemonSprite();
+	} else {
+		this.room.update();
+	}
 
-// Safety: if idx is invalid, don't write.
-if (typeof idx !== 'number' || idx < 0 || idx >= room.curSetList.length) return;
+	// Update the visible inputs (team view)
+	this.room.$('input[name=pokemon]').eq(this.chartIndex).val(this.curSet.species);
+	this.room.$('input[name=nickname]').eq(this.chartIndex).val(this.curSet.name || '');
 
-// Ensure the room's set references match
-if (room.curSet) room.curSet = this.curSet;
-room.curSetList[idx] = this.curSet;
-
-// ----- Re-render UI (this updates ability sets immediately) -----
-room.update();
-
-// ----- Persist -----
-room.curTeam.team = Storage.packTeam(room.curSetList);
-Storage.saveTeam(room.curTeam);
-app.user.trigger('saveteams');
+	// Persist
+	this.room.curTeam.team = Storage.packTeam(this.room.curSetList);
+	Storage.saveTeam(this.room.curTeam);
+	app.user.trigger('saveteams');
 }
 });
 	var AltFormPopup = this.AltFormPopup = Popup.extend({
@@ -4123,7 +4020,7 @@ app.user.trigger('saveteams');
 			var dex = this.room.curTeam.dex;
 			var species = dex.species.get(this.curSet.species);
 			var baseid = toID(species.baseSpecies);
-			var forms = [baseid].concat((species.cosmeticFormes || []).map(toID));
+			var forms = [baseid].concat(species.cosmeticFormes.map(toID));
 			var maxSpriteSize = 96;
 			var buf = '';
 			var baseSpecies = dex.species.get(species.baseSpecies);
@@ -4156,6 +4053,7 @@ buf += '<p>' + title + ' or <button name="close" class="button">Cancel</button><
 			this.close();
 			if (this.room.curSet) { this.room.updatePokemonSprite(); } 
 			else { this.room.update(); }
+			this.room.$('input[name=pokemon]').eq(this.chartIndex).val(this.curSet.species);
 			this.room.curTeam.team = Storage.packTeam(this.room.curSetList);
 			Storage.saveTeam(this.room.curTeam);
 		}
