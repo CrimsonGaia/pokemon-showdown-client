@@ -1265,6 +1265,8 @@ if (baseSpecies.cosmeticFormes && baseSpecies.cosmeticFormes.length) {
 	}
 }
 
+
+
 // Only show the button if there is at least one eligible (non-mega/non-gmax) alt
 var hasAlt = eligibleAltCount > 0;
 
@@ -1276,7 +1278,7 @@ buf += '<input type="number" name="level" class="textbox" value="' + (set.level 
 buf += '</div>';
 // ---- Shiny checkbox (ALWAYS show; in nickname row) ----
 if (this.curTeam.gen > 1) {
-	buf += '<div style="position:absolute; left: 204px; top: 22px; z-index:10; display:flex; align-items:center; gap:4px;">';
+	buf += '<div style="position:absolute; left: 209px; top: 22px; z-index:10; display:flex; align-items:center; gap:4px;">';
 	buf += '<label style="font-size:10px; margin:0; cursor:pointer; position:relative; top:-1px;">Shiny</label>';
 	buf += '<input type="checkbox" name="shiny" class="shiny-checkbox"' + (set.shiny ? ' checked' : '') +
 		' style="margin:0; cursor:pointer; width:12px; height:12px;" />';
@@ -1291,15 +1293,15 @@ if (hasAlt) {
 	var ffText = (dash >= 0 ? set.species.slice(dash + 1) : 'Base');
 
 	// Absolutely positioned so it DOES NOT push anything
-	buf += '<div style="position: absolute; left: 259px; top: 14px; display: flex; align-items: flex-end;">';
+	buf += '<div style="position: absolute; left: 270px; top: 14px; display: flex; align-items: flex-end;">';
 	buf += '<label style="font-size: 10px; margin: 0; position: relative; top: -3px;">' + ffLabel + '</label>';
-	buf += '<button type="button" class="textbox altform" name="altform" style="width: 90px; font-size: 10px; padding: 1px 4px; height: 18px; cursor: pointer; text-align: left;">' +
+	buf += '<button type="button" class="textbox altform" name="altform" style="width: 80px; font-size: 10px; padding: 1px 4px; height: 18px; cursor: pointer; text-align: left;">' +
     BattleLog.escapeHTML(ffText) + '</button>';
 	buf += '</div>';
 }
 
 buf += '</div>';
-			buf += '<div class="setchart" style="' + Dex.getTeambuilderSprite(set, this.curTeam.dex) + 'background-position-x: 20px; background-size: 96px 96px; overflow: hidden;">';
+			buf += '<div class="setchart" style="' + this.getScaledTeambuilderSpriteStyle(set) + '">';
 			// icon
 			buf += '<div class="setcol setcol-icon" style="position: relative;">';
 			buf += '<div class="setcell-sprite" style="margin-left: 10px;"></div>';
@@ -1420,17 +1422,17 @@ var modifiedWeight = baseWeight * (1 + (sizeTiers * sizeWeightModifier));
 var modifiedHeight = baseHeight * (1 + (sizeTiers * sizeWeightModifier));
 
 // height (top) + weight (bottom), right-aligned
-buf += '<div class="setcell" style="position: relative; top: -6px; left: 60px; display: inline-block; margin-left: 6px;">' +
+buf += '<div class="setcell" style="position: relative; top: -6px; left: 64px; display: inline-block; margin-left: 6px;">' +
 	'<div style="font-size: 9px; display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1;">' +
 	'<span class="height-display">' + modifiedHeight.toFixed(1) + ' m</span>' +
 	'<span class="weight-display">' + modifiedWeight.toFixed(1) + ' kg</span>' +
 	'</div></div>';
 
 // Size label left of dropdown (no crazy offsets)
-buf += '<div class="setcell" style="position: relative; top: -25px; left: -10px; display: inline-block; margin-left: 13px;">' +
+buf += '<div class="setcell" style="position: relative; top: -25px; display: inline-block; margin-left: 13px;">' +
 	'<div style="display:flex; align-items:flex-end; gap:6px;">' +
-	'<label style="font-size: 10px; margin: 0; position: relative; top: -4px;">Size</label>' +
-	'<select name="size" class="textbox" style="width: 24px; height: 19px; padding-left: 2px; font-size: 9px; appearance: none; -webkit-appearance: none; -moz-appearance: none; padding-right: 2px; text-align: center;">' +
+	'<label style="font-size: 10px; margin: 0; position: relative; top: -1px;">Size</label>' +
+	'<select name="size" class="textbox" style="width: 24px; height: 15px; padding-left: 2px; font-size: 9px; appearance: none; -webkit-appearance: none; -moz-appearance: none; padding-right: 2px; text-align: center;">' +
 	'<option value="XS"' + (set.size === 'XS' ? ' selected' : '') + '>XS</option>' +
 	'<option value="S"' + (set.size === 'S' ? ' selected' : '') + '>S</option>' +
 	'<option value="M"' + (!set.size || set.size === 'M' ? ' selected' : '') + '>M</option>' +
@@ -1757,47 +1759,122 @@ buf += '<div class="setcell" style="position: relative; top: -25px; left: -10px;
 			e.currentTarget.value = set.name = name;
 			this.save();
 		},
+		getScaledTeambuilderSpriteStyle: function (set) {
+	// Base sprite CSS (image + default positioning) from PS/Dex
+	var css = Dex.getTeambuilderSprite(set, this.curTeam.dex) || '';
+
+	// Ensure css ends with a semicolon so concatenation can't break
+	css = css.trim();
+	if (css && css[css.length - 1] !== ';') css += ';';
+
+	// REMOVE anything that would fight us
+	// (Dex sometimes outputs background-position, or background-position-x/y, and background-size)
+	css = css
+		.replace(/background-position\s*:[^;]*;?/ig, '')
+		.replace(/background-position-x\s*:[^;]*;?/ig, '')
+		.replace(/background-position-y\s*:[^;]*;?/ig, '')
+		.replace(/background-size\s*:[^;]*;?/ig, '')
+		.replace(/background-repeat\s*:[^;]*;?/ig, '');
+
+	// Size tier -> 10% scale per step (XS..XL)
+	var size = set.size || 'M';
+	var tierMap = {XS: -2, S: -1, M: 0, L: 1, XL: 2};
+	var tier = (tierMap[size] !== undefined) ? tierMap[size] : 0;
+
+	var basePx = 96;
+	var spritePx = Math.round(basePx * (1 + tier * 0.10));
+
+	// Treat the sprite as living in a fixed 96x96 "frame" whose top-left is (baseX, baseY)
+	// These match what your UI is already laid out for.
+	var baseX = 5;
+	var baseY = 0;
+
+	var delta = Math.round((basePx - spritePx) / 2);
+	var spriteX = baseX + delta;  
+	var spriteY = baseY + delta; 
+
+	return css +
+	'background-position:' + spriteX + 'px ' + spriteY + 'px; ' +
+	'background-position-x:' + spriteX + 'px; ' +
+	'background-position-y:' + spriteY + 'px; ' +
+	'background-size:' + spritePx + 'px ' + spritePx + 'px; ' +
+	'background-repeat:no-repeat; ' +
+	'overflow:hidden;';
+},
+
+
+
 		shinyChange: function (e) {
-			console.log('shinyChange called!', e);
-			// Always get the set from the list item to ensure we're updating the correct Pokemon
-			var $li = $(e.currentTarget).closest('li');
-			var i = +$li.attr('value');
-			var set = this.curSetList[i];
-			if (!set) {
-				console.log('No set found in shinyChange');
-				return;
-			}
-			var isChecked = $(e.currentTarget).is(':checked');
-			console.log('Shiny checked:', isChecked, 'for pokemon at index:', i);
-			if (isChecked) { set.shiny = true; } 
-			else { delete set.shiny; }
-			this.save();
-			// Update the sprite to show shiny status
-			var $setchart = $li.find('.setchart');
-			$setchart.attr('style', Dex.getTeambuilderSprite(set, this.curTeam.dex));
-		},
+	var $target = $(e.currentTarget);
+	var $li = $target.closest('li');
+
+	var set, $scope;
+	if ($li.length) {
+		var i = +$li.attr('value');
+		set = this.curSetList[i];
+		$scope = $li;
+	} else {
+		set = this.curSet;
+		$scope = this.$el;
+	}
+	if (!set) return;
+
+	if ($target.is(':checked')) set.shiny = true;
+	else delete set.shiny;
+
+	this.save();
+
+	var $setchart = $scope.find('.setchart').first();
+	if ($setchart.length) $setchart.attr('style', this.getScaledTeambuilderSpriteStyle(set));
+},
+
 		sizeChange: function (e) {
-			var $li = $(e.currentTarget).closest('li');
-			var i = +$li.attr('value');
-			var set = this.curSetList[i];
-			if (!set) return;
-			var size = $(e.currentTarget).val();
-			if (size && ['XS', 'S', 'M', 'L', 'XL'].includes(size)) {
-				if (size !== 'M') { set.size = size; } 
-				else { delete set.size; }
-				this.save();
-				// Update height and weight display
-				var species = this.curTeam.dex.species.get(set.species);
-				var baseWeight = species.weightkg || 0;
-				var baseHeight = species.heightm || 0;
-				var sizeWeightModifier = species.sizeWeightModifier !== undefined ? species.sizeWeightModifier : 0.1;
-				var sizeTiers = {'XS': -2, 'S': -1, 'M': 0, 'L': 1, 'XL': 2}[size] || 0;
-				var modifiedWeight = baseWeight * (1 + (sizeTiers * sizeWeightModifier));
-				var modifiedHeight = baseHeight * (1 + (sizeTiers * sizeWeightModifier));
-				$li.find('.height-display').text(modifiedHeight.toFixed(1) + ' m');
-				$li.find('.weight-display').text(modifiedWeight.toFixed(1) + ' kg');
-			}
-		},
+	var $target = $(e.currentTarget);
+
+	// Works in BOTH contexts:
+	// 1) Team list: inside <li value="i">
+	// 2) Focused/main panel: no <li>, use this.curSet
+	var $li = $target.closest('li');
+	var set, $scope;
+
+	if ($li.length) {
+		var i = +$li.attr('value');
+		set = this.curSetList[i];
+		$scope = $li;
+	} else {
+		set = this.curSet;
+		$scope = this.$el; // search within the main panel
+	}
+
+	if (!set) return;
+
+	var size = $target.val();
+	if (!size || !['XS', 'S', 'M', 'L', 'XL'].includes(size)) return;
+
+	// Persist size
+	if (size !== 'M') set.size = size;
+	else delete set.size;
+
+	this.save();
+
+	// Update height/weight display (same math you already use)
+	var species = this.curTeam.dex.species.get(set.species);
+	var baseWeight = species.weightkg || 0;
+	var baseHeight = species.heightm || 0;
+	var sizeWeightModifier = (species.sizeWeightModifier !== undefined ? species.sizeWeightModifier : 0.1);
+	var sizeTiers = {XS: -2, S: -1, M: 0, L: 1, XL: 2}[size] || 0;
+
+	var modifiedWeight = baseWeight * (1 + (sizeTiers * sizeWeightModifier));
+	var modifiedHeight = baseHeight * (1 + (sizeTiers * sizeWeightModifier));
+
+	$scope.find('.height-display').first().text(modifiedHeight.toFixed(1) + ' m');
+	$scope.find('.weight-display').first().text(modifiedWeight.toFixed(1) + ' kg');
+
+	// Reapply sprite style (this is the scaling feature)
+	var $setchart = $scope.find('.setchart').first();
+	if ($setchart.length) $setchart.attr('style', this.getScaledTeambuilderSpriteStyle(set));
+},
+
 		// clipboard
 		clipboard: [],
 		clipboardCount: function () { return this.clipboard.length; },
@@ -2098,7 +2175,7 @@ buf += '<div class="setcell" style="position: relative; top: -25px; left: -10px;
 		updatePokemonSprite: function () {
 			var set = this.curSet;
 			if (!set) return;
-			this.$('.setchart').attr('style', Dex.getTeambuilderSprite(set, this.curTeam.dex));
+			this.$('.setchart').attr('style', this.getScaledTeambuilderSpriteStyle(set));
 			this.$('.pokemonicon-' + this.curSetLoc).css('background', Dex.getPokemonIcon(set).substr(11));
 			var item = this.curTeam.dex.items.get(set.item);
 			if (item.id) { this.$('.setcol-details .itemicon').css('background', Dex.getItemIcon(item).substr(11)); } 
@@ -3244,7 +3321,8 @@ buf += '<div class="setcell" style="position: relative; top: -25px; left: -10px;
 			// Update only the specific pokemon's sprite
 			var $li = $container;
 			var $setchart = $li.find('.setchart');
-			$setchart.attr('style', Dex.getTeambuilderSprite(set, this.curTeam.dex));
+			$setchart.attr('style', this.getScaledTeambuilderSpriteStyle(set));
+
 		},
 		altForm: function (e) {
   e.preventDefault();
