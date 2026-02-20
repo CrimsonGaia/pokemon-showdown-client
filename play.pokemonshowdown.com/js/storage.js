@@ -1190,7 +1190,6 @@ text += 'Size: ' + String(curSet.size || 'M').toUpperCase() + "  \n";
 
 			if (!first) { text += "  \n"; }
 			if (curSet.nature) { text += '' + curSet.nature + ' Nature' + "  \n"; }
-			if (!first) { text += "  \n"; }
 		}
 		if (curSet.moves) for (var j = 0; j < curSet.moves.length; j++) {
 			var move = curSet.moves[j];
