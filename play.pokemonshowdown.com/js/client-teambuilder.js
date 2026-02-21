@@ -246,6 +246,28 @@
 				window.builderTeam = team;
 				teambuilder.loadingTeam = false;
 				teambuilder.curSetList = Storage.unpackTeam(team.team);
+				for (var k = 0; k < teambuilder.curSetList.length; k++) {
+  var s = teambuilder.curSetList[k];
+  if (!s || !s.species) continue;
+  var dex = teambuilder.curTeam.dex || Dex;
+var sp = dex.species.get(s.species);
+var ab = sp.abilities || {};
+  var as = (s.abilitySet === 2 ? 2 : 1);
+
+  if (as === 2) {
+    s.ability = ab.H || '';
+    s.ability2 = ab.S || '';
+    if (!s.ability && !s.ability2) { // fallback if set 2 doesn't exist
+      s.abilitySet = 1;
+      s.ability = ab['0'] || '';
+      s.ability2 = ab['1'] || '';
+    }
+  } else {
+    s.abilitySet = 1;
+    s.ability = ab['0'] || '';
+    s.ability2 = ab['1'] || '';
+  }
+}
 				Storage.activeSetList = teambuilder.curSetList;
 				teambuilder.curTeam.team = Storage.packTeam(teambuilder.curSetList);
 				teambuilder.updateTeamView();
@@ -721,6 +743,29 @@
 			}
 		}
 		Storage.activeSetList = this.curSetList = Storage.unpackTeam(this.curTeam.team);
+
+for (var k = 0; k < this.curSetList.length; k++) {
+  var s = this.curSetList[k];
+  if (!s || !s.species) continue;
+  var dex = this.curTeam.dex || Dex;
+var sp = dex.species.get(s.species);
+var ab = sp.abilities || {};
+  var as = (s.abilitySet === 2 ? 2 : 1);
+
+  if (as === 2) {
+    s.ability = ab.H || '';
+    s.ability2 = ab.S || '';
+    if (!s.ability && !s.ability2) { // fallback if set 2 doesn't exist
+      s.abilitySet = 1;
+      s.ability = ab['0'] || '';
+      s.ability2 = ab['1'] || '';
+    }
+  } else {
+    s.abilitySet = 1;
+    s.ability = ab['0'] || '';
+    s.ability2 = ab['1'] || '';
+  }
+}
 			this.curTeamIndex = i;
 			this.update();
 		},
@@ -1284,9 +1329,32 @@ buf += '</div>';
 			buf += '<div class="setchart" style="' + this.getScaledTeambuilderSpriteStyle(set) + '">';
 			// icon
 			buf += '<div class="setcol setcol-icon" style="position: relative;">';
+			// Size dropdown (top-right)
+buf += '<div class="size-in-sprite" style="position:absolute; bottom:32px; right: 0px; z-index:20; align-items:flex-end; gap:6px;">' +
+	'<label style="font-size:10px; margin:0; position:relative; top:-1px;">Size</label>' +
+	'<select name="size" class="textbox" style="width:24px; height:15px; padding-left:2px; font-size:9px; appearance:none; -webkit-appearance:none; -moz-appearance:none; padding-right:2px; text-align:center;">' +
+	'<option value="XS"' + (set.size === 'XS' ? ' selected' : '') + '>XS</option>' +
+	'<option value="S"' + (set.size === 'S' ? ' selected' : '') + '>S</option>' +
+	'<option value="M"' + (!set.size || set.size === 'M' ? ' selected' : '') + '>M</option>' +
+	'<option value="L"' + (set.size === 'L' ? ' selected' : '') + '>L</option>' +
+	'<option value="XL"' + (set.size === 'XL' ? ' selected' : '') + '>XL</option>' +
+	'</select></div>';
 			buf += '<div class="setcell-sprite" style="margin-left: 10px;"></div>';
 			
 			buf += '<div class="setcell setcell-pokemon"><label>Pok&eacute;mon</label><input type="text" name="pokemon" class="textbox chartinput" value="' + BattleLog.escapeHTML(set.species) + '" autocomplete="off" /></div></div>';
+			// ---- Height/Weight (computed once, used under Tera icon) ----
+var baseWeight = species.weightkg || 0;
+var baseHeight = species.heightm || 0;
+var sizeWeightModifier = species.sizeWeightModifier !== undefined ? species.sizeWeightModifier : 0.1;
+var sizeTiers = 0;
+var size = set.size || 'M';
+if (size === 'XS') sizeTiers = -2;
+else if (size === 'S') sizeTiers = -1;
+else if (size === 'L') sizeTiers = 1;
+else if (size === 'XL') sizeTiers = 2;
+
+var modifiedWeight = baseWeight * (1 + (sizeTiers * sizeWeightModifier));
+var modifiedHeight = baseHeight * (1 + (sizeTiers * sizeWeightModifier));
 			// details
 			buf += '<div class="setcol setcol-details"><div class="setrow">';
 			buf += '<div class="setcell setcell-details"><label style="position: relative; top: 6px;">Type';
@@ -1302,44 +1370,19 @@ buf += '</div>';
 				// Tera Type icon below type icons
 				if (this.curTeam.gen === 9) {
 					var teraType = set.teraType || species.requiredTeraType || species.types[0];
-					buf += '<br><button type="button" class="teratype" name="teraType" value="' + BattleLog.escapeHTML(teraType) + '" style="background: none; border: none; padding: 0; cursor: pointer; width: 20px; height: 20px; margin-left: 8px; position: relative; top: 4px;">';
+					buf += '<br><button type="button" class="teratype" name="teraType" value="' + BattleLog.escapeHTML(teraType) + '" style="background: none; border: none; padding: 0; cursor: pointer; width: 20px; height: 20px; margin-left: 4px; position: relative; top: 4px;">';
 					buf += '<img src="' + Dex.resourcePrefix + 'sprites/types/Tera' + teraType + '.png" alt="' + teraType + '" style="width: 20px; height: 20px; object-fit: contain; display: block; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5));" />';
 					buf += '</button>';
-					buf += '<span style="position: absolute; left: 159px; top: 64px; pointer-events: none; display: flex; flex-direction: column; align-items: flex-end; width: 60px;">';
-					buf += '<span style="font-size: 9px; margin-right: 2px;"></span>';
-					buf += '<span style="font-size: 9px;"></span>';
-					buf += '</span>';
+					buf += '<div style="margin-top: 11px; margin-left: 2px; font-size: 9px; line-height: 1.1; text-align: left;">' +
+					'<span class="height-display" style="display:block;">' + modifiedHeight.toFixed(1) + ' m</span>' +
+					'<span class="weight-display" style="display:block;">' + modifiedWeight.toFixed(1) + ' kg</span>' +
+					'</div>';
 				}
 			}
 			buf += '</label>';
 			buf += '<div style="display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap;">';
 			buf += '<div style="display: flex; flex-direction: column;">';
 
-			if (this.curTeam.gen > 1) {
-				// Gender button
-				var speciesGender = species.gender; // 'M', 'F', 'N', or undefined
-				var currentGender = set.gender || '';
-				var genderButton = '';
-				if (speciesGender === 'N') {
-					// Genderless - grey button with em dash
-					genderButton = '<button type="button" class="textbox genderToggle" name="genderToggle" data-value="" style="width: 40px; font-weight: bold; font-size: 12px; pointer-events: none; padding: 1.5px 0; height: 18px; background: rgba(128, 128, 128, 0.3); text-align: center;"><span style="position: relative; top: -2px;">—</span></button>';
-				} else if (speciesGender === 'M') {
-					// 100% Male - centered blue button
-					genderButton = '<button type="button" class="textbox genderToggle" name="genderToggle" data-value="M" style="width: 40px; font-weight: bold; font-size: 12px; pointer-events: none; padding: 1.5px 0; height: 18px; background: rgba(0, 150, 255, 0.3); text-align: center;"><span style="position: relative; top: -0.75px; left: -1px; color: #0004ffff;">♂</span></button>';
-				} else if (speciesGender === 'F') {
-					// 100% Female - centered pink button
-					genderButton = '<button type="button" class="textbox genderToggle" name="genderToggle" data-value="F" style="width: 40px; font-weight: bold; font-size: 12px; pointer-events: none; padding: 1.5px 0; height: 18px; background: rgba(255, 100, 150, 0.3); text-align: center;"><span style="position: relative; top: -2px; left: -1px; color: #ff0055ff;">♀</span></button>';
-				} else {
-					// Can be Male or Female - toggle button (default to Male if not set)
-					var isMale = currentGender === 'M' || !currentGender;
-					if (isMale) {
-					genderButton = '<button type="button" class="textbox genderToggle" name="genderToggle" data-value="M" style="width: 40px; font-weight: bold; font-size: 12px; cursor: pointer; padding: 1.5px 0; height: 18px; background: linear-gradient(to right, rgba(0, 150, 255, 0.3) 50%, transparent 50%); text-align: left; padding-left: 6px;"><span style="position: relative; top: -0.75px; right: 2px; color: #0004ffff;">♂</span></button>'; } 
-					else { genderButton = '<button type="button" class="textbox genderToggle" name="genderToggle" data-value="F" style="width: 40px; font-weight: bold; font-size: 12px; cursor: pointer; padding: 1.5px 0; height: 18px; background: linear-gradient(to left, rgba(255, 100, 150, 0.3) 50%, transparent 50%); text-align: right; padding-right: 6px;"><span style="position: relative; top: -1.5px; left: 1px; color: #ff0055ff;">♀</span></button>'; }
-				}
-				buf += '<div style="display:flex; flex-direction:column; gap:3px; position:relative; top:18px; left:1px;">';
-				buf += '<div style="display: flex; align-items: center; gap: 7px;"><label style="font-size: 10px;">Gender</label>' + genderButton + '</div>';
-				buf += '</div>';
-			}
 			buf += '</div>';
 			if (this.curTeam.gen > 1) {
 				if (isLetsGo) { buf += '<label style="font-size: 10px;">Happiness</label><input type="number" name="happiness" class="textbox" value="' + (typeof set.happiness === 'number' ? set.happiness : 70) + '" min="0" max="255" style="width: 50px;" />'; } 
@@ -1348,7 +1391,7 @@ buf += '</div>';
 			buf += '</div></div></div>';
 		// item icon
 		buf += '<div class="setrow setrow-icons">';
-		buf += '<div class="setcell" style="position: relative; left: 95px; top: 20px;">';
+		buf += '<div class="setcell" style="position: relative; left: 95px; top: 25px;">';
 		var itemicon = '<span class="itemicon"></span>';
 		var itemName = '';
 		if (set.item) {
@@ -1387,42 +1430,35 @@ buf += '</div>';
 				buttonText = abilitySet;
 			}
 			buf += '<div class="setcol setcol-ability" style="align-content: end; position: relative; top: -5px;">'; ;
-			// height/weight + size
-var baseWeight = species.weightkg || 0;
-var baseHeight = species.heightm || 0;
-var sizeWeightModifier = species.sizeWeightModifier !== undefined ? species.sizeWeightModifier : 0.1;
-var sizeTiers = 0;
-var size = set.size || 'M';
-if (size === 'XS') sizeTiers = -2;
-else if (size === 'S') sizeTiers = -1;
-else if (size === 'L') sizeTiers = 1;
-else if (size === 'XL') sizeTiers = 2;
 
-var modifiedWeight = baseWeight * (1 + (sizeTiers * sizeWeightModifier));
-var modifiedHeight = baseHeight * (1 + (sizeTiers * sizeWeightModifier));
-
-// height (top) + weight (bottom), right-aligned
-buf += '<div class="setcell" style="position: relative; top: -6px; left: 64px; display: inline-block; margin-left: 6px;">' +
-	'<div style="font-size: 9px; display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1;">' +
-	'<span class="height-display">' + modifiedHeight.toFixed(1) + ' m</span>' +
-	'<span class="weight-display">' + modifiedWeight.toFixed(1) + ' kg</span>' +
-	'</div></div>';
-
-// Size label left of dropdown (no crazy offsets)
-buf += '<div class="setcell" style="position: relative; top: -25px; display: inline-block; margin-left: 13px;">' +
-	'<div style="display:flex; align-items:flex-end; gap:6px;">' +
-	'<label style="font-size: 10px; margin: 0; position: relative; top: -1px;">Size</label>' +
-	'<select name="size" class="textbox" style="width: 24px; height: 15px; padding-left: 2px; font-size: 9px; appearance: none; -webkit-appearance: none; -moz-appearance: none; padding-right: 2px; text-align: center;">' +
-	'<option value="XS"' + (set.size === 'XS' ? ' selected' : '') + '>XS</option>' +
-	'<option value="S"' + (set.size === 'S' ? ' selected' : '') + '>S</option>' +
-	'<option value="M"' + (!set.size || set.size === 'M' ? ' selected' : '') + '>M</option>' +
-	'<option value="L"' + (set.size === 'L' ? ' selected' : '') + '>L</option>' +
-	'<option value="XL"' + (set.size === 'XL' ? ' selected' : '') + '>XL</option>' +
-	'</select></div></div>';
-
+if (this.curTeam.gen > 1) {
+				// Gender button
+				var speciesGender = species.gender; // 'M', 'F', 'N', or undefined
+				var currentGender = set.gender || '';
+				var genderButton = '';
+				if (speciesGender === 'N') {
+					// Genderless - grey button with em dash
+					genderButton = '<button type="button" class="textbox genderToggle" name="genderToggle" data-value="" style="width: 36px; font-weight: bold; font-size: 12px; pointer-events: none; padding: 1.5px 0; height: 18px; background: rgba(128, 128, 128, 0.3); text-align: center;"><span style="position: relative; top: -2px;">—</span></button>';
+				} else if (speciesGender === 'M') {
+					// 100% Male - centered blue button
+					genderButton = '<button type="button" class="textbox genderToggle" name="genderToggle" data-value="M" style="width: 36px; font-weight: bold; font-size: 12px; pointer-events: none; padding: 1.5px 0; height: 18px; background: rgba(0, 150, 255, 0.3); text-align: center;"><span style="position: relative; top: -0.75px; left: -1px; color: #0004ffff;">♂</span></button>';
+				} else if (speciesGender === 'F') {
+					// 100% Female - centered pink button
+					genderButton = '<button type="button" class="textbox genderToggle" name="genderToggle" data-value="F" style="width: 36px; font-weight: bold; font-size: 12px; pointer-events: none; padding: 1.5px 0; height: 18px; background: rgba(255, 100, 150, 0.3); text-align: center;"><span style="position: relative; top: -2px; left: -1px; color: #ff0055ff;">♀</span></button>';
+				} else {
+					// Can be Male or Female - toggle button (default to Male if not set)
+					var isMale = currentGender === 'M' || !currentGender;
+					if (isMale) {
+					genderButton = '<button type="button" class="textbox genderToggle" name="genderToggle" data-value="M" style="width: 36px; font-weight: bold; font-size: 12px; cursor: pointer; padding: 1.5px 0; height: 18px; background: linear-gradient(to right, rgba(0, 150, 255, 0.3) 50%, transparent 50%); text-align: left; padding-left: 6px;"><span style="position: relative; top: -0.75px; right: 2px; color: #0004ffff;">♂</span></button>'; } 
+					else { genderButton = '<button type="button" class="textbox genderToggle" name="genderToggle" data-value="F" style="width: 36px; font-weight: bold; font-size: 12px; cursor: pointer; padding: 1.5px 0; height: 18px; background: linear-gradient(to left, rgba(255, 100, 150, 0.3) 50%, transparent 50%); text-align: right; padding-right: 6px;"><span style="position: relative; top: -1.5px; left: 1px; color: #ff0055ff;">♀</span></button>'; }
+				}
+				buf += '<div style="display:flex; flex-direction:column; gap:3px; position:relative; top:-34px; left:16px;">';
+				buf += '<div style="display: flex; align-items: center; gap: 7px;"><label style="font-size: 10.5px;">Gender</label>' + genderButton + '</div>';
+				buf += '</div>';
+			}
 			//ability set
 			buf += '<div class="setcell">';
-			buf += '<div style="display: flex; align-items: end; gap: 6px;"><label style="margin: 0;">Ability Set</label><button type="button" class="textbox' + buttonClass + '"' + buttonName + ' data-value="' + abilitySet + '" style="' + buttonStyle + '">' + buttonText + '</button></div>';
+			buf += '<div style="display: flex; align-items: end; gap: 4px;"><label style="margin: 0;">Ability Set</label><button type="button" class="textbox' + buttonClass + '"' + buttonName + ' data-value="' + abilitySet + '" style="' + buttonStyle + '">' + buttonText + '</button></div>';
 			buf += '</div>';
 			buf += '<div class="setcell">';
 			buf += '<input type="text" name="ability" class="textbox chartinput" value="' + BattleLog.escapeHTML(set.ability) + '" autocomplete="off" style="margin: 0;" />';
