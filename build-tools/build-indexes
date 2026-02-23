@@ -202,7 +202,7 @@ console.log(`Merged descriptions for ${Object.keys(ItemsText).length} items`);
 	index = index.concat(['mega', 'powerhouse', 'legendary', 'restrictedlegendary', 'mythical', 'restrictedmythical', 'paradox', 'restrictedparadox',].map(x => toID(x) + ' flag'));
 	index = index.concat(['monster', 'water1', 'bug', 'flying', 'field', 'fairy', 'grass', 'humanlike', 'water3', 'mineral', 'amorphous', 'water2', 'ditto', 'dragon', 'undiscovered',].map(x => toID(x) + ' egggroup'));
 	index = index.concat(['ou', 'uu', 'ru', 'nu', 'pu', 'zu', 'lc', 'nfe', 'uber', 'uubl', 'rubl', 'nubl', 'publ', 'zubl', 'cap', 'caplc', 'capnfe',].map(x => toID(x) + ' tier'));
-	index = index.concat(['berries', 'fragile', 'volatile', 'consumable', 'pokeball', 'evolution', 'tradeevo',].map(x => toID(x) + ' itemclass'));
+	index = index = index.concat(['berry', 'fragile', 'volatile', 'consumable', 'pokeball', 'evolution', 'tradeevo',].map(x => toID(x) + ' itemclass'));
 	const BattleArticleTitles = {};
 	try {
 		for (const file of fs.readdirSync('../dex.pokemonshowdown.com/articles/')) {
@@ -281,11 +281,9 @@ console.log(`Merged descriptions for ${Object.keys(ItemsText).length} items`);
 		const desc = modItem.shortDesc || item.shortDesc || item.desc || '';
 		// Fragile/Volatile classification (check mod data first)
 		if (modItem.isFragile || item.isFragile) {
-			index.push(`${id} item fragile 0`);
 			fragileCount++;
 			if (fragileCount <= 3) console.log(`  Tagged fragile: ${id}`);
 		} else if (modItem.isMildlyFragile || item.isMildlyFragile) {
-			index.push(`${id} item volatile 0`);
 			volatileCount++;
 			if (volatileCount <= 3) console.log(`  Tagged volatile: ${id}`);
 		}
@@ -296,19 +294,15 @@ console.log(`Merged descriptions for ${Object.keys(ItemsText).length} items`);
 		const isTradeEvo = desc.includes('when traded');
 		const isSingleUse = desc.includes('Single use');
 		if (modItem.isPokeball || item.isPokeball) {
-			index.push(`${id} item pokeball 0`);
 			pokeballCount++;
 			if (pokeballCount <= 3) console.log(`  Tagged pokeball: ${id}`);
 		} else if (isTradeEvo) {
-			index.push(`${id} item tradeevo 0`);
 			tradeEvoCount++;
 			if (tradeEvoCount <= 3) console.log(`  Tagged tradeevo: ${id}`);
 		} else if (isEvolution) {
-			index.push(`${id} item evolution 0`);
 			evolutionCount++;
 			if (evolutionCount <= 3) console.log(`  Tagged evolution: ${id}`);
 		} else if (modItem.isBerry || item.isBerry || modItem.isGem || item.isGem || isSingleUse) {
-			index.push(`${id} item consumable 0`);
 			consumableCount++;
 			if (consumableCount <= 3) console.log(`  Tagged consumable: ${id}`);
 		}
@@ -366,6 +360,7 @@ console.log(`Merged descriptions for ${Object.keys(ItemsText).length} items`);
 		case 'item': name = Dex.items.get(id).name; break;
 		case 'ability': name = Dex.abilities.get(id).name; break;
 		case 'article': name = BattleArticleTitles[id] || ''; break;
+		case 'itemclass': name = id; break;
 		}
 		let res = '';
 		let nonAlnum = 0;
@@ -441,6 +436,9 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 			const species = Dex.mod(gen).species.get(id);
 			const baseSpecies = Dex.mod(gen).species.get(species.baseSpecies);
 			if (species.gen > genNum) continue;
+			// Hard-hide CAP and MissingNo/Glitch Pokémon from teambuilder lists
+			if (species.isNonstandard === 'CAP') continue;
+			if (species.num === 0) continue;
 			const speciesTier = (() => {
 				if (isMetBattle) {
 					let tier = species.tier;
@@ -563,13 +561,12 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 			
 			if (isVGC || isGen9BH) { return ["Mythical", "Restricted Legendary", "Regular", "NFE", "LC"]; }
 			if (isDoubles && genNum > 4) { return ["DUber", "(DUber)", "DOU", "DBL", "(DOU)", "DUU", "(DUU)", "New", "NFE", "LC"]; }
-			if (gen === 'gen4') { return ["CAP", "CAP NFE", "CAP LC", "AG", "Uber", "OU", "(OU)", "UUBL", "UU", "NUBL", "NU", "NFE", "LC"]; }
-			return [ "CAP", "CAP NFE", "CAP LC", "AG", "Uber", "(Uber)", "OU", "(OU)", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PUBL", "PU", "ZUBL", "ZU", "New", "NFE", "LC", "Unreleased", ];
-		})();
+			if (gen === 'gen4') { return ["AG", "Uber", "OU", "(OU)", "UUBL", "UU", "NUBL", "NU", "NFE", "LC"]; }
+			return [ "AG", "Uber", "(Uber)", "OU", "(OU)", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PUBL", "PU", "ZUBL", "ZU", "New", "NFE", "LC", "Unreleased" ];		})();
 		for (const tier of tierOrder) {
 			if (tier in {
 				OU: 1, UUBL: 1, AG: 1, Uber: 1, UU: 1, RU: 1, NU: 1, PU: 1, ZU: 1, NFE: 1, LC: 1, DOU: 1, DUU: 1,
-				"(DUU)": 1, New: 1, Legal: 1, Regular: 1, "Restricted Legendary": 1, "CAP LC": 1,
+				"(DUU)": 1, New: 1, Legal: 1, Regular: 1, "Restricted Legendary": 1,
 			}) {
 				let usedTier = tier;
 				if (usedTier === "(DUU)") usedTier = "DNU";
@@ -847,49 +844,75 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 	BattleTeambuilderTable['gen9indigostarstorm'] = {};
 	BattleTeambuilderTable['gen9indigostarstorm'].learnsets = {};
 
-	// Build tier table for gen9indigostarstorm
-	console.log('Building tier table for gen9indigostarstorm...');
-	const islDex = Dex.mod('gen9indigostarstorm');
-	const islPokedex = islDex.data.Pokedex;
-	const islFormatsData = islDex.data.FormatsData || {};
-	const islPokemon = Object.keys(islPokedex);
-	const islTierTable = {};
-	const islOverrideTier = {};
-	for (const id of islPokemon) {
-		const species = islPokedex[id];
-		if (!species || species.gen > 9) continue;
-		const formatsEntry = islFormatsData[id];
-		if (!formatsEntry) continue; // Skip if no formats-data entry
-		// Skip Past and Gigantamax Pokemon
-		if (formatsEntry.isNonstandard === 'Past' || formatsEntry.isNonstandard === 'Gigantamax') continue;
-		const speciesTier = formatsEntry.tier || 'Illegal';
-		if (speciesTier === 'Illegal') continue; // Skip illegal Pokemon
-		islOverrideTier[id] = speciesTier;
-		// Skip cosmetic formes
-		if (species.forme && (
-			['Aegislash', 'Castform', 'Cherrim', 'Cramorant', 'Eiscue', 'Meloetta', 'Mimikyu', 'Minior', 'Morpeko', 'Ramnarok', 'Wishiwashi'].includes(species.baseSpecies) ||
-			species.forme.includes('Totem') || species.forme.includes('Zen') || (species.baseSpecies === 'Ogerpon' && species.forme.includes('Tera')) || species.isCosmeticForme
-		)) { continue; }
-		if (!islTierTable[speciesTier]) islTierTable[speciesTier] = [];
-		islTierTable[speciesTier].push(id);
-	}
+// Build tier table for gen9indigostarstorm (ALL ISL regs) USING FormatsData tiers
+console.log('Building tier table for gen9indigostarstorm...');
+const islDex = Dex.mod('gen9indigostarstorm');
 
-	const islTiers = [];
-	const islFormatSlices = {};
-	const islTierOrder = ['Reg α', 'Reg Δ', 'Reg β', 'Reg γ', 'Reg ι', 'Illegal'];
-	for (const tier of islTierOrder) {
-		if (!islTierTable[tier]) continue;
-		if (tier === 'Reg α') islFormatSlices['Reg α'] = islTiers.length;
-		if (tier === 'Reg Δ') islFormatSlices['Reg Δ'] = islTiers.length;
-		if (tier === 'Reg β') islFormatSlices['Reg β'] = islTiers.length;
-		if (tier === 'Reg γ') islFormatSlices['Reg γ'] = islTiers.length;
-		if (tier === 'Reg ι') islFormatSlices['Reg ι'] = islTiers.length;
-		islTiers.push(['header', tier]);
-		islTiers.push(...islTierTable[tier]);
-	}
-	BattleTeambuilderTable['gen9indigostarstorm'].tiers = islTiers;
-	BattleTeambuilderTable['gen9indigostarstorm'].overrideTier = islOverrideTier;
-	BattleTeambuilderTable['gen9indigostarstorm'].formatSlices = islFormatSlices;
+// Load RAW FormatsData from the mod (this should define which Reg each mon belongs to)
+let rawFDMod = null;
+try { rawFDMod = requireServer('dist/data/mods/gen9indigostarstorm/formats-data'); } catch {}
+if (!rawFDMod) {
+  try { rawFDMod = requireServer('data/mods/gen9indigostarstorm/formats-data'); } catch {}
+}
+if (!rawFDMod) throw new Error("Could not load gen9indigostarstorm formats-data module.");
+
+const rawFormatsData =
+  rawFDMod.FormatsData ||
+  (rawFDMod.default && (rawFDMod.default.FormatsData || rawFDMod.default)) ||
+  {};
+
+// The ONLY regs we want the teambuilder to slice by
+const regs = ['Reg α','Reg Δ','Reg ι','Reg β','Reg ζ','Reg γ','Reg Θ','Reg ε','Reg λ','Reg ψ','Reg ν','Reg φ'];
+const buckets = Object.fromEntries(regs.map(r => [r, []]));
+
+// Put each species into exactly ONE reg bucket based on FormatsData.tier
+for (const id in rawFormatsData) {
+  const entry = rawFormatsData[id];
+  const tier = entry?.tier;
+  if (!tier || typeof tier !== 'string') continue;
+
+  // Ignore OU/UU/etc and only accept Reg tiers
+  if (!(tier in buckets)) continue;
+
+  const sp = islDex.species.get(id);
+  if (!sp || !sp.exists) continue;
+
+  // Avoid MissingNo sprite (0.png spam)
+  if (sp.num === 0) continue;
+
+  // Hard-hide categories you never want showing in ISL builder lists
+  if (sp.isNonstandard === 'Past' || sp.isNonstandard === 'Gigantamax' || sp.isNonstandard === 'CAP') continue;
+
+  buckets[tier].push(id);
+}
+
+// Optional: stable ordering by dex number
+for (const r of regs) {
+  buckets[r].sort((a, b) => {
+    const na = islDex.species.get(a).num || 99999;
+    const nb = islDex.species.get(b).num || 99999;
+    return na - nb;
+  });
+}
+
+// Build tiers + slices (vanilla-style)
+const islTiers = [];
+const islFormatSlices = {};
+const islOverrideTier = {};
+
+for (const r of regs) {
+  islFormatSlices[r] = islTiers.length;
+  islTiers.push(['header', r]);
+
+  for (const pid of buckets[r]) {
+    islTiers.push(pid);            // string entry OK (client converts to ['pokemon', ...])
+    islOverrideTier[pid] = r;
+  }
+}
+
+BattleTeambuilderTable['gen9indigostarstorm'].tiers = islTiers;
+BattleTeambuilderTable['gen9indigostarstorm'].overrideTier = islOverrideTier;
+BattleTeambuilderTable['gen9indigostarstorm'].formatSlices = islFormatSlices;
 	// Build item list for gen9indigostarstorm from the mod Dex (separate from vanilla)
 console.log('Building item list for gen9indigostarstorm...');
 {
@@ -1011,7 +1034,7 @@ try {
 	console.log('Building overrideSpeciesData for gen9indigostarstorm...');
 	const baseGen9Dex = Dex.mod('gen9');
 	const islOverrideSpeciesData = {};
-	for (const id in islPokedex) {
+	for (const id of Object.keys(rawFormatsData)) {
 		const islSpecies = islDex.species.get(id);
 		const baseSpecies = baseGen9Dex.species.get(id);
 		// Skip if species doesn't exist in base gen9 (new mod Pokemon don't need override)
