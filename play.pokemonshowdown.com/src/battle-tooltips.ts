@@ -1433,7 +1433,17 @@ export class BattleTooltips {
 				if (this.battle.gen === 1 && statName === 'spd') continue;
 				let statLabel = this.battle.gen === 1 && statName === 'spa' ? 'spc' : statName;
 				buf += statName === 'atk' ? '<small>' : '<small> / ';
-				buf += `${BattleText[statLabel].statShortName}&nbsp;</small>`;
+				const fallbackShort: Record<string, string> = {
+  hp: 'HP', atk: 'Atk', def: 'Def', spa: 'SpA', spd: 'SpD', spe: 'Spe', spc: 'Spc'
+};
+
+const entry =
+  (globalThis as any).BattleText?.[statLabel] ||
+  (globalThis as any).BattleText?.stats?.[statLabel];
+
+const shortName = entry?.statShortName ?? fallbackShort[statLabel] ?? statLabel.toUpperCase();
+
+buf += `${shortName}&nbsp;</small>`;
 				buf += `${stats[statName]}`;
 				if (modifiedStats[statName] !== stats[statName]) hasModifiedStat = true;
 			}
@@ -1449,7 +1459,17 @@ export class BattleTooltips {
 			if (this.battle.gen === 1 && statName === 'spd') continue;
 			let statLabel = this.battle.gen === 1 && statName === 'spa' ? 'spc' : statName;
 			buf += statName === 'atk' ? '<small>' : '<small> / ';
-			buf += `${BattleText[statLabel].statShortName}&nbsp;</small>`;
+			const fallbackShort: Record<string, string> = {
+  hp: 'HP', atk: 'Atk', def: 'Def', spa: 'SpA', spd: 'SpD', spe: 'Spe', spc: 'Spc'
+};
+
+const entry =
+  (globalThis as any).BattleText?.[statLabel] ||
+  (globalThis as any).BattleText?.stats?.[statLabel];
+
+const shortName = entry?.statShortName ?? fallbackShort[statLabel] ?? statLabel.toUpperCase();
+
+buf += `${shortName}&nbsp;</small>`;
 			if (modifiedStats[statName] === stats[statName]) {
 				buf += `${modifiedStats[statName]}`;
 			} else if (modifiedStats[statName] < stats[statName]) {
@@ -2539,34 +2559,23 @@ export class BattleTooltips {
 		const isISLFormat = tier?.toLowerCase().includes('indigostarstorm') || tier?.toLowerCase().includes('isl');
 		
 		// For ISL formats, show both abilities in the set
-		if (isISLFormat && (clientPokemon || serverPokemon)) {
-			const speciesForme = clientPokemon?.getSpeciesForme() || serverPokemon?.speciesForme || '';
-			const species = this.battle.dex.species.get(speciesForme);
-			if (species.exists && species.abilities) {
-				// Determine which ability set (check if using H or S)
-				const currentAbility = clientPokemon?.ability || serverPokemon?.ability || '';
-				const isSet2 = currentAbility === species.abilities['H'] || currentAbility === species.abilities['S'];
-				
-				let ability1, ability2;
-				if (isSet2) {
-					ability1 = species.abilities['H'];
-					ability2 = species.abilities['S'];
-				} else {
-					ability1 = species.abilities['0'];
-					ability2 = species.abilities['1'];
-				}
-				
-				// Build ability set display
-				const abilityNames = [];
-				if (ability1) abilityNames.push(this.battle.dex.abilities.get(ability1).name);
-				if (ability2 && ability2 !== ability1) abilityNames.push(this.battle.dex.abilities.get(ability2).name);
-				
-				if (abilityNames.length > 0) {
-					text = '<small>Ability Set:</small> ' + abilityNames.join(' + ');
-					return text;
-				}
-			}
-		}
+if (isISLFormat && (clientPokemon || serverPokemon)) {
+  const ability1 = abilityData.baseAbility || abilityData.ability;
+  // ability2 is not currently part of AbilityData type, so read it from serverPokemon if present
+  const ability2 =
+    (serverPokemon as any)?.baseAbility2 ||
+    (serverPokemon as any)?.ability2 ||
+    (clientPokemon as any)?.baseAbility2 ||
+    (clientPokemon as any)?.ability2;
+
+  const abilityNames: string[] = [];
+  if (ability1) abilityNames.push(this.battle.dex.abilities.get(ability1).name);
+  if (ability2 && ability2 !== ability1) abilityNames.push(this.battle.dex.abilities.get(ability2).name);
+
+  if (abilityNames.length) {
+    return '<small>Ability Set:</small> ' + abilityNames.join(' + ');
+  }
+}
 		
 		if (!isActive) {
 			// for switch tooltips, only show the original ability
