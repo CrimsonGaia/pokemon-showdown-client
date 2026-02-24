@@ -2480,7 +2480,7 @@ if (!formatid.startsWith('isl') && window.BattleFormats && BattleFormats[format]
       if (!name) return '';
       var id = toID(name);
       var ability = dex.abilities.get(name);
-      var desc = (BattleAbilities[id] && BattleAbilities[id].shortDesc) || ability.shortDesc || '';
+      var desc = ability.shortDesc || ability.desc || '';
       return (
         '<li class="result abilityrow">' +
           '<a class="cur" data-entry="ability|' + BattleLog.escapeHTML(name) + '">' +
@@ -2553,7 +2553,7 @@ if (!formatid.startsWith('isl') && window.BattleFormats && BattleFormats[format]
     if (!name) return '';
     var id = toID(name);
     var ability = dex.abilities.get(name);
-    var desc = (BattleAbilities[id] && BattleAbilities[id].shortDesc) || ability.shortDesc || '';
+    var desc = ability.shortDesc || ability.desc || '';
     var curClass = (set.abilitySet === setNum) ? 'cur' : '';
     return (
       '<li class="result abilityrow">' +
