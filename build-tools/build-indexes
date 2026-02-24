@@ -1483,34 +1483,34 @@ console.log("DONE");
 
 
 
-//region Build text.js
+//region Build text-desc.js (DO NOT overwrite battle text.js)
 {
-	const textDataDefault = Dex.loadTextData();           // vanilla/root
-const textDataIndigo = Dex.loadTextData('gen9indigostarstorm'); // mod layer
+  const textDataDefault = Dex.loadTextData();
+  const textDataIndigo = Dex.loadTextData('gen9indigostarstorm');
 
-function buildTextTable(textData) {
-  const Text = {};
-  function assignData(id, entry) {
-    const out = Text[id] || (Text[id] = {});
-    for (const key in entry) {
-      if (key === 'name') continue;     // keep desc + shortDesc
-      out[key] = entry[key];
+  function buildTextTable(textData) {
+    const Text = {};
+    function assignData(id, entry) {
+      const out = Text[id] || (Text[id] = {});
+      for (const key in entry) {
+        if (key === 'name') continue;
+        out[key] = entry[key];
+      }
     }
+    for (const id in textData.Moves) assignData(id, textData.Moves[id]);
+    for (const id in textData.Abilities) assignData(id, textData.Abilities[id]);
+    for (const id in textData.Items) assignData(id, textData.Items[id]);
+    return Text;
   }
-  for (const id in textData.Moves) assignData(id, textData.Moves[id]);
-  for (const id in textData.Abilities) assignData(id, textData.Abilities[id]);
-  for (const id in textData.Items) assignData(id, textData.Items[id]);
-  return Text;
-}
 
-const out = {
-  Default: buildTextTable(textDataDefault.Default),
-  gen9indigostarstorm: buildTextTable(textDataIndigo.Default),
-};
+  const out = {
+    default: buildTextTable(textDataDefault.Default),
+    gen9indigostarstorm: buildTextTable(textDataIndigo.Default),
+  };
 
-fs.writeFileSync(
-  'play.pokemonshowdown.com/data/text.js',
-  'exports.BattleText = ' + es3stringify(out) + ';'
-);
+  fs.writeFileSync(
+    'play.pokemonshowdown.com/data/text-desc.js',
+    'exports.BattleTextDesc = ' + es3stringify(out) + ';'
+  );
 }
 console.log("DONE");
