@@ -3439,6 +3439,12 @@ export class Battle {
 			if (this.tier.includes('Super Staff Bros')) {
 				this.dex = Dex.mod('gen9ssb' as ID);
 			}
+			if (
+  			this.tier.includes('Indigo Starstorm') ||
+  			this.tier.includes('ISL Regulation Set')
+			) {
+  			this.dex = Dex.mod('gen9indigostarstorm' as ID);
+			}
 			this.log(args);
 			break;
 		}

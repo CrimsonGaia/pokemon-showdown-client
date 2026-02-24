@@ -132,6 +132,15 @@ License: GPLv2
 	right: 0;
 }
 
+
+.status-icon {
+  width: 80px;
+  height: 18px;
+  image-rendering: pixelated;
+  vertical-align: middle;
+}
+
+
 .statbar {
 	position: absolute;
 	display: none;
@@ -253,7 +262,7 @@ License: GPLv2
 }
 .statbar .status img {
 	vertical-align: top;
-	top: -2px;
+	top: 1px;
 	position: relative;
 }
 .statbar span {
