@@ -1030,6 +1030,7 @@ try {
 	const overrideMoveKeys = ['accuracy', 'basePower', 'category', 'critRatio', 'desc', 'flags', 'isNonstandard', 'pp', 'priority', 'shortDesc', 'target', 'type',];
 	const overrideAbilityKeys = ['desc', 'flags', 'isNonstandard', 'rating', 'shortDesc'];
 	const overrideItemKeys = ['desc', 'fling', 'isNonstandard', 'naturalGift', 'shortDesc'];
+	const overrideTypeChartKeys = ['damageTaken'];
 	// Build overrideSpeciesData for gen9indigostarstorm (for custom abilities, stats, types, etc.)
 	console.log('Building overrideSpeciesData for gen9indigostarstorm...');
 	const baseGen9Dex = Dex.mod('gen9');
@@ -1086,7 +1087,23 @@ try {
 	BattleTeambuilderTable[MOD_ID].overrideMoveData = islOverrideMoveData;
 	BattleTeambuilderTable[MOD_ID].overrideItemData = islOverrideItemData;
 	BattleTeambuilderTable[MOD_ID].overrideAbilityData = islOverrideAbilityData;
+	// ---- Build teambuilder overrideTypeChart from the mod Dex ----
+try {
+	const baseGen9Dex = Dex.mod('gen9');
+	const islDex = Dex.mod(MOD_ID);
 
+	const islOverrideTypeChart = buildPatchTable(
+		baseGen9Dex.data.TypeChart,
+		islDex.data.TypeChart,
+		overrideTypeChartKeys
+	);
+
+	BattleTeambuilderTable[MOD_ID].overrideTypeChart = islOverrideTypeChart;
+
+	console.log(`DEBUG: teambuilder overrideTypeChart built from Dex: types=${Object.keys(islOverrideTypeChart).length}`);
+} catch (e) {
+	console.log('Note: Could not build mod overrideTypeChart from Dex:', e && e.message ? e.message : e);
+}
 	console.log(
 		`DEBUG: teambuilder overrides built from Dex: ` +
 		`moves=${Object.keys(islOverrideMoveData).length}, ` +
@@ -1359,6 +1376,28 @@ console.log("DONE");
   }
 
   writeBattleExport(path.join(CLIENT_DATA_DIR, 'typechart.js'), 'BattleTypeChart', TypeChart);
+  // -------------------------
+// MOD TYPECHART OVERLAY (PATCH)
+// -------------------------
+{
+  console.log(`Building \`data/mods/${MOD_ID}/typechart.js\` overlay...`);
+
+  const baseTypeChart = Dex.data.TypeChart;
+  const modDex = Dex.mod(MOD_ID);
+  const modTypeChart = modDex.data.TypeChart;
+
+  if (!modTypeChart || typeof modTypeChart !== 'object') {
+    throw new Error(`Dex.mod(${MOD_ID}) did not provide data.TypeChart`);
+  }
+
+  // Only patch what matters for effectiveness in tooltips.
+  const typechartPatch = buildPatchTable(baseTypeChart, modTypeChart, ['damageTaken']);
+
+  ensureDir(MOD_OUT_DIR);
+  writeBattleModData(path.join(MOD_OUT_DIR, 'typechart.js'), MOD_ID, 'TypeChart', typechartPatch);
+
+  console.log(`Built ${Object.keys(typechartPatch).length} ${MOD_ID} typechart overlay entries`);
+}
 
   console.log('DONE building typechart.js');
 }

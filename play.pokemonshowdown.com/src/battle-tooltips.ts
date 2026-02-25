@@ -997,13 +997,20 @@ const status = pokemon.status
 	renderStats(clientPokemon: Pokemon | null, serverPokemon?: ServerPokemon | null, short?: boolean) {
 		const isTransformed = clientPokemon?.volatiles.transform;
 		if (!serverPokemon || isTransformed) {
-			if (!clientPokemon) throw new Error('Must pass either clientPokemon or serverPokemon');
-			let [min, max] = this.getSpeedRange(clientPokemon);
-			return `<p><small>Spe</small> ${min} to ${max} <small>(before items/abilities/modifiers)</small></p>`;
-		}
+  if (!clientPokemon) throw new Error('Must pass either clientPokemon or serverPokemon');
+  let [min, max] = this.getSpeedRange(clientPokemon);
+
+  let buf = '';
+  if (!short) buf += this.renderTypeMatchups(clientPokemon, null);
+  buf += `<p><small>Spe</small> ${min} to ${max} <small>(before items/abilities/modifiers)</small></p>`;
+  return buf;
+}
 		const stats = serverPokemon.stats;
 		const modifiedStats = this.calculateModifiedStats(clientPokemon, serverPokemon);
-		let buf = '<p>';
+		let buf = '';
+		// Only show matchup breakdown in the full (non-short) tooltip, above base stats.
+		if (!short) buf += this.renderTypeMatchups(clientPokemon, serverPokemon);
+		buf += '<p>';
 		if (!short) {
 			let hasModifiedStat = false;
 			for (const statName of Dex.statNamesExceptHP) {
@@ -1011,12 +1018,9 @@ const status = pokemon.status
 				let statLabel = this.battle.gen === 1 && statName === 'spa' ? 'spc' : statName;
 				buf += statName === 'atk' ? '<small>' : '<small> / ';
 				const fallbackShort: Record<string, string> = { hp: 'HP', atk: 'Atk', def: 'Def', spa: 'SpA', spd: 'SpD', spe: 'Spe', spc: 'Spc' };
-
-const entry =
-  (globalThis as any).BattleText?.[statLabel] ||
-  (globalThis as any).BattleText?.stats?.[statLabel];
-const shortName = entry?.statShortName ?? fallbackShort[statLabel] ?? statLabel.toUpperCase();
-buf += `${shortName}&nbsp;</small>`;
+				const entry = (globalThis as any).BattleText?.[statLabel] || (globalThis as any).BattleText?.stats?.[statLabel];
+				const shortName = entry?.statShortName ?? fallbackShort[statLabel] ?? statLabel.toUpperCase();
+				buf += `${shortName}&nbsp;</small>`;
 				buf += `${stats[statName]}`;
 				if (modifiedStats[statName] !== stats[statName]) hasModifiedStat = true;
 			}
@@ -1030,11 +1034,9 @@ buf += `${shortName}&nbsp;</small>`;
 			let statLabel = this.battle.gen === 1 && statName === 'spa' ? 'spc' : statName;
 			buf += statName === 'atk' ? '<small>' : '<small> / ';
 			const fallbackShort: Record<string, string> = { hp: 'HP', atk: 'Atk', def: 'Def', spa: 'SpA', spd: 'SpD', spe: 'Spe', spc: 'Spc' };
-const entry =
-  (globalThis as any).BattleText?.[statLabel] ||
-  (globalThis as any).BattleText?.stats?.[statLabel];
-const shortName = entry?.statShortName ?? fallbackShort[statLabel] ?? statLabel.toUpperCase();
-buf += `${shortName}&nbsp;</small>`;
+			const entry = (globalThis as any).BattleText?.[statLabel] || (globalThis as any).BattleText?.stats?.[statLabel];
+			const shortName = entry?.statShortName ?? fallbackShort[statLabel] ?? statLabel.toUpperCase();
+			buf += `${shortName}&nbsp;</small>`;
 			if (modifiedStats[statName] === stats[statName]) { buf += `${modifiedStats[statName]}`; } 
 			else if (modifiedStats[statName] < stats[statName]) { buf += `<strong class="stat-lowered">${modifiedStats[statName]}</strong>`; } 
 			else { buf += `<strong class="stat-boosted">${modifiedStats[statName]}</strong>`; }
@@ -1042,6 +1044,65 @@ buf += `${shortName}&nbsp;</small>`;
 		buf += '</p>';
 		return buf;
 	}
+	private renderTypeMatchups(clientPokemon: Pokemon | null, serverPokemon?: ServerPokemon | null) {
+	// Defensive typing (Tera-aware).
+	const pokemon = clientPokemon || serverPokemon;
+	if (!pokemon) return '';
+	const types = serverPokemon?.terastallized ? [serverPokemon.teraType] : this.getPokemonTypes(pokemon);
+
+	// Attack types list from the dex types table (includes modded types if the dex is modded).
+	const attackTypes: Dex.TypeName[] = this.battle.dex.types.names()
+  .map(n => n as Dex.TypeName);
+
+	const weaknesses4x: Dex.TypeName[] = [];
+	const weaknesses2x: Dex.TypeName[] = [];
+	const resistsQuarter: Dex.TypeName[] = [];
+	const resistsHalf: Dex.TypeName[] = [];
+	const immunities: Dex.TypeName[] = [];
+
+	for (const atkType of attackTypes) {
+		let mult = 1;
+		for (const defType of types) {
+			const typeData: any = (this.battle.dex as any).types?.get?.(defType);
+			const dt = typeData?.damageTaken;
+			if (!dt) continue;
+
+			// Showdown client typechart uses type IDs as keys
+			const key = toID(atkType);
+			const val = dt[key] ?? dt[atkType];
+			// damageTaken: 0 neutral, 1 weak, 2 resist, 3 immune
+			if (val === 1) mult *= 2;
+			else if (val === 2) mult *= 0.5;
+			else if (val === 3) { mult = 0; break; }
+		}
+
+		if (mult === 0) immunities.push(atkType);
+		else if (mult === 4) weaknesses4x.push(atkType);
+		else if (mult === 2) weaknesses2x.push(atkType);
+		else if (mult === 0.25) resistsQuarter.push(atkType);
+		else if (mult === 0.5) resistsHalf.push(atkType);
+	}
+
+	const renderIcons = (list: Dex.TypeName[]) => list.length ?
+		`<span class="textaligned-typeicons">${list.map(t => Dex.getTypeIcon(t)).join(' ')}</span>` :
+		`<small>(none)</small>`;
+
+	const weakParts: string[] = [];
+	if (weaknesses4x.length) weakParts.push(`<small>4×</small> ${renderIcons(weaknesses4x)}`);
+	if (weaknesses2x.length) weakParts.push(`<small>2×</small> ${renderIcons(weaknesses2x)}`);
+	const weakLine = weakParts.length ? weakParts.join('&nbsp; ') : '<small>(none)</small>';
+
+	const resistParts: string[] = [];
+	if (resistsQuarter.length) resistParts.push(`<small>¼×</small> ${renderIcons(resistsQuarter)}`);
+	if (resistsHalf.length) resistParts.push(`<small>½×</small> ${renderIcons(resistsHalf)}`);
+	const resistLine = resistParts.length ? resistParts.join('&nbsp; ') : '<small>(none)</small>';
+	const immuneLine = immunities.length ? renderIcons(immunities) : '<small>(none)</small>';
+	return (
+  		`<p><small>Weaknesses:</small> ${weakLine}</p>` +
+  		`<p><small>Resistances:</small> ${resistLine}</p>` +
+  		`<p><small>Immunities:</small> ${immuneLine}</p>`
+	);
+}
 	getPPUseText(moveTrackRow: [string, number], showKnown?: boolean) {
 		let [moveName, ppUsed] = moveTrackRow;
 		let move;
