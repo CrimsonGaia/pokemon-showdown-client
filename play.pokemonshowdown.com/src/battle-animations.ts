@@ -82,6 +82,31 @@ export class BattleScene implements BattleSceneStub {
 		$frame.addClass('battle');
 		this.$frame = $frame;
 		this.log = new BattleLog($logFrame[0] as HTMLDivElement, this);
+		// --- Teambar live refresh hook ---
+// Item reveals and some state changes don't always trigger updateSidebars/updateSidebar,
+// and updateStatbars can run before pokemon.item is applied for the current line.
+// Hook BattleLog updates and redraw teambar on the next microtask.
+{
+	const logAny = this.log as any;
+
+	const origAdd = logAny.add?.bind(this.log);
+	if (origAdd) {
+		logAny.add = (...args: any[]) => {
+			const ret = origAdd(...args);
+			Promise.resolve().then(() => this.updateTeamBar());
+			return ret;
+		};
+	}
+
+	const origAddDiv = logAny.addDiv?.bind(this.log);
+	if (origAddDiv) {
+		logAny.addDiv = (...args: any[]) => {
+			const ret = origAddDiv(...args);
+			Promise.resolve().then(() => this.updateTeamBar());
+			return ret;
+		};
+	}
+}
 		this.log.battleParser!.pokemonName = (pokemonId: string) => {
 			if (!pokemonId) return '';
 			if (battle.ignoreNicks || battle.ignoreOpponent) {
@@ -492,21 +517,36 @@ export class BattleScene implements BattleSceneStub {
 		return BattleLog.escapeHTML(name);
 	}
 	getTeamBarHTML(side: Side, isP1: boolean): string {
-		let html = '';
-		for (let i = 0; i < side.pokemon.length; i++) {
-			const pokemon = side.pokemon[i];
-			const status = pokemon.fainted ? ' fainted' : (pokemon.status ? ' status' : '');
-			const iconStyle = Dex.getPokemonIcon(pokemon);
-			// Add item icon if item is revealed
-			let itemIconHTML = '';
-			if (pokemon.item && pokemon.item !== '(exists)') {
-				const itemIconStyle = Dex.getItemIcon(pokemon.item);
-				itemIconHTML = `<span class="itemicon" style="${itemIconStyle}"></span>`;
-			}
-			html += `<span class="picon battleteambar-sprite${status}" style="${iconStyle}">${itemIconHTML}</span>`;
+	let html = '';
+
+	// Use stable team size (important after refresh)
+	const teamSize = side.totalPokemon || side.pokemon.length;
+
+	for (let i = 0; i < teamSize; i++) {
+		const pokemon = side.pokemon[i];
+
+		// If the slot is missing after refresh, render a placeholder instead of dropping the slot
+		if (!pokemon) {
+			html += `<span class="picon battleteambar-sprite empty" style="${Dex.getPokemonIcon('pokeball')}">` +
+				`<span class="itemicon itemicon-unknown">?</span></span>`;
+			continue;
 		}
-		return html;
+
+		const status = pokemon.fainted ? ' fainted' : (pokemon.status ? ' status' : '');
+		const iconStyle = Dex.getPokemonIcon(pokemon);
+
+		let itemIconHTML = '';
+		if (pokemon.item && pokemon.item !== '(exists)') {
+			itemIconHTML = `<span class="itemicon" style="${Dex.getItemIcon(pokemon.item)}"></span>`;
+		} else {
+			itemIconHTML = `<span class="itemicon itemicon-unknown">?</span>`;
+		}
+
+		html += `<span class="picon battleteambar-sprite${status}" style="${iconStyle}">${itemIconHTML}</span>`;
 	}
+
+	return html;
+}
 	getSidebarHTML(side: Side, posStr: string): string {
 		let noShow = this.battle.hardcoreMode && this.battle.gen < 7;
 		// Check if this is an ISL format
@@ -595,12 +635,18 @@ export class BattleScene implements BattleSceneStub {
 		);
 	}
 	updateSidebar(side: Side) {
-		if (this.battle.gameType === 'freeforall') {
-			this.updateLeftSidebar();
-			this.updateRightSidebar();
-		} else if (side === this.battle.nearSide || side === this.battle.nearSide.ally) { this.updateLeftSidebar(); } 
-		else { this.updateRightSidebar(); }
+	if (this.battle.gameType === 'freeforall') {
+		this.updateLeftSidebar();
+		this.updateRightSidebar();
+	} else if (side === this.battle.nearSide || side === this.battle.nearSide.ally) {
+		this.updateLeftSidebar();
+	} else {
+		this.updateRightSidebar();
 	}
+
+	// ✅ keep TOP teambar in sync (items, fainted, etc.)
+	this.updateTeamBar();
+}
 	updateLeftSidebar() {
 		const side = this.battle.nearSide;
 		if (side.ally) {
@@ -633,7 +679,16 @@ export class BattleScene implements BattleSceneStub {
 		const p2HTML = this.getTeamBarHTML(p2Side, false);
 		this.$battleteambar.html( `<div class="battleteambar-p1">${p1HTML}</div>` + `<div class="battleteambar-p2">${p2HTML}</div>`);
 	}
-	updateStatbars() { for (const side of this.battle.sides) { for (const active of side.active) { if (active) active.sprite.updateStatbar(active); } } }
+	updateStatbars() {
+	for (const side of this.battle.sides) {
+		for (const active of side.active) {
+			if (active) active.sprite.updateStatbar(active);
+		}
+	}
+
+	// Keep TOP teambar synced with newly-revealed items/status
+	this.updateTeamBar();
+}
 	resetSides(skipEmpty?: boolean) {
 		if (!skipEmpty) { for (const $spritesContainer of this.$sprites) { $spritesContainer.empty(); }}
 		for (const side of this.battle.sides) {

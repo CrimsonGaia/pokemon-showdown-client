@@ -7,6 +7,8 @@ License: GPLv2
 
 @import url(./battle-log.css?v10);
 
+
+
 .battle {
 	position: absolute;
 	text-align: left;
@@ -258,7 +260,7 @@ License: GPLv2
 }
 .statbar .status {
 	min-height: 10px;
-	font-size: 7pt;
+	font-size: 8pt;
 }
 .statbar .status img {
 	vertical-align: top;
@@ -351,7 +353,7 @@ License: GPLv2
 	display: flex;
 	justify-content: space-between;
 	align-items: flex-start;
-	padding: 2px 5px;
+	padding: 2px 0px;
 	z-index: 1;
 }
 .battleteambar-p1 {
@@ -369,7 +371,7 @@ License: GPLv2
 	flex-direction: row;
 	align-items: center;
 	flex-wrap: wrap;
-	max-width: 210px;
+	max-width: 216px;
 	align-content: flex-start;
 	justify-content: flex-end;
 }
@@ -390,10 +392,19 @@ License: GPLv2
 	height: 24px;
 	display: inline-block;
 	image-rendering: pixelated;
-	transform: scale(0.5);
+	transform: scale(1);
 	transform-origin: top right;
 	z-index: 2;
 	pointer-events: none;
+}
+.battleteambar-sprite .itemicon.itemicon-unknown {
+	border-radius: 2px;
+	color: #fff;
+	font-weight: 700;
+	font-size: 14px;        
+	line-height: 24px;
+	text-align: center;
+	background-image: none !important;
 }
 .battleteambar-sprite.fainted {
 	opacity: 0.3;
