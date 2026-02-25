@@ -9,6 +9,30 @@ License: GPLv2
 
 
 
+/* Tooltip-specific status icon sizing */
+#tooltipwrapper .tooltip-status-icon {
+	width: 80px;
+	height: 18px;
+	vertical-align: text-bottom;
+	image-rendering: pixelated;
+}
+
+/* Ability set formatting in tooltips */
+#tooltipwrapper .abilityset-title {
+	font-weight: 700;
+	display: inline-block;
+	margin-top: 2px;
+}
+
+#tooltipwrapper .ability-line {
+	display: inline-block;
+	margin-left: 8px;
+}
+/* Ability set header colors in tooltips */
+#tooltipwrapper .abilityset-title.set-1 { color: #2e9d3f; } /* green */
+#tooltipwrapper .abilityset-title.set-2 { color: #2b6fdd; } /* blue */
+
+
 .battle {
 	position: absolute;
 	text-align: left;
@@ -362,7 +386,7 @@ License: GPLv2
 	flex-direction: row;
 	align-items: center;
 	flex-wrap: wrap;
-	max-width: 210px;
+	max-width: 216px;
 	align-content: flex-start;
 }
 .battleteambar-p2 {

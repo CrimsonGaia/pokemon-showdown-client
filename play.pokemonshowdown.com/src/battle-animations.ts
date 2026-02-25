@@ -3603,6 +3603,12 @@ export const BattleOtherAnims: AnimTable = {
 };
 //region Status Animations
 export const BattleStatusAnims: AnimTable = {
+	aura: {
+	anim(scene, [attacker]) {
+		// Reuse the Z-move “power up” particle sequence
+		BattleOtherAnims.zpower.anim(scene, [attacker]);
+	},
+},
 	brn: {
 		anim(scene, [attacker]) {
 			scene.showEffect('fireball', 
