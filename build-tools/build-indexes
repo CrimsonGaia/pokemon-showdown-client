@@ -4,138 +4,88 @@ const fs = require("fs");
 const path = require('path');
 const child_process = require("child_process");
 const rootDir = path.resolve(__dirname, '..');
-
-//
 const SERVER_PATH = path.resolve(rootDir, '../pokemon-showdown');
 process.chdir(rootDir);
-//
-if (!fs.existsSync(SERVER_PATH)) {
-  throw new Error(
-    `Local pokemon-showdown server not found.\nExpected at: ${SERVER_PATH}`
-  );
-}
+if (!fs.existsSync(SERVER_PATH)) { throw new Error(`Local pokemon-showdown server not found.\nExpected at: ${SERVER_PATH}`); }
 process.stdout.write("Using local pokemon-showdown server... ");
 child_process.execSync('npm run build', {
   cwd: SERVER_PATH,
   stdio: 'inherit',
 });
 console.log("DONE");
-//
 //loadmod data
 function loadModData(relPath, kind) {
   let mod;
-  try {
-    mod = requireServer(relPath);
-  } catch {
-    return null;
-  }
-
+  try { mod = requireServer(relPath); } 
+  catch {  return null; }
   if (!mod) return null;
-
   switch (kind) {
     case 'abilities':
       return mod.BattleAbilities || mod.Abilities || mod.default || null;
-
     case 'abilitiesText':
       return mod.AbilitiesText || mod.default || mod || null;
-
     case 'moves':
       return mod.BattleMovedex || mod.Moves || mod.default || null;
-
     case 'movesText':
       return mod.MovesText || mod.default || mod || null;
-
     default:
       throw new Error(`Unknown mod data kind: ${kind}`);
   }
 }
-
-
-
-
-
-
-
 const Dex = require(path.join(SERVER_PATH, 'dist/sim/dex')).Dex;
 const CompoundWordNames =
-  require(path.join(SERVER_PATH, 'dist/data/aliases')).CompoundWordNames;
+require(path.join(SERVER_PATH, 'dist/data/aliases')).CompoundWordNames;
 const toID = Dex.toID;
 process.stdout.write("Loading gen 6 data... ");
 Dex.includeData();
 console.log("DONE");
 function es3stringify(obj) {
-  if (!obj) return 'null';
-  const buf = JSON.stringify(obj);
-  if (!buf) return 'null';
-  return buf.replace(
+	if (!obj) return 'null';
+	const buf = JSON.stringify(obj);
+	if (!buf) return 'null';
+	return buf.replace(
     /"([A-Za-z][A-Za-z0-9]*)":/g,
     (fullMatch, key) =>
-      (['return', 'new', 'delete'].includes(key) ? fullMatch : `${key}:`)
+    (['return', 'new', 'delete'].includes(key) ? fullMatch : `${key}:`)
   );
 }
 function requireNoCache(...args) {
-  const pathSpec =
-    args.length === 1 ? args[0] : path.join(args[0], args[1]);
-
+  const pathSpec = args.length === 1 ? args[0] : path.join(args[0], args[1]);
   delete require.cache[require.resolve(pathSpec)];
   return require(pathSpec);
 }
-
-// -----------------------------
-// Overlay helpers (client build)
-// -----------------------------
+//region Overlay helpers
 const CLIENT_DATA_DIR = path.join(rootDir, 'play.pokemonshowdown.com', 'data');
 const MOD_ID = 'gen9indigostarstorm';
 const MOD_OUT_DIR = path.join(CLIENT_DATA_DIR, 'mods', MOD_ID);
-
-function ensureDir(dir) {
-  fs.mkdirSync(dir, {recursive: true});
-}
-
+function ensureDir(dir) { fs.mkdirSync(dir, {recursive: true}); }
 function pickExport(mod, keys) {
-  for (const k of keys) {
-    if (mod && mod[k] && typeof mod[k] === 'object') return mod[k];
-  }
-  return null;
+	for (const k of keys) { if (mod && mod[k] && typeof mod[k] === 'object') return mod[k]; }
+	return null;
 }
-
-function requireServer(relPath) {
-  return requireNoCache(path.join(SERVER_PATH, relPath));
-}
-
+function requireServer(relPath) { return requireNoCache(path.join(SERVER_PATH, relPath)) }
 function writeBattleExport(outPath, exportName, data) {
-  if (!data || typeof data !== 'object') {
-    throw new Error(`Refusing to write ${outPath}: export ${exportName} is not an object`);
-  }
-  const buf = `exports.${exportName} = ` + es3stringify(data) + ';';
-  if (!buf || buf.includes('undefined')) {
-    throw new Error(`Serialization failed for ${outPath} (${exportName})`);
-  }
-  ensureDir(path.dirname(outPath));
-  fs.writeFileSync(outPath, buf);
+	if (!data || typeof data !== 'object') { throw new Error(`Refusing to write ${outPath}: export ${exportName} is not an object`); }
+	const buf = `exports.${exportName} = ` + es3stringify(data) + ';';
+	if (!buf || buf.includes('undefined')) { throw new Error(`Serialization failed for ${outPath} (${exportName})`); }
+	ensureDir(path.dirname(outPath));
+	fs.writeFileSync(outPath, buf);
 }
 function writeBattleModData(outPath, modid, key, data) {
-  if (!data || typeof data !== 'object') {
-    throw new Error(`Refusing to write ${outPath}: mod export ${modid}.${key} is not an object`);
-  }
-  const buf =
+	if (!data || typeof data !== 'object') { throw new Error(`Refusing to write ${outPath}: mod export ${modid}.${key} is not an object`); }
+	const buf =
     `exports.BattleModData = exports.BattleModData || Object.create(null);\n` +
     `exports.BattleModData['${modid}'] = exports.BattleModData['${modid}'] || Object.create(null);\n` +
     `exports.BattleModData['${modid}']['${key}'] = ` + es3stringify(data) + `;\n`;
-
-  if (!buf || buf.includes('undefined')) {
-    throw new Error(`Serialization failed for ${outPath} (BattleModData['${modid}']['${key}'])`);
-  }
+  if (!buf || buf.includes('undefined')) { throw new Error(`Serialization failed for ${outPath} (BattleModData['${modid}']['${key}'])`); }
   ensureDir(path.dirname(outPath));
   fs.writeFileSync(outPath, buf);
 }
-
 function cloneObjTable(src) {
   const out = {};
   for (const id in src) out[id] = {...src[id]};
   return out;
 }
-
 /**
  * Build a "patch" table for a mod: includes
  * - brand new entries (not in base)
@@ -146,13 +96,11 @@ function buildPatchTable(baseTable, modTable, keys = null) {
   for (const id in modTable) {
     const m = modTable[id];
     const b = baseTable[id];
-    if (!b) { patch[id] = {...m}; continue; }
-
+    if (!b || id === 'silverpowder' || id === 'corrosiveshot' || id === 'mudslide' || id === 'rootburst') { patch[id] = {...m}; continue; }
     if (!keys) {
       if (JSON.stringify(m) !== JSON.stringify(b)) patch[id] = {...m};
       continue;
     }
-
     let changed = false;
     const diff = {};
     for (const k of keys) {
@@ -165,14 +113,9 @@ function buildPatchTable(baseTable, modTable, keys = null) {
   }
   return patch;
 }
-
 // Load custom mod data for search index
 process.stdout.write("Loading custom mod data... ");
-const modMoves = loadModData(
-	'dist/data/mods/gen9indigostarstorm/moves.js',
-	'moves'
-);
-
+const modMoves = loadModData('dist/data/mods/gen9indigostarstorm/moves.js', 'moves');
 const modItemsData =requireNoCache(path.join(SERVER_PATH,'dist/data/mods/gen9indigostarstorm/items.js')).Items;
 console.log("DONE");
 console.log(`Loaded ${Object.keys(modItemsData).length} items from mod data`);
@@ -185,15 +128,14 @@ console.log("DONE");
 console.log(`Merged descriptions for ${Object.keys(ItemsText).length} items`);
 
 
-
-
-
 //region Build search-index.js
 {
 	process.stdout.write("Building `data/search-index.js`... ");
 	let index = [];
+	const modMovesData = loadModData('dist/data/mods/gen9indigostarstorm/moves.js', 'moves') || {};
 	index = index.concat(Object.keys(Dex.data.Pokedex).map(x => x + ' pokemon'));
 	index = index.concat(Object.keys(Dex.data.Moves).map(x => x + ' move'));
+	for (const id of Object.keys(modMovesData)) { if (!Dex.data.Moves[id]) index.push(id + ' move'); }
 	index = index.concat(Object.keys(Dex.data.Items).map(x => x + ' item'));
 	index = index.concat(Object.keys(Dex.data.Abilities).map(x => x + ' ability'));
 	index = index.concat(Object.keys(Dex.data.TypeChart).map(x => toID(x) + ' type'));
@@ -254,7 +196,6 @@ console.log(`Merged descriptions for ${Object.keys(ItemsText).length} items`);
 		if (Dex.data.Pokedex[id].isCosmeticForme) continue;
 		generateAlias(id, name, 'pokemon');
 	}
-	const modMovesData = loadModData('dist/data/mods/gen9indigostarstorm/moves.js','moves') || {};
 	for (const id in Dex.data.Moves) {
 		const move = Dex.data.Moves[id];
 		const modMove = modMovesData[id] || {};
@@ -266,6 +207,11 @@ console.log(`Merged descriptions for ${Object.keys(ItemsText).length} items`);
 		move.desc ||
 		'';
 	}
+	for (const id in modMovesData) {
+  if (Dex.data.Moves[id]) continue;
+  const move = modMovesData[id];
+  if (move?.name) generateAlias(id, move.name, 'move');
+}
 	let fragileCount = 0;
 	let volatileCount = 0;
 	let pokeballCount = 0;
@@ -356,7 +302,7 @@ console.log(`Merged descriptions for ${Object.keys(ItemsText).length} items`);
 		let name = '';
 		switch (entry[1]) {
 		case 'pokemon': name = Dex.species.get(id).name; break;
-		case 'move': name = Dex.moves.get(id).name; break;
+		case 'move': name = (modMovesData?.[id]?.name || Dex.moves.get(id).name); break;
 		case 'item': name = Dex.items.get(id).name; break;
 		case 'ability': name = Dex.abilities.get(id).name; break;
 		case 'article': name = BattleArticleTitles[id] || ''; break;
@@ -405,7 +351,6 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 	const STADIUM = [2.04, 1.04];
 	const NATDEX = [9.1, 8.1];
 	const OTHER = [9.9, 9.6, 9.4, 9.2, -9.4, 8.6, 8.4, 8.2, 8.1, -8.4, -8.6, 7.1, 5.1, 3.1];
-	
 	// process.stdout.write("\n  ");
 	for (const genIdent of [...GENS, ...DOUBLES, ...VGC, ...NFE, ...STADIUM, ...OTHER, ...NATDEX, ...LC]) {
 		const isMetBattle = ('' + genIdent).endsWith('.2');
@@ -483,10 +428,8 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 					return 'Regular';
 				}
 				if (isGen9BH) {
-					if ((species.natDexTier === 'Illegal' || species.forme.includes('Totem')) &&
-						!['Floette-Eternal', 'Greninja-Ash', 'Xerneas-Neutral'].includes(species.name)) { return 'Illegal'; }
-					if ((species.name === 'Xerneas' || species.battleOnly || species.forme === 'Eternamax') &&
-						!(species.isMega || species.isPrimal || ['Greninja-Ash', 'Necrozma-Ultra'].includes(species.name))) { return 'Illegal'; }
+					if ((species.natDexTier === 'Illegal' || species.forme.includes('Totem')) && !['Floette-Eternal', 'Greninja-Ash', 'Xerneas-Neutral'].includes(species.name)) { return 'Illegal'; }
+					if ((species.name === 'Xerneas' || species.battleOnly || species.forme === 'Eternamax') && !(species.isMega || species.isPrimal || ['Greninja-Ash', 'Necrozma-Ultra'].includes(species.name))) { return 'Illegal'; }
 					if (species.isNonstandard && ['LGPE', 'CAP', 'Future'].includes(species.isNonstandard)) return 'Illegal';
 					return species.tags.includes('Mythical') ? 'Mythical' :
 						species.tags.includes('Restricted Legendary') ? 'Restricted Legendary' :
@@ -555,10 +498,8 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 			BattleTeambuilderTable[gen].items = items;
 			BattleTeambuilderTable[gen].formatSlices = formatSlices;
 			if (genNum >= 5) { BattleTeambuilderTable[gen].monotypeBans = monotypeBans; }
-	
 		}
 		const tierOrder = (() => {
-			
 			if (isVGC || isGen9BH) { return ["Mythical", "Restricted Legendary", "Regular", "NFE", "LC"]; }
 			if (isDoubles && genNum > 4) { return ["DUber", "(DUber)", "DOU", "DBL", "(DOU)", "DUU", "(DUU)", "New", "NFE", "LC"]; }
 			if (gen === 'gen4') { return ["AG", "Uber", "OU", "(OU)", "UUBL", "UU", "NUBL", "NU", "NFE", "LC"]; }
@@ -843,7 +784,6 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 	// Create nested structure for mod learnsets
 	BattleTeambuilderTable['gen9indigostarstorm'] = {};
 	BattleTeambuilderTable['gen9indigostarstorm'].learnsets = {};
-
 // Build tier table for gen9indigostarstorm (ALL ISL regs) USING FormatsData tiers
 console.log('Building tier table for gen9indigostarstorm...');
 const islDex = Dex.mod('gen9indigostarstorm');
@@ -1026,7 +966,7 @@ try {
 	console.log('Note: Could not build mod learnsets from islDex.data.Learnsets:', e && e.message ? e.message : e);
 }
 	// Client relevant data that should be overridden by past gens and mods
-	const overrideSpeciesKeys = ['abilities', 'baseStats', 'cosmeticFormes', 'isNonstandard', 'requiredItems', 'types', 'unreleasedHidden',];
+	const overrideSpeciesKeys = ['abilities', 'baseStats', 'cosmeticFormes', 'isNonstandard', 'requiredItems', 'types', 'unreleasedHidden', 'infusibleSlots'];
 	const overrideMoveKeys = ['accuracy', 'basePower', 'category', 'critRatio', 'desc', 'flags', 'isNonstandard', 'pp', 'priority', 'shortDesc', 'target', 'type',];
 	const overrideAbilityKeys = ['desc', 'flags', 'isNonstandard', 'rating', 'shortDesc'];
 	const overrideItemKeys = ['desc', 'fling', 'isNonstandard', 'naturalGift', 'shortDesc'];
@@ -1169,6 +1109,7 @@ process.stdout.write("Building `data/pokedex.js` (base) + mod overlay... ");
   const patchKeys = [
     'abilities', 'baseStats', 'types', 'weightkg',
     'isNonstandard', 'requiredItems', 'formeOrder',
+	'infusibleSlots',
   ];
 
   for (const id in modDex.data.Pokedex) {

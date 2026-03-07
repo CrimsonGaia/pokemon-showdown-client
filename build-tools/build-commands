@@ -1,15 +1,9 @@
 #!/usr/bin/env node
-/**
- * Builds out a cache of commands from the server & their help commands
- */
-
+// Builds out a cache of commands from the server & their help commands
 'use strict';
-
 const fs = require('fs');
 const path = require('path');
-
 const repoRoot = path.resolve(__dirname, '..');
-
 // Use local pokemon-showdown server (no caches/)
 const SERVER_PATH = process.env.PS_SERVER_PATH
   ? path.resolve(process.env.PS_SERVER_PATH)
@@ -18,9 +12,7 @@ const SERVER_PATH = process.env.PS_SERVER_PATH
         ? path.resolve(repoRoot, '..', 'pokemon-showdown')
         : path.resolve(repoRoot, 'pokemon-showdown')
     );
-
 console.log('Building `data/commands.json` index...');
-
 const noop = () => null;
 Object.assign(globalThis, {
   Config: { routes: { root: '' } },
@@ -36,44 +28,32 @@ Object.assign(globalThis, {
   },
   toID: str => ('' + str).toLowerCase().replace(/[^a-z0-9]/g, ''),
 });
-
 // ✅ Load from local server dist, not caches/
 const { Chat } = require(path.join(SERVER_PATH, 'dist', 'server', 'chat'));
 const Tournaments = require(path.join(SERVER_PATH, 'dist', 'server', 'tournaments'));
-
 // yes, these have to be done separately, yes it sucks
 Object.assign(globalThis, {
   Tournaments,
   Chat,
   Dex: { includeData: noop },
 });
-
 Chat.commands = Object.create(null);
 Chat.pages = Object.create(null);
-
 // ✅ IMPORTANT: these paths are resolved relative to SERVER_PATH, not the client repo.
 // Force cwd so Chat’s plugin loader finds dist/server/chat-commands correctly.
 const oldCwd = process.cwd();
 process.chdir(SERVER_PATH);
-
 try {
   Chat.loadPluginDirectory('dist/server/chat-commands');
   Chat.loadPlugin(globalThis.Tournaments, 'tournaments');
   Chat.loadPluginDirectory('dist/server/chat-plugins');
-} finally {
-  process.chdir(oldCwd);
-}
-
+} finally { process.chdir(oldCwd); }
 const recurseCommands = (table = Chat.commands, namespace = '', results = {}) => {
   for (const cmd in table) {
     const handler = table[cmd];
-    if (!handler || ['string', 'boolean'].includes(typeof handler) || cmd === 'aliases') {
-      continue;
-    }
+    if (!handler || ['string', 'boolean'].includes(typeof handler) || cmd === 'aliases') { continue; }
     const fullCmd = (namespace + ' ' + cmd).trim();
-    if (Array.isArray(handler)) {
-      continue;
-    }
+    if (Array.isArray(handler)) { continue; }
     if (typeof handler === 'object') {
       recurseCommands(handler, (namespace + ' ' + cmd).trim(), results);
       continue;
@@ -86,11 +66,9 @@ const recurseCommands = (table = Chat.commands, namespace = '', results = {}) =>
   }
   return results;
 };
-
 fs.writeFileSync(
   'play.pokemonshowdown.com/data/commands.js',
   `exports.BattleChatCommands = ${JSON.stringify(recurseCommands())}`
 );
-
 console.log('DONE');
 process.exit(0);

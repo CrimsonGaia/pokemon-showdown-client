@@ -24,7 +24,8 @@
           "image-rendering: -moz-crisp-edges",
           "-webkit-overflow-scrolling",
           "min-height: auto",
-          "scrollbar-width"
+          "scrollbar-width",
+          "scrollbar-width: none"
         ]
       }
     ],
@@ -39,7 +40,9 @@
     "axe/aria": [
       "default",
       {
-        "aria-valid-attr-value": "off"
+        "aria-valid-attr-value": "off",
+        "aria-roles": "off",
+        "aria-required-children": "off"
       }
     ]
   }
