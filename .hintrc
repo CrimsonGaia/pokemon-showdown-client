@@ -25,7 +25,8 @@
           "-webkit-overflow-scrolling",
           "min-height: auto",
           "scrollbar-width",
-          "scrollbar-width: none"
+          "scrollbar-width: none",
+          "-webkit-column-break-inside"
         ]
       }
     ],

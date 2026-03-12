@@ -144,7 +144,28 @@ console.log(`Merged descriptions for ${Object.keys(ItemsText).length} items`);
 	index = index.concat(['mega', 'powerhouse', 'legendary', 'restrictedlegendary', 'mythical', 'restrictedmythical', 'paradox', 'restrictedparadox',].map(x => toID(x) + ' flag'));
 	index = index.concat(['monster', 'water1', 'bug', 'flying', 'field', 'fairy', 'grass', 'humanlike', 'water3', 'mineral', 'amorphous', 'water2', 'ditto', 'dragon', 'undiscovered',].map(x => toID(x) + ' egggroup'));
 	index = index.concat(['ou', 'uu', 'ru', 'nu', 'pu', 'zu', 'lc', 'nfe', 'uber', 'uubl', 'rubl', 'nubl', 'publ', 'zubl', 'cap', 'caplc', 'capnfe',].map(x => toID(x) + ' tier'));
-	index = index = index.concat(['berry', 'fragile', 'volatile', 'consumable', 'pokeball', 'evolution', 'tradeevo',].map(x => toID(x) + ' itemclass'));
+	index = index.concat([
+		'fragile',
+		'volatile',
+		'pokeball',
+		'megastone',
+		'zcrystals',
+		'tradeevo',
+		'evostones',
+		'evolution',
+		'berry',
+		'consumable',
+		'species',
+		'typeplates',
+		'healing',
+		'statboost',
+		'statuscure',
+		'resist',
+		'reactive',
+		'utility',
+		'weather',
+		'terrain',
+	].map(x => toID(x) + ' itemclass'));
 	const BattleArticleTitles = {};
 	try {
 		for (const file of fs.readdirSync('../dex.pokemonshowdown.com/articles/')) {
@@ -857,7 +878,7 @@ BattleTeambuilderTable['gen9indigostarstorm'].formatSlices = islFormatSlices;
 console.log('Building item list for gen9indigostarstorm...');
 {
 	const islDex = Dex.mod('gen9indigostarstorm');
-	const itemIDs = Object.keys(islDex.data.Items);
+	const itemIDs = Object.keys(modItemsData);
 	itemIDs.sort();
 
 	const greatItems = [['header', "Popular items"]];
@@ -969,7 +990,7 @@ try {
 	const overrideSpeciesKeys = ['abilities', 'baseStats', 'cosmeticFormes', 'isNonstandard', 'requiredItems', 'types', 'unreleasedHidden', 'infusibleSlots'];
 	const overrideMoveKeys = ['accuracy', 'basePower', 'category', 'critRatio', 'desc', 'flags', 'isNonstandard', 'pp', 'priority', 'shortDesc', 'target', 'type',];
 	const overrideAbilityKeys = ['desc', 'flags', 'isNonstandard', 'rating', 'shortDesc'];
-	const overrideItemKeys = ['desc', 'fling', 'isNonstandard', 'naturalGift', 'shortDesc'];
+	const overrideItemKeys = ['desc', 'fling', 'isNonstandard', 'naturalGift', 'shortDesc', 'itemClass'];
 	const overrideTypeChartKeys = ['damageTaken'];
 	// Build overrideSpeciesData for gen9indigostarstorm (for custom abilities, stats, types, etc.)
 	console.log('Building overrideSpeciesData for gen9indigostarstorm...');
@@ -1011,9 +1032,26 @@ try {
 		overrideMoveKeys
 	);
 
+	const baseItemsForOverride = cloneObjTable(baseGen9Dex.data.Items);
+	const modItemsForOverride = cloneObjTable(islDex.data.Items);
+
+	for (const id in baseItemsForOverride) {
+		const it = baseGen9Dex.items.get(id);
+		if (it?.desc && !baseItemsForOverride[id].desc) baseItemsForOverride[id].desc = it.desc;
+		if (it?.shortDesc && !baseItemsForOverride[id].shortDesc) baseItemsForOverride[id].shortDesc = it.shortDesc;
+	}
+
+	for (const id in modItemsForOverride) {
+		const it = islDex.items.get(id);
+		if (!it?.exists) continue;
+		modItemsForOverride[id].name ||= it.name;
+		if (it?.desc && !modItemsForOverride[id].desc) modItemsForOverride[id].desc = it.desc;
+		if (it?.shortDesc && !modItemsForOverride[id].shortDesc) modItemsForOverride[id].shortDesc = it.shortDesc;
+	}
+
 	const islOverrideItemData = buildPatchTable(
-		baseGen9Dex.data.Items,
-		islDex.data.Items,
+		baseItemsForOverride,
+		modItemsForOverride,
 		overrideItemKeys
 	);
 
@@ -1244,7 +1282,17 @@ console.log("DONE");
     if (it?.shortDesc && !modItemsFull[id].shortDesc) modItemsFull[id].shortDesc = it.shortDesc;
   }
 
-  const itemPatchKeys = ['desc', 'shortDesc', 'fling', 'naturalGift', 'isNonstandard', 'isPokeball', 'isFragile', 'isMildlyFragile'];
+  const itemPatchKeys = [
+	'desc',
+	'shortDesc',
+	'fling',
+	'naturalGift',
+	'isNonstandard',
+	'isPokeball',
+	'isFragile',
+	'isMildlyFragile',
+	'itemClass',
+];
   const itemsPatch = buildPatchTable(Items, modItemsFull, itemPatchKeys);
 
   ensureDir(MOD_OUT_DIR);

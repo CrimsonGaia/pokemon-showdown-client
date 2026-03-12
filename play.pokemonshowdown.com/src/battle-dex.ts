@@ -166,6 +166,7 @@ export const Dex = new class implements ModdedDex {
 	readonly gen = 9;
 	readonly modid = 'gen9' as ID;
 	readonly cache = null!;
+	formats: any = null;
 	readonly REGULAR = 0;
 	readonly WEAK = 1;
 	readonly RESIST = 2;
@@ -203,7 +204,7 @@ export const Dex = new class implements ModdedDex {
 		this.moddedDexes[modid] = new ModdedDex(modid);
 		return this.moddedDexes[modid];
 	}
-	forGen(gen: number) {
+	forGen(gen: number): ModdedDex {
 		if (!gen) return this;
 		return this.mod(`gen${gen}` as ID);
 	}
@@ -213,7 +214,7 @@ export const Dex = new class implements ModdedDex {
 		if (!formatid.startsWith('gen')) return 6;
 		return parseInt(formatid.charAt(3)) || Dex.gen;
 	}
-	forFormat(format: string) {
+	forFormat(format: string): ModdedDex {
 		let dex = Dex.forGen(Dex.formatGen(format));
 		const formatid = toID(format).slice(4);
 		if (dex.gen === 7 && formatid.includes('letsgo')) { dex = Dex.mod('gen7letsgo' as ID); }
@@ -861,6 +862,7 @@ export class ModdedDex {
 		Types: {} as { [k: string]: Dex.Effect },
 	};
 	pokeballs: string[] | null = null;
+	formats: any;
 
 	constructor(modid: ID) {
 		this.modid = modid;
@@ -891,8 +893,6 @@ export class ModdedDex {
 			const modTable = window.BattleTeambuilderTable?.[this.modid];
 			const modHas = !!(modTable?.overrideMoveData && id in modTable.overrideMoveData);
 			if (modHas) Object.assign(data, modTable.overrideMoveData[id]);
-
-			// if base doesn't exist but mod defines it, make it real
 			if (modHas && base && base.exists === false) {
 				data.exists = true;
 				data.id ||= id;
@@ -961,7 +961,14 @@ export class ModdedDex {
 			const modHas = !!(modTable?.overrideItemData && id in modTable.overrideItemData);
 			if (modHas) Object.assign(data, modTable.overrideItemData[id]);
 
-			if (modHas && base && base.exists === false) {
+			const modItems =
+				(window as any).BattleModData?.[this.modid]?.Items ||
+				(globalThis as any).BattleModData?.[this.modid]?.Items ||
+				(globalThis as any).exports?.BattleModData?.[this.modid]?.Items;
+			const modHasItemPatch = !!(modItems && id in modItems);
+			if (modHasItemPatch) Object.assign(data, modItems[id]);
+
+			if ((modHas || modHasItemPatch) && base && base.exists === false) {
 				data.exists = true;
 				data.id ||= id;
 				data.name ||= name;
