@@ -49,6 +49,7 @@ export declare namespace Dex {
 	export type PokemonSet = Teams.PokemonSet;
 }
 const ISL_ALLOWED_CACHE: WeakMap<object, Set<ID>> = new WeakMap();
+const ISL_ALLOWED_ITEM_CACHE = new WeakMap<any, Set<ID>>();
 export type { ID };
 declare const require: any;
 declare const global: any;
@@ -948,32 +949,50 @@ export class ModdedDex {
 				id = toID(name);
 			}
 			if (this.cache.Items.hasOwnProperty(id)) return this.cache.Items[id];
-
 			const base: any = Dex.items.get(name);
 			let data: any = { ...base };
-
 			for (let i = Dex.gen - 1; i >= this.gen; i--) {
 				const table = window.BattleTeambuilderTable?.[`gen${i}`];
 				if (table?.overrideItemData && id in table.overrideItemData) Object.assign(data, table.overrideItemData[id]);
 			}
-
 			const modTable = window.BattleTeambuilderTable?.[this.modid];
 			const modHas = !!(modTable?.overrideItemData && id in modTable.overrideItemData);
 			if (modHas) Object.assign(data, modTable.overrideItemData[id]);
-
 			const modItems =
 				(window as any).BattleModData?.[this.modid]?.Items ||
 				(globalThis as any).BattleModData?.[this.modid]?.Items ||
 				(globalThis as any).exports?.BattleModData?.[this.modid]?.Items;
 			const modHasItemPatch = !!(modItems && id in modItems);
 			if (modHasItemPatch) Object.assign(data, modItems[id]);
-
 			if ((modHas || modHasItemPatch) && base && base.exists === false) {
 				data.exists = true;
 				data.id ||= id;
 				data.name ||= name;
 			}
+			// Indigo Starstorm item roster behavior:
+			// Only items explicitly present in BattleModData.gen9indigostarstorm.Items are legal.
+			// Everything else is treated as Past.
+			if (this.modid === 'gen9indigostarstorm') {
+				let allowedSet = ISL_ALLOWED_ITEM_CACHE.get(this);
+				if (!allowedSet) {
+					allowedSet = new Set<ID>();
 
+					if (modItems) {
+						for (const itemid in modItems) {
+							allowedSet.add(toID(itemid) as ID);
+						}
+					}
+
+					ISL_ALLOWED_ITEM_CACHE.set(this, allowedSet);
+				}
+
+				const num = (data.num ?? base?.num) as number | undefined;
+				const isCustom = typeof num === 'number' && (num >= 10000 || num < 0);
+
+				if (!isCustom && !allowedSet.has(id)) {
+					data.isNonstandard = 'Past';
+				}
+			}
 			const item = new Item(id, data.name || name, data);
 			this.cache.Items[id] = item;
 			return item;

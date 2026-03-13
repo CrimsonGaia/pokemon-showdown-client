@@ -268,7 +268,7 @@
 		var isItemGrid = this.isItemGridMode();
 		if (isPokemonGrid || isItemGrid) {
 			var i = this.renderedIndex;
-			var finalIndex = i + (forceAdd ? 50 : 50);
+			var finalIndex = i + (forceAdd ? 255 : 255);
 			if (finalIndex > resultSet.length) finalIndex = resultSet.length;
 			var buf = '';
 			while (i < finalIndex) {
@@ -891,7 +891,9 @@
 		evostones: 'Evo Stones',
 		weather: 'Weather',
 		terrain: 'Terrain',
+		sweets: 'Sweets',
 	};
+
 	function normalizeItemClass(tag) {
 		var id = toID(tag || '');
 		var aliases = {
@@ -909,6 +911,10 @@
 			megastone: 'megastone',
 			statboost: 'statboost',
 			statuscure: 'statuscure',
+			sweet: 'sweets',
+			sweets: 'sweets',
+			alcremiesweet: 'sweets',
+			alcremiesweets: 'sweets',
 		};
 		return aliases[id] || id;
 	}

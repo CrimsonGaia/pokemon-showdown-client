@@ -740,17 +740,25 @@ abstract class BattleTypedSearch<T extends SearchType> {
 			this.dex = Dex.mod('gen7letsgo' as ID);
 		}
 		// must happen AFTER the "gen9" stripping block, so format is like "indigostarstormou" or "indigostarstorm"
-if (format.startsWith('indigostarstorm') || format.startsWith('isl')) {
-	console.log('[DEBUG] ISL format detected, original format:', format);
+// must happen AFTER the "gen9" stripping block
+const normalizedFormat = toID(format);
+
+if (normalizedFormat.includes('indigostarstorm') || normalizedFormat.includes('isl')) {
+	console.log('[DEBUG] ISL format detected, original format:', format, 'normalized:', normalizedFormat);
 	this.formatType = 'indigostarstorm';
 	this.dex = Dex.mod('gen9indigostarstorm' as ID);
-	// normalize: remove the mod marker so the remaining format is the actual tier (ou/uu/etc)
-	if (format.startsWith('indigostarstorm')) {
-		format = format.slice('indigostarstorm'.length) as ID;
+
+	// strip the ISL marker if it is being used as a prefix
+	if (normalizedFormat.startsWith('indigostarstorm')) {
+		format = normalizedFormat.slice('indigostarstorm'.length) as ID;
+	} else if (normalizedFormat.startsWith('isl')) {
+		format = normalizedFormat.slice('isl'.length) as ID;
 	} else {
-		format = format.slice('isl'.length) as ID;
+		// if ISL appears later in the format id/name, keep the original tier fallback
+		format = normalizedFormat as ID;
 	}
-	if (!format) format = 'ou' as ID; // pick a sane default if someone selects just "gen9indigostarstorm"
+
+	if (!format) format = 'ou' as ID;
 }
 		if (format.includes('nationaldex') || format.startsWith('nd') || format.includes('natdex')) {
 			format = (format.startsWith('nd') ? format.slice(2) : format.includes('natdex') ? format.slice(6) : format.slice(11)) as ID;
@@ -1679,15 +1687,60 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 			table.items = null;
 		}
 
+
+
+		//excluded items
+		const isZCrystal = (item: Dex.Item) => !!((item as any).zMove || (item as any).zMoveType || (item as any).zMoveFrom);
+		const isSpeciesSpecificLegacyItem = (item: Dex.Item) => {
+			const forcedForme = (item as any).forcedForme || '';
+			return !!(
+				(item as any).onMemory || /^Silvally-/.test(forcedForme) ||
+				(item as any).onDrive || /^Genesect-/.test(forcedForme)
+			);
+		};
+		const isCAPItem = (item: Dex.Item) => {
+			const id = item.id || '';
+			const forcedForme = (item as any).forcedForme || '';
+			return !!(
+				(item as any).isNonstandard === 'CAP' ||
+				id === 'crucibellite' ||
+				id === 'vilevial' ||
+				(item as any).megaStone === 'Crucibelle-Mega' ||
+				forcedForme === 'Venomicon-Epilogue'
+			);
+		};
+		const isPastItem = (item: Dex.Item) => (item as any).isNonstandard === 'Past';
+
 		const isExcludedItem = (item: Dex.Item) => {
 			if (!item?.exists) return true;
-			if ((item as any).isGem) return true;
-			if ((item as any).zMove || (item as any).zMoveType || (item as any).zMoveFrom) return true;
+			const id = item.id || '';
+			const name = item.name || '';
+			if (isPastItem(item)) return true;
+			if (isZCrystal(item)) return true;
+			if (isSpeciesSpecificLegacyItem(item)) return true;
+			if (isCAPItem(item)) return true;
+			if ((item as any).isGem || id.endsWith('gem') || /\bGem\b/i.test(name)) return true;
+			if ( id.endsWith('fossil') || id.startsWith('fossilized') || /\bFossil\b/i.test(name) || /\bFossilized\b/i.test(name)) return true;
+			if (id.endsWith('incense') || /\bIncense\b/i.test(name)) return true;
 			return false;
 		};
 
+
+
+
 		// Non-ISL formats: keep existing behavior, but without "Useless items"
-		if ((this.formatType as any) !== 'indigostarstorm') {
+		const isISL =
+			(this.formatType as any) === 'indigostarstorm' ||
+			this.dex?.modid === 'gen9indigostarstorm' ||
+			(this.format || '').includes('isl') ||
+			(this.format || '').includes('indigostarstorm');
+		console.log('[ITEM SEARCH BRANCH]', {
+			format: this.format,
+			formatType: this.formatType,
+			dexModid: this.dex?.modid,
+			isISL,
+		});
+		if (!isISL) {
 			const baseResults: SearchRow[] = table.itemSet;
 			const results: SearchRow[] = [];
 			let inUselessSection = false;
@@ -1707,27 +1760,27 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 				if (isExcludedItem(item)) continue;
 				results.push(row);
 			}
-
 			const typePlateRows: SearchRow[] = [];
 			const speciesSpecificRows: SearchRow[] = [];
 			const megaStoneRows: SearchRow[] = [];
+			const sweetRows: SearchRow[] = [];
 			const pokeballRows: SearchRow[] = [];
 			for (let id in BattleItems) {
 				const item = this.dex.items.get(id);
 				if (isExcludedItem(item)) continue;
 				const row: SearchRow = ['item', item.id];
 				const itemClasses = this.getItemClass(item);
-
 				if (itemClasses.includes('typeplates')) typePlateRows.push(row);
 				else if (itemClasses.includes('megastone')) megaStoneRows.push(row);
 				else if (itemClasses.includes('species')) speciesSpecificRows.push(row);
+				else if (itemClasses.includes('sweets')) sweetRows.push(row);
 				else if (itemClasses.includes('pokeball')) pokeballRows.push(row);
 			}
 			typePlateRows.sort((a, b) => this.dex.items.get(a[1]).name.localeCompare(this.dex.items.get(b[1]).name));
 			speciesSpecificRows.sort((a, b) => this.dex.items.get(a[1]).name.localeCompare(this.dex.items.get(b[1]).name));
 			megaStoneRows.sort((a, b) => this.dex.items.get(a[1]).name.localeCompare(this.dex.items.get(b[1]).name));
+			sweetRows.sort((a, b) => this.dex.items.get(a[1]).name.localeCompare(this.dex.items.get(b[1]).name));
 			pokeballRows.sort((a, b) => this.dex.items.get(a[1]).name.localeCompare(this.dex.items.get(b[1]).name));
-
 			if (typePlateRows.length) {
 				results.push(['header', 'Type Plates']);
 				for (const row of typePlateRows) results.push(row);
@@ -1740,49 +1793,57 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 				results.push(['header', 'Mega Stones']);
 				for (const row of megaStoneRows) results.push(row);
 			}
+			if (sweetRows.length) {
+				results.push(['header', 'Alcremie Sweets']);
+				for (const row of sweetRows) results.push(row);
+			}
 			if (pokeballRows.length) {
 				results.push(['header', 'Poké Balls']);
 				for (const row of pokeballRows) results.push(row);
 			}
 			return results;
 		}
+		// ISL: use itemSet as the candidate source and filter by actual ISL item data,
+		// but do NOT require an explicit mod Items entry just to display inherited items.
+		const legalItems: Dex.Item[] = [];
+		const seen = new Set<ID>();
 
-		// ISL: use the modded table ONLY as the legality source, then rebuild sections from tags
-		const allowedItemIds: ID[] = [];
 		for (const row of table.itemSet as SearchRow[]) {
 			if (row[0] !== 'item') continue;
 			const item = this.dex.items.get(row[1]);
+			if (!item?.exists) continue;
+			if (seen.has(item.id)) continue;
 			if (isExcludedItem(item)) continue;
-			allowedItemIds.push(item.id);
+
+			seen.add(item.id);
+			legalItems.push(item);
 		}
-
-		const seen = new Set<string>();
-		const legalItems = allowedItemIds
-			.filter(id => {
-				if (seen.has(id)) return false;
-				seen.add(id);
-				return true;
-			})
-			.map(id => this.dex.items.get(id))
-			.filter(item => item?.exists);
-
-		type Bucket = {label: string; tags: string[]};
+		legalItems.sort((a, b) => a.name.localeCompare(b.name));
+		type Bucket = {label: string; tags: string[]; rows?: SearchRow[]};
 		//region Item Pools/Buckets
 		const buckets: Bucket[] = [
-			{label: 'Unsorted', tags: []},
-			{label: 'Evolution Stones', tags: ['evolution', 'tradeevo', 'evostones']},
+			{label: 'Uncategorized items', tags: []},
+			{label: 'Evolution Stones', tags: ['evostones']},
 			{label: 'Weather/Terrain', tags: ['weather', 'terrain']},
 			{label: 'Type Plates', tags: ['typeplates']},
 			{label: 'Resist', tags: ['resist']},
 			{label: 'Stat Boost', tags: ['statboost']},
 			{label: 'Status Cure', tags: ['statuscure']},
 			{label: 'Healing', tags: ['healing']},
+			{label: 'Utility', tags: ['utility']},
 			{label: 'Mega Stones', tags: ['megastone']},
 			{label: 'Z-Crystals', tags: ['zcrystals']},
 			{label: 'Signature Items', tags: ['species']},
+			{label: 'TM/TR/HM', tags: []},
+			{label: 'Alcremie Sweets', tags: ['sweets']},
+			{label: 'Evolution Items without an effect', tags: ['evolution', 'tradeevo']},
 			{label: 'Poké Balls', tags: ['pokeball']},
 		];
-
+		const isTechnicalMachineItem = (item: Dex.Item) => {
+			const id = item.id || '';
+			const name = item.name || '';
+			return /^(tm|tr|hm)\d+$/.test(id) || /^(TM|TR|HM)\d+/i.test(name);
+		};
 		const used = new Set<string>();
 		const results: SearchRow[] = [];
 		const unsortedRows: SearchRow[] = [];
@@ -1790,26 +1851,40 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 			const item = legalItems[i];
 			const itemTags = this.getItemClass(item);
 			let matched = false;
-			for (let j = 0; j < buckets.length; j++) {
-				const bucket = buckets[j];
-				if (!bucket.tags.length) continue; // skip Unsorted during matching
-				for (let k = 0; k < bucket.tags.length; k++) {
-					if (itemTags.includes(bucket.tags[k])) {
-						if (!(bucket as any).rows) (bucket as any).rows = [];
-						(bucket as any).rows.push(['item', item.id]);
-						used.add(item.id);
-						matched = true;
-						break;
-					}
+
+			if (isTechnicalMachineItem(item)) {
+				const tmBucket = buckets.find(bucket => bucket.label === 'TM/TR/HM');
+				if (tmBucket) {
+					if (!tmBucket.rows) tmBucket.rows = [];
+					tmBucket.rows.push(['item', item.id]);
+					used.add(item.id);
+					matched = true;
 				}
-				if (matched) break; // first match wins
 			}
-			if (!matched) { unsortedRows.push(['item', item.id]); }
+
+			if (!matched) {
+				for (let j = 0; j < buckets.length; j++) {
+					const bucket = buckets[j];
+					if (!bucket.tags.length) continue; // skip Unsorted and TM/TR/HM during tag matching
+					for (let k = 0; k < bucket.tags.length; k++) {
+						if (itemTags.includes(bucket.tags[k])) {
+							if (!bucket.rows) bucket.rows = [];
+							bucket.rows.push(['item', item.id]);
+							used.add(item.id);
+							matched = true;
+							break;
+						}
+					}
+					if (matched) break; // first match wins
+				}
+			}
+
+			if (!matched) unsortedRows.push(['item', item.id]);
 		}
 		for (let i = 0; i < buckets.length; i++) {
 			const bucket = buckets[i];
 			let rows: SearchRow[] = [];
-			if (bucket.label === 'Unsorted') { rows = unsortedRows; } 
+			if (bucket.label === 'Uncategorized items') { rows = unsortedRows; } 
 			else { rows = ((bucket as any).rows || []) as SearchRow[]; }
 			rows.sort((a, b) => this.dex.items.get(a[1]).name.localeCompare(this.dex.items.get(b[1]).name));
 			if (rows.length) {
@@ -1871,6 +1946,7 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 		species: 'Species-specific',
 		megastone: 'Mega Stone',
 		typeplates: 'Type Plates',
+		sweets: 'Sweets',
 		zcrystals: 'Z-Crystals',
 		evostones: 'Evo Stones',
 		weather: 'Weather',
@@ -1894,6 +1970,10 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 			megastone: 'megastone',
 			statboost: 'statboost',
 			statuscure: 'statuscure',
+			sweets: 'sweets',
+			sweet: 'sweets',
+			alcremiesweet: 'sweets',
+			alcremiesweets: 'sweets',
 		};
 		return aliases[id] || id;
 	}
