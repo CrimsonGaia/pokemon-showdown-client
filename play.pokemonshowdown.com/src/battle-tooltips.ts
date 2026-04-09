@@ -164,14 +164,25 @@ export class BattleTooltips {
 	static isLocked = false;
 	static isPressed = false;
 
+		static getWrapper() {
+		return document.getElementById('tooltipwrapper') as HTMLDivElement | null;
+	}
+
+	static clearWrapperClasses() {
+		const wrapper = BattleTooltips.getWrapper();
+		if (!wrapper) return;
+		wrapper.classList.remove('tooltip-locked', 'tooltip-locking-click', 'tooltip-locking-tap');
+	}
+
 	static hideTooltip() {
 		BattleTooltips.cancelLongTap();
-		if (!BattleTooltips.elem) return;
-		BattleTooltips.elem.parentNode!.removeChild(BattleTooltips.elem);
+		const wrapper = BattleTooltips.getWrapper();
+		if (wrapper) wrapper.remove();
+
 		BattleTooltips.elem = null;
 		BattleTooltips.parentElem = null;
 		BattleTooltips.isLocked = false;
-		$('#tooltipwrapper').removeClass('tooltip-locked tooltip-locking-click tooltip-locking-tap');
+		BattleTooltips.isPressed = false;
 	}
 
 	static cancelLongTap() {
@@ -179,56 +190,108 @@ export class BattleTooltips {
 			clearTimeout(BattleTooltips.longTapTimeout);
 			BattleTooltips.longTapTimeout = 0;
 		}
-		$('#tooltipwrapper').removeClass('tooltip-locking-click tooltip-locking-tap');
+		const wrapper = BattleTooltips.getWrapper();
+		wrapper?.classList.remove('tooltip-locking-click', 'tooltip-locking-tap');
 	}
 
 	lockTooltip() {
 		if (BattleTooltips.elem && !BattleTooltips.isLocked) {
 			BattleTooltips.isLocked = true;
 			if (BattleTooltips.isPressed) {
-				$(BattleTooltips.parentElem!).removeClass('pressed');
+				BattleTooltips.parentElem?.classList.remove('pressed');
 				BattleTooltips.isPressed = false;
 			}
-			// $('#tooltipwrapper').removeClass('tooltip-locking');
-			$('#tooltipwrapper').addClass('tooltip-locked');
+			BattleTooltips.getWrapper()?.classList.add('tooltip-locked');
 		}
 	}
 
-	handleTouchEnd(e: TouchEvent) {
-		BattleTooltips.cancelLongTap();
 
-		if (!BattleTooltips.isLocked) BattleTooltips.hideTooltip();
-	}
+	listen(elem: HTMLElement) {
+		const getTooltipTarget = (event: Event) => {
+			const target = event.target as HTMLElement | null;
+			if (!target) return null;
+			const tooltipTarget = target.closest('.has-tooltip') as HTMLElement | null;
+			if (!tooltipTarget || !elem.contains(tooltipTarget)) return null;
+			return tooltipTarget;
+		};
 
-	listen(elem: HTMLElement | JQuery) {
-		const $elem = $(elem);
-		$elem.on('mouseover', '.has-tooltip', this.showTooltipEvent);
-		$elem.on('click', '.has-tooltip', this.clickTooltipEvent);
-		$elem.on('focus', '.has-tooltip', this.showTooltipEvent);
-		$elem.on('mouseout', '.has-tooltip', BattleTooltips.unshowTooltip);
-		$elem.on('mousedown', '.has-tooltip', this.holdLockTooltipEvent);
-		$elem.on('blur', '.has-tooltip', BattleTooltips.unshowTooltip);
-		$elem.on('mouseup', '.has-tooltip', BattleTooltips.unshowTooltip);
-
-		$elem.on('touchstart', '.has-tooltip', e => {
-			e.preventDefault();
-			this.holdLockTooltipEvent(e);
-			if (!BattleTooltips.parentElem) {
-				// should never happen, but in case there's a bug in the tooltip handler
-				BattleTooltips.parentElem = e.currentTarget;
-			}
-			$(BattleTooltips.parentElem!).addClass('pressed');
-			BattleTooltips.isPressed = true;
+		elem.addEventListener('mouseover', event => {
+			const tooltipTarget = getTooltipTarget(event);
+			if (!tooltipTarget || BattleTooltips.isLocked) return;
+			this.showTooltip(tooltipTarget);
 		});
-		$elem.on('touchend', '.has-tooltip', e => {
-			e.preventDefault();
-			if (e.currentTarget === BattleTooltips.parentElem && BattleTooltips.isPressed) {
-				BattleTooltips.parentElem!.click();
+
+		elem.addEventListener('focusin', event => {
+			const tooltipTarget = getTooltipTarget(event);
+			if (!tooltipTarget || BattleTooltips.isLocked) return;
+			this.showTooltip(tooltipTarget);
+		});
+
+		elem.addEventListener('mouseout', event => {
+			const tooltipTarget = getTooltipTarget(event);
+			if (!tooltipTarget) return;
+			BattleTooltips.unshowTooltip();
+		});
+
+		elem.addEventListener('focusout', event => {
+			const tooltipTarget = getTooltipTarget(event);
+			if (!tooltipTarget) return;
+			BattleTooltips.unshowTooltip();
+		});
+
+		elem.addEventListener('click', event => {
+			const tooltipTarget = getTooltipTarget(event);
+			if (!tooltipTarget) return;
+			if (BattleTooltips.isLocked) {
+				event.preventDefault();
+				event.stopImmediatePropagation();
+			}
+		});
+
+		elem.addEventListener('touchstart', event => {
+			const tooltipTarget = getTooltipTarget(event);
+			if (!tooltipTarget) return;
+
+			event.preventDefault();
+			if (BattleTooltips.isLocked) BattleTooltips.hideTooltip();
+
+			this.showTooltip(tooltipTarget);
+			BattleTooltips.parentElem = tooltipTarget;
+			tooltipTarget.classList.add('pressed');
+			BattleTooltips.isPressed = true;
+
+			BattleTooltips.longTapTimeout = window.setTimeout(() => {
+				BattleTooltips.longTapTimeout = 0;
+				this.lockTooltip();
+			}, BattleTooltips.LONG_TAP_DELAY);
+
+			BattleTooltips.getWrapper()?.classList.add('tooltip-locking-tap');
+		}, {passive: false});
+
+		elem.addEventListener('touchend', event => {
+			const tooltipTarget = getTooltipTarget(event);
+			if (!tooltipTarget) return;
+
+			event.preventDefault();
+			BattleTooltips.cancelLongTap();
+
+			if (tooltipTarget === BattleTooltips.parentElem && BattleTooltips.isPressed) {
+				tooltipTarget.click();
 			}
 			BattleTooltips.unshowTooltip();
 		});
-		$elem.on('touchleave', '.has-tooltip', BattleTooltips.unshowTooltip);
-		$elem.on('touchcancel', '.has-tooltip', BattleTooltips.unshowTooltip);
+
+		elem.addEventListener('touchleave', event => {
+			const tooltipTarget = getTooltipTarget(event);
+			if (!tooltipTarget) return;
+			BattleTooltips.unshowTooltip();
+		});
+
+		elem.addEventListener('touchcancel', event => {
+			const tooltipTarget = getTooltipTarget(event);
+			if (!tooltipTarget) return;
+			BattleTooltips.unshowTooltip();
+		});
 	}
 
 	clickTooltipEvent = (e: Event) => {
@@ -242,21 +305,17 @@ export class BattleTooltips {
 	 *
 	 * (Namely, a long-tap or long-click)
 	 */
-	holdLockTooltipEvent = (e: JQuery.TriggeredEvent) => {
-		if (BattleTooltips.isLocked) BattleTooltips.hideTooltip();
-		const target = e.currentTarget as HTMLElement;
-		this.showTooltip(target);
-		const isClick = (e.type === 'mousedown' && target.tagName === 'BUTTON');
+	holdLockTooltipEvent = (e: Event) => {
+		if (!BattleTooltips.elem) return;
 
-		BattleTooltips.longTapTimeout = setTimeout(() => {
-			BattleTooltips.longTapTimeout = 0;
-			this.lockTooltip();
-		}, isClick ? BattleTooltips.LONG_CLICK_DELAY : BattleTooltips.LONG_TAP_DELAY);
-		if (isClick) {
-			$('#tooltipwrapper').addClass('tooltip-locking-click');
-		} else {
-			$('#tooltipwrapper').addClass('tooltip-locking-tap');
-		}
+		const target = e.currentTarget as HTMLElement | null;
+		if (!target) return;
+
+		const wrapper = document.getElementById('tooltipwrapper');
+		if (wrapper) wrapper.classList.add('tooltip-locked');
+
+		BattleTooltips.isLocked = true;
+		this.showTooltip(target);
 	};
 
 	showTooltipEvent = (e: Event) => {
@@ -270,7 +329,7 @@ export class BattleTooltips {
 	static unshowTooltip() {
 		if (BattleTooltips.isLocked) return;
 		if (BattleTooltips.isPressed) {
-			$(BattleTooltips.parentElem!).removeClass('pressed');
+			BattleTooltips.parentElem?.classList.remove('pressed');
 			BattleTooltips.isPressed = false;
 		}
 		BattleTooltips.hideTooltip();
@@ -388,80 +447,83 @@ export class BattleTooltips {
 		return true;
 	}
 
-	placeTooltip(innerHTML: string, hoveredElem?: HTMLElement, notRelativeToParent?: boolean, type?: string) {
-		let $elem;
+		placeTooltip(innerHTML: string, hoveredElem?: HTMLElement, notRelativeToParent?: boolean, type?: string) {
+		let anchorElem: HTMLElement | null = null;
+
 		if (hoveredElem) {
-			$elem = $(hoveredElem);
+			anchorElem = hoveredElem;
 		} else {
-			$elem = (this.battle.scene as BattleScene).$turn;
+			const turnElem = (this.battle.scene as BattleScene).$turn?.[0] as HTMLElement | undefined;
+			anchorElem = turnElem || null;
 			notRelativeToParent = true;
 		}
 
-		let hoveredX1 = $elem.offset()!.left;
+		if (!anchorElem) return false;
 
-		if (!notRelativeToParent) {
-			$elem = $elem.parent();
+		let positionElem = anchorElem;
+		if (!notRelativeToParent && anchorElem.parentElement) {
+			positionElem = anchorElem.parentElement;
 		}
 
-		let hoveredY1 = $elem.offset()!.top;
-		let hoveredY2 = hoveredY1 + $elem.outerHeight()!;
+		const anchorRect = anchorElem.getBoundingClientRect();
+		const positionRect = positionElem.getBoundingClientRect();
 
-		// (x, y) are the left and top offsets of #tooltipwrapper, which mark the
-		// BOTTOM LEFT CORNER of the tooltip
+		const hoveredX1 = anchorRect.left + window.scrollX;
+		const hoveredY1 = positionRect.top + window.scrollY;
+		const hoveredY2 = hoveredY1 + positionRect.height;
 
 		let x = Math.max(hoveredX1 - 2, 0);
 		let y = Math.max(hoveredY1 - 5, 0);
 
-		let $wrapper = $('#tooltipwrapper');
-		if (!$wrapper.length) {
-			$wrapper = $(`<div id="tooltipwrapper" role="tooltip"></div>`);
-			$(document.body).append($wrapper);
-			$wrapper.on('click', e => {
+		let wrapper = BattleTooltips.getWrapper();
+		if (!wrapper) {
+			wrapper = document.createElement('div');
+			wrapper.id = 'tooltipwrapper';
+			wrapper.setAttribute('role', 'tooltip');
+			wrapper.addEventListener('click', () => {
 				try {
-					const selection = window.getSelection()!;
-					if (selection.type === 'Range') return;
+					const selection = window.getSelection();
+					if (selection?.type === 'Range') return;
 				} catch {}
 				BattleTooltips.hideTooltip();
 			});
+			document.body.appendChild(wrapper);
 		} else {
-			$wrapper.removeClass('tooltip-locked');
+			wrapper.classList.remove('tooltip-locked');
 		}
-		$wrapper.css({
-			left: Math.min(x, document.documentElement.clientWidth - 400),
-			top: y,
-		});
-		innerHTML = `<div class="tooltipinner"><div class="tooltip tooltip-${type!}">${innerHTML}</div></div>`;
-		$wrapper.html(innerHTML).appendTo(document.body);
-		BattleTooltips.elem = $wrapper.find('.tooltip')[0] as HTMLDivElement;
+
+		wrapper.style.left = `${Math.min(x, document.documentElement.clientWidth - 400)}px`;
+		wrapper.style.top = `${y}px`;
+
+		wrapper.innerHTML = `<div class="tooltipinner"><div class="tooltip tooltip-${type || ''}">${innerHTML}</div></div>`;
+		document.body.appendChild(wrapper);
+
+		BattleTooltips.elem = wrapper.querySelector('.tooltip') as HTMLDivElement | null;
 		BattleTooltips.isLocked = false;
 
-		let height = $(BattleTooltips.elem).outerHeight()!;
+		if (!BattleTooltips.elem) return false;
+
+		const height = BattleTooltips.elem.offsetHeight;
 		if (y - height < 1) {
-			// tooltip is too tall to fit above the element:
-			// try to fit it below it instead
 			y = hoveredY2 + height + 5;
-			if (y > document.documentElement.clientHeight) {
-				// tooltip is also too tall to fit below the element:
-				// just place it at the top of the screen
+			if (y > document.documentElement.clientHeight + window.scrollY) {
 				y = height + 1;
 			}
-			$wrapper.css('top', y);
+			wrapper.style.top = `${y}px`;
 		} else if (y < 75) {
-			// tooltip is pretty high up, put it below the element if it fits
-			y = hoveredY2 + height + 5;
-			if (y < document.documentElement.clientHeight) {
-				// it fits
-				$wrapper.css('top', y);
+			const lowerY = hoveredY2 + height + 5;
+			if (lowerY < document.documentElement.clientHeight + window.scrollY) {
+				wrapper.style.top = `${lowerY}px`;
 			}
 		}
 
-		let width = $(BattleTooltips.elem).outerWidth()!;
+		const width = BattleTooltips.elem.offsetWidth;
 		const availableWidth = document.documentElement.clientWidth + window.scrollX;
 		if (x > availableWidth - width - 2) {
 			x = availableWidth - width - 2;
-			$wrapper.css('left', x);
+			wrapper.style.left = `${x}px`;
 		} else if (x > document.documentElement.clientWidth - 400) {
-			$wrapper.css('left', x);
+			wrapper.style.left = `${x}px`;
 		}
 
 		BattleTooltips.parentElem = hoveredElem || null;
@@ -949,7 +1011,7 @@ export class BattleTooltips {
 			text += itemText;
 			text += '</p>';
 		}
-
+		text += this.renderWeaponState(clientPokemon);
 		text += this.renderStats(clientPokemon, serverPokemon, !isActive);
 
 		if (serverPokemon && !isActive) {
@@ -1461,7 +1523,19 @@ export class BattleTooltips {
 		buf += '</p>';
 		return buf;
 	}
+	renderWeaponState(pokemon: Pokemon | null) {
+		if (!pokemon || pokemon.maxWeaponDurability <= 0) return '';
 
+		let text = '<p>';
+		text += `<small>Weapon durability:</small> ${pokemon.weaponDurability} / ${pokemon.maxWeaponDurability}`;
+
+		if (pokemon.weaponDurability === 0 && pokemon.weaponRecoveryLeft > 0) {
+			text += `<br /><small>Weapon recovery:</small> ${pokemon.weaponRecoveryLeft} turn${pokemon.weaponRecoveryLeft === 1 ? '' : 's'}`;
+		}
+
+		text += '</p>';
+		return text;
+	}
 	getPPUseText(moveTrackRow: [string, number], showKnown?: boolean) {
 		let [moveName, ppUsed] = moveTrackRow;
 		let move;
@@ -1472,8 +1546,7 @@ export class BattleTooltips {
 			maxpp = 5;
 		} else {
 			move = this.battle.dex.moves.get(moveName);
-			maxpp = (move.pp === 1 || move.noPPBoosts ? move.pp : move.pp * 8 / 5);
-			if (this.battle.gen < 3) maxpp = Math.min(61, maxpp);
+			maxpp = move.pp;
 		}
 		const bullet = moveName.startsWith('*') || move.isZ ? '<span style="color:#888">&#8226;</span>' : '&#8226;';
 		if (ppUsed === Infinity) {

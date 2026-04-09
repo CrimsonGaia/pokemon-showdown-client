@@ -1,12 +1,9 @@
 /**
  * Pokemon Showdown Battle
- *
  * This is the main file for handling battle animations
- *
  * Licensing note: PS's client has complicated licensing:
  * - The client as a whole is AGPLv3
  * - The battle replay/animation engine (battle-*.ts) by itself is MIT
- *
  * Layout:
  *
  * - Battle
@@ -15,18 +12,15 @@
  *   - BattleScene
  *     - BattleLog
  *       - BattleTextParser
- *
  * When a Battle receives a message, it splits the message into tokens
  * and parses what happens, updating its own state, and then telling
  * BattleScene to do any relevant animations. The tokens then get
  * passed directly into BattleLog. If the message is an in-battle
  * message, it'll be extracted by BattleTextParser, which adds it to
  * both the battle log itself, as well as the messagebar.
- *
  * @author Guangcong Luo <guangcongluo@gmail.com>
  * @license MIT
  */
-
 // import $ from 'jquery';
 import { BattleSceneStub } from './battle-scene-stub';
 import { BattleLog } from './battle-log';
@@ -35,16 +29,13 @@ import { Dex, toID, toUserid, type ID, type ModdedDex } from './battle-dex';
 import { BattleTextParser, type Args, type KWArgs, type SideID } from './battle-text-parser';
 import { Teams } from './battle-teams';
 declare const app: { user: AnyObject, rooms: AnyObject, ignore?: AnyObject } | undefined;
-
 /** [id, element?, ...misc] */
 export type EffectState = any[] & { 0: ID };
 export type WeatherState = [name: string, minTimeLeft: number, maxTimeLeft: number];
 export type HPColor = 'r' | 'y' | 'g';
-
 export class Pokemon implements PokemonDetails, PokemonHealth {
 	name = '';
 	speciesForme = '';
-
 	/**
 	 * A string representing information extractable from textual
 	 * messages: side, nickname.
@@ -64,13 +55,11 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 	 * forme information and shininess isn't visible there. In those
 	 * cases, details can change during the first switch-in, but will
 	 * otherwise not change over the course of a game.
-	 *
 	 * Examples: `Mimikyu, L50, F`, `Steelix, M, shiny`
 	 */
 	details = '';
 	/**
 	 * `` `${ident}|${details}` ``. Tracked for ease of searching.
-	 *
 	 * As with ident, blank before the first switch-in, and will only
 	 * change during the first switch-in.
 	 */
@@ -104,7 +93,9 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 	turnstatuses: { [effectid: string]: EffectState } = {};
 	movestatuses: { [effectid: string]: EffectState } = {};
 	lastMove = '';
-
+	weaponDurability = 0;
+	maxWeaponDurability = 0;
+	weaponRecoveryLeft = 0;
 	/** [[moveName, ppUsed]] */
 	moveTrack: [string, number][] = [];
 	statusData = { sleepTurns: 0, toxicTurns: 0 };
@@ -127,11 +118,7 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 
 		this.sprite = side.battle.scene.addPokemonSprite(this);
 	}
-
-	isActive() {
-		return this.side.active.includes(this);
-	}
-
+	isActive() { return this.side.active.includes(this); }
 	/** @deprecated */
 	private getHPColor(): HPColor {
 		if (this.hpcolor) return this.hpcolor;
@@ -150,7 +137,6 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 	}
 	static getPixelRange(pixels: number, color: HPColor | ''): [number, number] {
 		let epsilon = 0.5 / 714;
-
 		if (pixels === 0) return [0, 0];
 		if (pixels === 1) return [0 + epsilon, 2 / 48 - epsilon];
 		if (color) {
@@ -170,15 +156,12 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 			}
 		}
 		if (pixels === 48) return [1, 1];
-
 		return [pixels / 48, (pixels + 1) / 48 - epsilon];
 	}
 	static getFormattedRange(range: [number, number], precision: number, separator: string) {
 		if (range[0] === range[1]) {
 			let percentage = Math.abs(range[0] * 100);
-			if (Math.floor(percentage) === percentage) {
-				return `${percentage}%`;
-			}
+			if (Math.floor(percentage) === percentage) { return `${percentage}%`; }
 			return percentage.toFixed(precision) + '%';
 		}
 		let lower;
@@ -230,9 +213,7 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 				if (heal) {
 					this.hp += this.maxhp * damage / 100;
 					if (this.hp > this.maxhp) this.hp = this.maxhp;
-				} else {
-					this.hp -= this.maxhp * damage / 100;
-				}
+				} else { this.hp -= this.maxhp * damage / 100; }
 				// parse the absolute health information
 				let ret = this.healthParse(hpstring);
 				if (ret && (ret[1] === 100)) {
@@ -244,22 +225,17 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 				let pixels = Math.ceil(damage * 48 / 100);
 				return [pixels, 48, percent];
 			}
-			if (hpstring.substr(hpstring.length - 1) !== ')') {
-				return null;
-			}
+			if (hpstring.substr(hpstring.length - 1) !== ')') {  return null; }
 			hpstring = hpstring.substr(parenIndex + 1, hpstring.length - parenIndex - 2);
 		}
-
 		let oldhp = this.fainted ? 0 : (this.hp || 1);
 		let oldmaxhp = this.maxhp;
 		let oldwidth = this.hpWidth(100);
 		let oldcolor = this.hpcolor;
-
 		this.side.battle.parseHealth(hpstring, this);
 		if (oldmaxhp === 0) { // max hp not known before parsing this message
 			oldmaxhp = oldhp = this.maxhp;
 		}
-
 		let oldnum = oldhp ? (Math.floor(this.maxhp * oldhp / oldmaxhp) || 1) : 0;
 		let delta = this.hp - oldnum;
 		let deltawidth = this.hpWidth(100) - oldwidth;
@@ -269,9 +245,7 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 		if (!details) return false;
 		if (details === this.details) return true;
 		if (this.searchid) return false;
-		if (details.includes(', shiny')) {
-			if (this.checkDetails(details.replace(', shiny', ''))) return true;
-		}
+		if (details.includes(', shiny')) { if (this.checkDetails(details.replace(', shiny', ''))) return true; }
 		// the actual forme was hidden on Team Preview
 		details = details.replace(/(-[A-Za-z0-9-]+)?(, |$)/, '-*$2');
 		return (details === this.details);
@@ -290,9 +264,7 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 		this.volatiles[volatile] = [volatile, ...args] as EffectState;
 		this.side.battle.scene.addEffect(this, volatile);
 	}
-	hasVolatile(volatile: ID) {
-		return !!this.volatiles[volatile];
-	}
+	hasVolatile(volatile: ID) { return !!this.volatiles[volatile]; }
 	removeTurnstatus(volatile: ID) {
 		this.side.battle.scene.removeEffect(this, volatile);
 		if (!this.hasTurnstatus(volatile)) return;
@@ -304,13 +276,9 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 		if (this.hasTurnstatus(volatile)) return;
 		this.turnstatuses[volatile] = [volatile];
 	}
-	hasTurnstatus(volatile: ID) {
-		return !!this.turnstatuses[volatile];
-	}
+	hasTurnstatus(volatile: ID) { return !!this.turnstatuses[volatile]; }
 	clearTurnstatuses() {
-		for (let id in this.turnstatuses) {
-			this.removeTurnstatus(id as ID);
-		}
+		for (let id in this.turnstatuses) { this.removeTurnstatus(id as ID); }
 		this.turnstatuses = {};
 		this.side.battle.scene.updateStatbar(this);
 	}
@@ -325,13 +293,9 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 		this.movestatuses[volatile] = [volatile];
 		this.side.battle.scene.addEffect(this, volatile);
 	}
-	hasMovestatus(volatile: ID) {
-		return !!this.movestatuses[volatile];
-	}
+	hasMovestatus(volatile: ID) { return !!this.movestatuses[volatile]; }
 	clearMovestatuses() {
-		for (let id in this.movestatuses) {
-			this.removeMovestatus(id as ID);
-		}
+		for (let id in this.movestatuses) { this.removeMovestatus(id as ID); }
 		this.movestatuses = {};
 	}
 	clearVolatiles() {
@@ -363,9 +327,7 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 	rememberAbility(ability: string, isNotBase?: boolean) {
 		ability = Dex.abilities.get(ability).name;
 		this.ability = ability;
-		if (!this.baseAbility && !isNotBase) {
-			this.baseAbility = ability;
-		}
+		if (!this.baseAbility && !isNotBase) { this.baseAbility = ability; }
 	}
 	getBoost(boostStat: Dex.BoostStatName) {
 		let boostStatTable = {
@@ -378,36 +340,26 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 			evasion: 'Evasion',
 			spc: 'Spc',
 		};
-		if (!this.boosts[boostStat]) {
-			return '1&times;&nbsp;' + boostStatTable[boostStat];
-		}
+		if (!this.boosts[boostStat]) { return '1&times;&nbsp;' + boostStatTable[boostStat]; }
 		if (this.boosts[boostStat] > 6) this.boosts[boostStat] = 6;
 		if (this.boosts[boostStat] < -6) this.boosts[boostStat] = -6;
 		const isRBY = this.side.battle.gen <= 1 && !this.side.battle.tier.includes('Stadium');
 		if (!isRBY && (boostStat === 'accuracy' || boostStat === 'evasion')) {
 			if (this.boosts[boostStat] > 0) {
-				let goodBoostTable = [
-					'1&times;', '1.33&times;', '1.67&times;', '2&times;', '2.33&times;', '2.67&times;', '3&times;',
-				];
+				let goodBoostTable = ['1&times;', '1.33&times;', '1.67&times;', '2&times;', '2.33&times;', '2.67&times;', '3&times;',];
 				// let goodBoostTable = ['Normal', '+1', '+2', '+3', '+4', '+5', '+6'];
 				return '' + goodBoostTable[this.boosts[boostStat]] + '&nbsp;' + boostStatTable[boostStat];
 			}
-			let badBoostTable = [
-				'1&times;', '0.75&times;', '0.6&times;', '0.5&times;', '0.43&times;', '0.38&times;', '0.33&times;',
-			];
+			let badBoostTable = ['1&times;', '0.75&times;', '0.6&times;', '0.5&times;', '0.43&times;', '0.38&times;', '0.33&times;',];
 			// let badBoostTable = ['Normal', '&minus;1', '&minus;2', '&minus;3', '&minus;4', '&minus;5', '&minus;6'];
 			return '' + badBoostTable[-this.boosts[boostStat]] + '&nbsp;' + boostStatTable[boostStat];
 		}
 		if (this.boosts[boostStat] > 0) {
-			let goodBoostTable = [
-				'1&times;', '1.5&times;', '2&times;', '2.5&times;', '3&times;', '3.5&times;', '4&times;',
-			];
+			let goodBoostTable = ['1&times;', '1.5&times;', '2&times;', '2.5&times;', '3&times;', '3.5&times;', '4&times;',];
 			// let goodBoostTable = ['Normal', '+1', '+2', '+3', '+4', '+5', '+6'];
 			return '' + goodBoostTable[this.boosts[boostStat]] + '&nbsp;' + boostStatTable[boostStat];
 		}
-		let badBoostTable = [
-			'1&times;', '0.67&times;', '0.5&times;', '0.4&times;', '0.33&times;', '0.29&times;', '0.25&times;',
-		];
+		let badBoostTable = ['1&times;', '0.67&times;', '0.5&times;', '0.4&times;', '0.33&times;', '0.29&times;', '0.25&times;',];
 		// let badBoostTable = ['Normal', '&minus;1', '&minus;2', '&minus;3', '&minus;4', '&minus;5', '&minus;6'];
 		return '' + badBoostTable[-this.boosts[boostStat]] + '&nbsp;' + boostStatTable[boostStat];
 	}
@@ -445,16 +397,12 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 		this.volatiles = pokemon.volatiles;
 		// this.lastMove = pokemon.lastMove; // I think
 		if (!copySource) {
-			const volatilesToRemove = [
-				'airballoon', 'attract', 'autotomize', 'disable', 'encore', 'foresight', 'gmaxchistrike', 'imprison', 'laserfocus', 'mimic', 'miracleeye', 'nightmare', 'saltcure', 'smackdown', 'stockpile1', 'stockpile2', 'stockpile3', 'syrupbomb', 'torment', 'typeadd', 'typechange', 'yawn',
-			];
+			const volatilesToRemove = ['airballoon', 'attract', 'autotomize', 'disable', 'encore', 'foresight', 'gmaxchistrike', 'imprison', 'laserfocus', 'mimic', 'miracleeye', 'nightmare', 'saltcure', 'smackdown', 'stockpile1', 'stockpile2', 'stockpile3', 'syrupbomb', 'torment', 'typeadd', 'typechange', 'yawn',];
 			for (const statName of Dex.statNamesExceptHP) {
 				volatilesToRemove.push('protosynthesis' + statName);
 				volatilesToRemove.push('quarkdrive' + statName);
 			}
-			for (const volatile of volatilesToRemove) {
-				delete this.volatiles[volatile];
-			}
+			for (const volatile of volatilesToRemove) { delete this.volatiles[volatile]; }
 		}
 		if (copySource === 'shedtail') {
 			for (let i in this.volatiles) {
@@ -465,7 +413,6 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 		}
 		delete this.volatiles['transform'];
 		delete this.volatiles['formechange'];
-
 		pokemon.boosts = {};
 		pokemon.volatiles = {};
 		pokemon.side.battle.scene.removeTransform(pokemon);
@@ -474,11 +421,8 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 	copyTypesFrom(pokemon: Pokemon, preterastallized = false) {
 		const [types, addedType] = pokemon.getTypes(undefined, preterastallized);
 		this.addVolatile('typechange' as ID, types.join('/'));
-		if (addedType) {
-			this.addVolatile('typeadd' as ID, addedType);
-		} else {
-			this.removeVolatile('typeadd' as ID);
-		}
+		if (addedType) { this.addVolatile('typeadd' as ID, addedType); } 
+		else { this.removeVolatile('typeadd' as ID); }
 	}
 	getTypes(serverPokemon?: ServerPokemon, preterastallized = false): [readonly Dex.TypeName[], Dex.TypeName | ''] {
 		let types: readonly Dex.TypeName[];
@@ -1138,8 +1082,8 @@ export class Battle {
 	paused: boolean;
 
 	constructor(options: {
-		$frame?: JQuery,
-		$logFrame?: JQuery,
+		$frame?: HTMLElement,
+		$logFrame?: HTMLElement,
 		id?: ID,
 		log?: string[] | string | null,
 		paused?: boolean,
@@ -1183,12 +1127,9 @@ export class Battle {
 	}
 
 	onResize = () => {
-		const width = $(window).width()!;
-		if (width < 950 || this.hardcoreMode) {
-			this.messageShownTime = 500;
-		} else {
-			this.messageShownTime = 1;
-		}
+		const width = window.innerWidth;
+		if (width < 950 || this.hardcoreMode) { this.messageShownTime = 500; } 
+		else { this.messageShownTime = 1; }
 		if (width && width < 640) {
 			const scale = (width / 640);
 			this.scene.$frame?.css('transform', `scale(${scale})`);
@@ -1201,11 +1142,7 @@ export class Battle {
 			this.scene.$frame?.css('margin-bottom', '0');
 		}
 	};
-
-	subscribe(listener: Battle['subscription']) {
-		this.subscription = listener;
-	}
-
+	subscribe(listener: Battle['subscription']) { this.subscription = listener; }
 	removePseudoWeather(weather: string) {
 		for (let i = 0; i < this.pseudoWeather.length; i++) {
 			if (this.pseudoWeather[i][0] === weather) {
@@ -1220,11 +1157,7 @@ export class Battle {
 		this.scene.updateWeather();
 	}
 	hasPseudoWeather(weather: string) {
-		for (const [pseudoWeatherName] of this.pseudoWeather) {
-			if (weather === pseudoWeatherName) {
-				return true;
-			}
-		}
+		for (const [pseudoWeatherName] of this.pseudoWeather) { if (weather === pseudoWeatherName) { return true; } }
 		return false;
 	}
 	getAllActive() {
@@ -1232,31 +1165,19 @@ export class Battle {
 		// Sides 3 and 4 are synced with sides 1 and 2, so they don't need to be checked
 		for (let i = 0; i < 2; i++) {
 			const side = this.sides[i];
-			for (const active of side.active) {
-				if (active && !active.fainted) {
-					pokemonList.push(active);
-				}
-			}
+			for (const active of side.active) { if (active && !active.fainted) { pokemonList.push(active); } }
 		}
 		return pokemonList;
 	}
 	// Used in Pokemon#effectiveAbility over abilityActive to prevent infinite recursion
 	ngasActive() {
-		for (const active of this.getAllActive()) {
-			if (active.ability === 'Neutralizing Gas' && !active.volatiles['gastroacid']) {
-				return true;
-			}
-		}
+		for (const active of this.getAllActive()) { if (active.ability === 'Neutralizing Gas' && !active.volatiles['gastroacid']) { return true; } }
 		return false;
 	}
 	abilityActive(abilities: string | string[]) {
 		if (typeof abilities === 'string') abilities = [abilities];
 		abilities = abilities.map(toID);
-		for (const active of this.getAllActive()) {
-			if (abilities.includes(toID(active.effectiveAbility()))) {
-				return true;
-			}
-		}
+		for (const active of this.getAllActive()) { if (abilities.includes(toID(active.effectiveAbility()))) { return true; } }
 		return false;
 	}
 	reset() {
@@ -1276,16 +1197,11 @@ export class Battle {
 		this.weatherMinTimeLeft = 0;
 		this.pseudoWeather = [];
 		this.lastMove = '';
-
-		for (const side of this.sides) {
-			if (side) side.reset();
-		}
+		for (const side of this.sides) { if (side) side.reset(); }
 		this.myPokemon = null;
 		this.myAllyPokemon = null;
-
 		// DOM state
 		this.scene.reset();
-
 		// activity queue state
 		this.activeMoveIsSpread = null;
 		this.currentStep = 0;
@@ -1293,11 +1209,8 @@ export class Battle {
 		this.nextStep();
 	}
 	destroy() {
-		if (this.autoresize) {
-			window.removeEventListener('resize', this.onResize);
-		}
+		if (this.autoresize) { window.removeEventListener('resize', this.onResize); }
 		this.scene.destroy();
-
 		for (let i = 0; i < this.sides.length; i++) {
 			if (this.sides[i]) this.sides[i].destroy();
 			this.sides[i] = null!;
@@ -1311,23 +1224,15 @@ export class Battle {
 		this.p4 = null!;
 	}
 
-	log(args: Args, kwArgs?: KWArgs, preempt?: boolean) {
-		this.scene.log.add(args, kwArgs, preempt);
-	}
-
-	resetToCurrentTurn() {
-		this.seekTurn(this.ended ? Infinity : this.turn, true);
-	}
-	switchViewpoint() {
-		this.setViewpoint(this.viewpointSwitched ? 'p1' : 'p2');
-	}
+	log(args: Args, kwArgs?: KWArgs, preempt?: boolean) { this.scene.log.add(args, kwArgs, preempt); }
+	resetToCurrentTurn() {this.seekTurn(this.ended ? Infinity : this.turn, true); }
+	switchViewpoint() { this.setViewpoint(this.viewpointSwitched ? 'p1' : 'p2'); }
 	setViewpoint(sideid: SideID) {
 		if (this.mySide.sideid === sideid) return;
 		if (sideid.length !== 2 || !sideid.startsWith('p')) return;
 		const side = this[sideid];
 		if (!side) return;
 		this.mySide = side;
-
 		if ((side.n % 2) === this.p1.n) {
 			this.viewpointSwitched = false;
 			this.nearSide = this.p1;
@@ -1346,10 +1251,7 @@ export class Battle {
 
 		this.resetToCurrentTurn();
 	}
-
-	//
 	// activities
-	//
 	start() {
 		this.log(['start']);
 		this.resetTurnsSinceMoved();
@@ -1376,24 +1278,14 @@ export class Battle {
 		this.scene.updateWeather(true);
 	}
 	setTurn(turnNum: number) {
-		if (turnNum === this.turn + 1) {
-			this.endLastTurnPending = true;
-		}
+		if (turnNum === this.turn + 1) { this.endLastTurnPending = true; }
 		if (this.turn && !this.usesUpkeep) this.updateTurnCounters(); // for compatibility with old replays
 		this.turn = turnNum;
 		this.started = true;
-
 		if (this.seeking === null) this.turnsSinceMoved++;
-
 		this.scene.incrementTurn();
-
-		if (this.seeking !== null) {
-			if (turnNum >= this.seeking) {
-				this.stopSeeking();
-			}
-		} else {
-			this.subscription?.('turn');
-		}
+		if (this.seeking !== null) { if (turnNum >= this.seeking) { this.stopSeeking(); } } 
+		else { this.subscription?.('turn'); }
 	}
 	resetTurnsSinceMoved() {
 		this.turnsSinceMoved = 0;
@@ -1401,25 +1293,19 @@ export class Battle {
 	}
 	changeWeather(weatherName: string, poke?: Pokemon, isUpkeep?: boolean, ability?: Dex.Effect) {
 		let weather = toID(weatherName);
-		if (!weather || weather === 'none') {
-			weather = '' as ID;
-		}
+		if (!weather || weather === 'none') { weather = '' as ID; }
 		if (isUpkeep) {
 			if (this.weather && this.weatherTimeLeft) {
 				this.weatherTimeLeft--;
 				if (this.weatherMinTimeLeft !== 0) this.weatherMinTimeLeft--;
 			}
-			if (this.seeking === null) {
-				this.scene.upkeepWeather();
-			}
+			if (this.seeking === null) { this.scene.upkeepWeather(); }
 			return;
 		}
 		if (weather) {
 			let isExtremeWeather = (weather === 'deltastream' || weather === 'desolateland' || weather === 'primordialsea');
 			if (poke) {
-				if (ability) {
-					this.activateAbility(poke, ability.name);
-				}
+				if (ability) { this.activateAbility(poke, ability.name); }
 				this.weatherTimeLeft = (this.gen <= 5 || isExtremeWeather) ? 0 : 8;
 				this.weatherMinTimeLeft = (this.gen <= 5 || isExtremeWeather) ? 0 : 5;
 			} else if (isExtremeWeather) {
@@ -1434,12 +1320,9 @@ export class Battle {
 		this.scene.updateWeather();
 	}
 	swapSideConditions() {
-		const sideConditions = [
-			'mist', 'lightscreen', 'reflect', 'spikes', 'safeguard', 'tailwind', 'toxicspikes', 'stealthrock', 'waterpledge', 'firepledge', 'grasspledge', 'stickyweb', 'auroraveil', 'gmaxsteelsurge', 'gmaxcannonade', 'gmaxvinelash', 'gmaxwildfire',
-		];
+		const sideConditions = ['mist', 'lightscreen', 'reflect', 'spikes', 'safeguard', 'tailwind', 'toxicspikes', 'stealthrock', 'waterpledge', 'firepledge', 'grasspledge', 'stickyweb', 'auroraveil', 'gmaxsteelsurge', 'gmaxcannonade', 'gmaxvinelash', 'gmaxwildfire',];
 		if (this.gameType === 'freeforall') {
 			// Court Change rotates side conditions clockwise in a free-for-all
-
 			// the list of all sides in clockwise order
 			const sides = [this.sides[0], this.sides[3], this.sides[1], this.sides[2]];
 			const temp: { [k: number]: Side["sideConditions"] } = { 0: {}, 1: {}, 2: {}, 3: {} };
@@ -1465,9 +1348,7 @@ export class Battle {
 		let side2 = this.sides[1];
 		for (const id of sideConditions) {
 			if (side1.sideConditions[id] && side2.sideConditions[id]) {
-				[side1.sideConditions[id], side2.sideConditions[id]] = [
-					side2.sideConditions[id], side1.sideConditions[id],
-				];
+				[side1.sideConditions[id], side2.sideConditions[id]] = [side2.sideConditions[id], side1.sideConditions[id],];
 				this.scene.addSideCondition(side1.n, id as ID);
 				this.scene.addSideCondition(side2.n, id as ID);
 			} else if (side1.sideConditions[id] && !side2.sideConditions[id]) {
@@ -1505,18 +1386,12 @@ export class Battle {
 		let fromeffect = Dex.getEffect(kwArgs.from);
 		this.activateAbility(pokemon, fromeffect);
 		pokemon.clearMovestatuses();
-		if (move.id === 'focuspunch') {
-			pokemon.removeTurnstatus('focuspunch' as ID);
-		}
+		if (move.id === 'focuspunch') { pokemon.removeTurnstatus('focuspunch' as ID); }
 		this.scene.updateStatbar(pokemon);
-		if (fromeffect.id === 'sleeptalk') {
-			pokemon.rememberMove(move.name, 0);
-		}
+		if (fromeffect.id === 'sleeptalk') { pokemon.rememberMove(move.name, 0); }
 		let callerMoveForPressure = null;
 		// will not include effects that are conditions named after moves like Magic Coat and Snatch, which is good
-		if (fromeffect.id && kwArgs.from.startsWith("move:")) {
-			callerMoveForPressure = fromeffect as Dex.Move;
-		}
+		if (fromeffect.id && kwArgs.from.startsWith("move:")) { callerMoveForPressure = fromeffect as Dex.Move; }
 		if (!fromeffect.id || callerMoveForPressure || fromeffect.id === 'pursuit') {
 			let moveName = move.name;
 			if (!callerMoveForPressure) {
@@ -1527,18 +1402,13 @@ export class Battle {
 				} else if (move.name.startsWith('Z-')) {
 					moveName = moveName.slice(2);
 					move = Dex.moves.get(moveName);
-					if (window.BattleItems) {
-						for (let item in BattleItems) {
-							if (BattleItems[item].zMoveType === move.type) pokemon.item = item;
-						}
-					}
+					if (window.BattleItems) { for (let item in BattleItems) { if (BattleItems[item].zMoveType === move.type) pokemon.item = item; } }
 				}
 			}
 			let pp = 1;
 			if (this.abilityActive('Pressure') && move.id !== 'stickyweb') {
 				const foeTargets = [];
 				const moveTarget = move.pressureTarget;
-
 				if (
 					!target && this.gameType === 'singles' &&
 					!['self', 'allies', 'allySide', 'adjacentAlly', 'adjacentAllyOrSelf', 'allyTeam'].includes(moveTarget)
@@ -1549,56 +1419,34 @@ export class Battle {
 					for (const active of this.getAllActive()) {
 						if (active === pokemon) continue;
 						// Pressure affects allies in gen 3 and 4
-						if (this.gen <= 4 || (active.side !== pokemon.side && active.side.ally !== pokemon.side)) {
-							foeTargets.push(active);
-						}
+						if (this.gen <= 4 || (active.side !== pokemon.side && active.side.ally !== pokemon.side)) { foeTargets.push(active); }
 					}
-				} else if (target && target.side !== pokemon.side) {
-					foeTargets.push(target);
-				}
-
-				for (const foe of foeTargets) {
-					if (foe && !foe.fainted && foe.effectiveAbility() === 'Pressure') {
-						pp += 1;
-					}
-				}
+				} else if (target && target.side !== pokemon.side) { foeTargets.push(target); }
+				for (const foe of foeTargets) { if (foe && !foe.fainted && foe.effectiveAbility() === 'Pressure') { pp += 1; } }
 			}
-			if (!callerMoveForPressure) {
-				pokemon.rememberMove(moveName, pp);
-			} else {
-				pokemon.rememberMove(callerMoveForPressure.name, pp - 1); // 1 pp was already deducted from using the move itself
-			}
+			if (!callerMoveForPressure) { pokemon.rememberMove(moveName, pp); } 
+			else { pokemon.rememberMove(callerMoveForPressure.name, pp - 1); } // 1 pp was already deducted from using the move itself
 		}
 		pokemon.lastMove = move.id;
 		this.lastMove = move.id;
-		if (move.id === 'wish' || move.id === 'healingwish') {
-			pokemon.side.wisher = pokemon;
-		}
+		if (move.id === 'wish' || move.id === 'healingwish') { pokemon.side.wisher = pokemon; }
 	}
 	animateMove(pokemon: Pokemon, move: Dex.Move, target: Pokemon | null, kwArgs: KWArgs) {
 		this.activeMoveIsSpread = kwArgs.spread;
 		if (this.seeking !== null || kwArgs.still) return;
-
 		if (!target) target = pokemon.side.foe.active[0];
 		if (!target) target = pokemon.side.foe.missedPokemon;
-		if (kwArgs.miss && target.side) {
-			target = target.side.missedPokemon;
-		}
-		if (kwArgs.notarget) {
-			return;
-		}
-
+		if (kwArgs.miss && target.side) { target = target.side.missedPokemon; }
+		if (kwArgs.notarget) { return; }
 		if (kwArgs.prepare || kwArgs.anim === 'prepare') {
 			this.scene.runPrepareAnim(move.id, pokemon, target);
 			return;
 		}
-
 		let usedMove = kwArgs.anim ? Dex.moves.get(kwArgs.anim) : move;
 		if (!kwArgs.spread) {
 			this.scene.runMoveAnim(usedMove.id, [pokemon, target]);
 			return;
 		}
-
 		let targets = [pokemon];
 		if (kwArgs.spread === '.') {
 			//  no target was hit by the attack
@@ -1613,15 +1461,12 @@ export class Battle {
 				targets.push(curTarget);
 			}
 		}
-
 		this.scene.runMoveAnim(usedMove.id, targets);
 	}
 	cantUseMove(pokemon: Pokemon, effect: Dex.Effect, move: Dex.Move, kwArgs: KWArgs) {
 		pokemon.clearMovestatuses();
 		this.scene.updateStatbar(pokemon);
-		if (effect.id in BattleStatusAnims) {
-			this.scene.runStatusAnim(effect.id, [pokemon]);
-		}
+		if (effect.id in BattleStatusAnims) { this.scene.runStatusAnim(effect.id, [pokemon]); }
 		this.activateAbility(pokemon, effect);
 		if (move.id) pokemon.rememberMove(move.name, 0);
 		switch (effect.id) {
@@ -1660,7 +1505,6 @@ export class Battle {
 		}
 		this.scene.animReset(pokemon);
 	}
-
 	activateAbility(pokemon: Pokemon | null, effectOrName: Dex.Effect | string, isNotBase?: boolean) {
 		if (!pokemon || !effectOrName) return;
 		if (typeof effectOrName !== 'string') {
@@ -1670,39 +1514,22 @@ export class Battle {
 		this.scene.abilityActivateAnim(pokemon, effectOrName);
 		pokemon.rememberAbility(effectOrName, isNotBase);
 	}
-
 	runMinor(args: Args, kwArgs: KWArgs, nextArgs?: Args, nextKwargs?: KWArgs) {
 		if (nextArgs && nextKwargs) {
-			if (args[2] === 'Sturdy' && args[0] === '-activate') {
-				args[2] = 'ability: Sturdy';
-			}
+			if (args[2] === 'Sturdy' && args[0] === '-activate') { args[2] = 'ability: Sturdy'; }
 			if (['-crit', '-supereffective', '-resisted'].includes(args[0]) || args[2] === 'ability: Sturdy') {
 				kwArgs.then = '.';
 			}
 			if (args[0] === '-damage' && !kwArgs.from && args[1] !== nextArgs[1] && (
 				['-crit', '-supereffective', '-resisted'].includes(nextArgs[0]) ||
 				(nextArgs[0] === '-damage' && !nextKwargs.from)
-			)) {
-				kwArgs.then = '.';
-			}
-			if (args[0] === '-damage' && nextArgs[0] === '-damage' && kwArgs.from && kwArgs.from === nextKwargs.from) {
-				kwArgs.then = '.';
-			}
-			if (args[0] === '-heal' && nextArgs[0] === '-heal' && kwArgs.from && kwArgs.from === nextKwargs.from) {
-				kwArgs.then = '.';
-			}
-			if (args[0] === '-ability' && (args[2] === 'Intimidate' || args[4] === 'boost')) {
-				kwArgs.then = '.';
-			}
-			if (args[0] === '-unboost' && nextArgs[0] === '-unboost') {
-				kwArgs.then = '.';
-			}
-			if (args[0] === '-boost' && nextArgs[0] === '-boost') {
-				kwArgs.then = '.';
-			}
-			if (args[0] === '-damage' && kwArgs.from === 'Leech Seed' && nextArgs[0] === '-heal' && nextKwargs.silent) {
-				kwArgs.then = '.';
-			}
+			)) { kwArgs.then = '.'; }
+			if (args[0] === '-damage' && nextArgs[0] === '-damage' && kwArgs.from && kwArgs.from === nextKwargs.from) { kwArgs.then = '.'; }
+			if (args[0] === '-heal' && nextArgs[0] === '-heal' && kwArgs.from && kwArgs.from === nextKwargs.from) { kwArgs.then = '.'; }
+			if (args[0] === '-ability' && (args[2] === 'Intimidate' || args[4] === 'boost')) { kwArgs.then = '.'; }
+			if (args[0] === '-unboost' && nextArgs[0] === '-unboost') { kwArgs.then = '.'; }
+			if (args[0] === '-boost' && nextArgs[0] === '-boost') { kwArgs.then = '.'; }
+			if (args[0] === '-damage' && kwArgs.from === 'Leech Seed' && nextArgs[0] === '-heal' && nextKwargs.silent) { kwArgs.then = '.'; }
 			if (args[0] === 'detailschange' && nextArgs[0] === '-mega') {
 				if (this.scene.closeMessagebar()) {
 					this.currentStep--;
@@ -1713,7 +1540,6 @@ export class Battle {
 		}
 		if (kwArgs.then) this.waitForAnimations = false;
 		if (kwArgs.simult) this.waitForAnimations = 'simult';
-
 		const CONSUMED = ['eaten', 'popped', 'consumed', 'held up'];
 		switch (args[0]) {
 		case '-damage': {
@@ -1721,16 +1547,13 @@ export class Battle {
 			let damage = poke.healthParse(args[2], true);
 			if (damage === null) break;
 			let range = poke.getDamageRange(damage);
-
 			if (kwArgs.from) {
 				let effect = Dex.getEffect(kwArgs.from);
 				let ofpoke = this.getPokemon(kwArgs.of);
 				this.activateAbility(ofpoke, effect);
 				if (effect.effectType === 'Item') {
 					const itemPoke = ofpoke || poke;
-					if (itemPoke.prevItem !== effect.name && !CONSUMED.includes(itemPoke.prevItemEffect)) {
-						itemPoke.item = effect.name;
-					}
+					if (itemPoke.prevItem !== effect.name && !CONSUMED.includes(itemPoke.prevItemEffect)) { itemPoke.item = effect.name; }
 				}
 				switch (effect.id) {
 				case 'brn':
@@ -1757,9 +1580,7 @@ export class Battle {
 					break;
 				}
 			} else {
-				if (this.dex.moves.get(this.lastMove).category !== 'Status') {
-					poke.timesAttacked++;
-				}
+				if (this.dex.moves.get(this.lastMove).category !== 'Status') { poke.timesAttacked++; }
 				let damageinfo = '' + Pokemon.getFormattedRange(range, damage[1] === 100 ? 0 : 1, '\u2013');
 				if (damage[1] !== 100) {
 					let hover = `${(damage[0] < 0) ? '\u2212' : ''}${Math.abs(damage[0])}/${damage[1]}`;
@@ -1780,21 +1601,14 @@ export class Battle {
 			let damage = poke.healthParse(args[2], true, true);
 			if (damage === null) break;
 			let range = poke.getDamageRange(damage);
-
 			if (kwArgs.from) {
 				let effect = Dex.getEffect(kwArgs.from);
 				let ofpoke = this.getPokemon(kwArgs.of);
 				this.activateAbility(ofpoke || poke, effect);
-				if (effect.effectType === 'Item' && !CONSUMED.includes(poke.prevItemEffect)) {
-					if (poke.prevItem !== effect.name) {
-						poke.item = effect.name;
-					}
-				}
+				if (effect.effectType === 'Item' && !CONSUMED.includes(poke.prevItemEffect)) { if (poke.prevItem !== effect.name) { poke.item = effect.name; } }
 				switch (effect.id) {
 				case 'lunardance':
-					for (let trackedMove of poke.moveTrack) {
-						trackedMove[1] = 0;
-					}
+					for (let trackedMove of poke.moveTrack) { trackedMove[1] = 0; }
 					// falls through
 				case 'healingwish':
 					this.lastMove = 'healing-wish';
@@ -1829,11 +1643,8 @@ export class Battle {
 					let range = cpoke.getDamageRange(damage);
 					let formattedRange = Pokemon.getFormattedRange(range, 0, ' to ');
 					let diff = damage[0];
-					if (diff > 0) {
-						this.scene.healAnim(cpoke, formattedRange);
-					} else {
-						this.scene.damageAnim(cpoke, formattedRange);
-					}
+					if (diff > 0) { this.scene.healAnim(cpoke, formattedRange); } 
+					else { this.scene.damageAnim(cpoke, formattedRange); }
 				}
 			}
 			this.log(args, kwArgs);
@@ -1850,17 +1661,13 @@ export class Battle {
 				this.log(args, kwArgs);
 				break;
 			}
-			if (!poke.boosts[stat]) {
-				poke.boosts[stat] = 0;
-			}
+			if (!poke.boosts[stat]) { poke.boosts[stat] = 0; }
 			poke.boosts[stat] += amount;
 
 			if (!kwArgs.silent && kwArgs.from) {
 				let effect = Dex.getEffect(kwArgs.from);
 				let ofpoke = this.getPokemon(kwArgs.of);
-				if (!(effect.id === 'weakarmor' && stat === 'spe')) {
-					this.activateAbility(ofpoke || poke, effect);
-				}
+				if (!(effect.id === 'weakarmor' && stat === 'spe')) { this.activateAbility(ofpoke || poke, effect); }
 			}
 			this.scene.resultAnim(poke, poke.getBoost(stat), 'good');
 			this.log(args, kwArgs);
@@ -1877,11 +1684,8 @@ export class Battle {
 				this.log(args, kwArgs);
 				break;
 			}
-			if (!poke.boosts[stat]) {
-				poke.boosts[stat] = 0;
-			}
+			if (!poke.boosts[stat]) { poke.boosts[stat] = 0; }
 			poke.boosts[stat] -= amount;
-
 			if (!kwArgs.silent && kwArgs.from) {
 				let effect = Dex.getEffect(kwArgs.from);
 				let ofpoke = this.getPokemon(kwArgs.of);
@@ -1913,7 +1717,6 @@ export class Battle {
 			}
 			this.scene.resultAnim(poke, 'Stats swapped', 'neutral');
 			this.scene.resultAnim(poke2, 'Stats swapped', 'neutral');
-
 			this.log(args, kwArgs);
 			break;
 		}
@@ -1921,11 +1724,8 @@ export class Battle {
 			let poke = this.getPokemon(args[1])!;
 			let ofpoke = this.getPokemon(args[2]);
 			let effect = Dex.getEffect(args[3]);
-			for (const stat in poke.boosts) {
-				if (poke.boosts[stat] > 0) delete poke.boosts[stat];
-			}
+			for (const stat in poke.boosts) { if (poke.boosts[stat] > 0) delete poke.boosts[stat]; }
 			this.scene.resultAnim(poke, 'Boosts lost', 'bad');
-
 			if (effect.id) {
 				switch (effect.id) {
 				case 'spectralthief':
@@ -1939,11 +1739,8 @@ export class Battle {
 		}
 		case '-clearnegativeboost': {
 			let poke = this.getPokemon(args[1])!;
-			for (const stat in poke.boosts) {
-				if (poke.boosts[stat] < 0) delete poke.boosts[stat];
-			}
+			for (const stat in poke.boosts) { if (poke.boosts[stat] < 0) delete poke.boosts[stat]; }
 			this.scene.resultAnim(poke, 'Restored', 'good');
-
 			this.log(args, kwArgs);
 			break;
 		}
@@ -1962,11 +1759,8 @@ export class Battle {
 			if (this.gen >= 6) {
 				const volatilesToCopy = ['focusenergy', 'gmaxchistrike', 'laserfocus'];
 				for (const volatile of volatilesToCopy) {
-					if (frompoke.volatiles[volatile]) {
-						poke.addVolatile(volatile as ID);
-					} else {
-						poke.removeVolatile(volatile as ID);
-					}
+					if (frompoke.volatiles[volatile]) { poke.addVolatile(volatile as ID); } 
+					else { poke.removeVolatile(volatile as ID); }
 				}
 			}
 			this.scene.resultAnim(poke, 'Stats copied', 'neutral');
@@ -1983,17 +1777,13 @@ export class Battle {
 				this.activateAbility(ofpoke || poke, effect);
 			}
 			this.scene.resultAnim(poke, 'Stats reset', 'neutral');
-
 			this.log(args, kwArgs);
 			break;
 		}
 		case '-invertboost': {
 			let poke = this.getPokemon(args[1])!;
-			for (const stat in poke.boosts) {
-				poke.boosts[stat] = -poke.boosts[stat];
-			}
+			for (const stat in poke.boosts) { poke.boosts[stat] = -poke.boosts[stat]; }
 			this.scene.resultAnim(poke, 'Stats inverted', 'neutral');
-
 			this.log(args, kwArgs);
 			break;
 		}
@@ -2004,7 +1794,6 @@ export class Battle {
 				this.scene.timeOffset = timeOffset;
 				this.scene.resultAnim(active, 'Stats reset', 'neutral');
 			}
-
 			this.log(args, kwArgs);
 			break;
 		}
@@ -2058,9 +1847,7 @@ export class Battle {
 			let ofpoke = this.getPokemon(kwArgs.of);
 			if (fromeffect.id === 'clearamulet') {
 				ofpoke!.item = 'Clear Amulet';
-			} else {
-				this.activateAbility(ofpoke || poke, fromeffect);
-			}
+			} else { this.activateAbility(ofpoke || poke, fromeffect); }
 			switch (effect.id) {
 			case 'brn':
 				this.scene.resultAnim(poke, 'Already burned', 'neutral');
@@ -2070,11 +1857,8 @@ export class Battle {
 				this.scene.resultAnim(poke, 'Already poisoned', 'neutral');
 				break;
 			case 'slp':
-				if (fromeffect.id === 'uproar') {
-					this.scene.resultAnim(poke, 'Failed', 'neutral');
-				} else {
-					this.scene.resultAnim(poke, 'Already asleep', 'neutral');
-				}
+				if (fromeffect.id === 'uproar') { this.scene.resultAnim(poke, 'Failed', 'neutral'); } 
+				else { this.scene.resultAnim(poke, 'Already asleep', 'neutral'); }
 				break;
 			case 'par':
 				this.scene.resultAnim(poke, 'Already paralyzed', 'neutral');
@@ -2086,9 +1870,7 @@ export class Battle {
 				this.scene.resultAnim(poke, 'Stat drop blocked', 'neutral');
 				break;
 			default:
-				if (poke) {
-					this.scene.resultAnim(poke, 'Failed', 'neutral');
-				}
+				if (poke) { this.scene.resultAnim(poke, 'Failed', 'neutral'); }
 				break;
 			}
 			this.scene.animReset(poke);
@@ -2117,7 +1899,6 @@ export class Battle {
 				poke.addTurnstatus('protect' as ID);
 				this.scene.resultAnim(poke, 'Protected', 'good');
 				break;
-
 			case 'safetygoggles':
 				poke.item = 'Safety Goggles';
 				break;
@@ -2162,10 +1943,7 @@ export class Battle {
 			let ofpoke = this.getPokemon(kwArgs.of) || poke;
 			poke.status = args[2] as Dex.StatusName;
 			this.activateAbility(ofpoke || poke, effect);
-			if (effect.effectType === 'Item') {
-				ofpoke.item = effect.name;
-			}
-
+			if (effect.effectType === 'Item') { ofpoke.item = effect.name; }
 			switch (args[2]) {
 			case 'brn':
 				this.scene.resultAnim(poke, 'Burned', 'brn');
@@ -2204,7 +1982,6 @@ export class Battle {
 		case '-curestatus': {
 			let poke = this.getPokemon(args[1])!;
 			let effect = Dex.getEffect(kwArgs.from);
-
 			if (effect.id) {
 				switch (effect.id) {
 				case 'flamewheel':
@@ -2252,9 +2029,22 @@ export class Battle {
 				target.status = '';
 				this.scene.updateStatbarIfExists(target);
 			}
-
 			this.scene.resultAnim(poke, 'Team Cured', 'good');
 			this.log(args, kwArgs);
+			break;
+		}
+		case '-weapon': {
+			const poke = this.getPokemon(args[1]);
+			if (!poke) break;
+			const durabilityText = args[2] || '';
+			if (!durabilityText) break;
+			const [durabilityPart, recoverPart] = durabilityText.split('|');
+			const [currentText, maxText] = durabilityPart.split('/');
+			poke.weaponDurability = parseInt(currentText || '0', 10) || 0;
+			poke.maxWeaponDurability = parseInt(maxText || '0', 10) || 0;
+			poke.weaponRecoveryLeft = 0;
+			if (recoverPart?.startsWith('[recover]')) { poke.weaponRecoveryLeft = parseInt(recoverPart.slice(9), 10) || 0; }
+			this.scene.updateStatbar(poke);
 			break;
 		}
 		case '-item': {
@@ -2265,22 +2055,18 @@ export class Battle {
 			if (!poke) {
 				if (effect.id === 'frisk') {
 					const possibleTargets = ofpoke!.side.foe.active.filter(p => p !== null);
-					if (possibleTargets.length === 1) {
-						poke = possibleTargets[0]!;
-					} else {
+					if (possibleTargets.length === 1) { poke = possibleTargets[0]!; } 
+					else {
 						this.activateAbility(ofpoke, "Frisk");
 						this.log(args, kwArgs);
 						break;
 					}
-				} else {
-					throw new Error('No Pokemon in -item message');
-				}
+				} else { throw new Error('No Pokemon in -item message'); }
 			}
 			poke.item = item.name;
 			poke.itemEffect = '';
 			poke.removeVolatile('airballoon' as ID);
 			if (item.id === 'airballoon') poke.addVolatile('airballoon' as ID);
-
 			if (effect.id) {
 				switch (effect.id) {
 				case 'pickup':
@@ -2364,11 +2150,8 @@ export class Battle {
 					poke.prevItemEffect = 'flung';
 					break;
 				case 'knockoff':
-					if (this.gen <= 4) {
-						poke.itemEffect = 'knocked off';
-					} else {
-						poke.prevItemEffect = 'knocked off';
-					}
+					if (this.gen <= 4) { poke.itemEffect = 'knocked off'; } 
+					else { poke.prevItemEffect = 'knocked off'; }
 					this.scene.runOtherAnim('itemoff' as ID, [poke]);
 					this.scene.resultAnim(poke, 'Item knocked off', 'neutral');
 					break;
@@ -2427,17 +2210,13 @@ export class Battle {
 				case 'desolateland':
 				case 'primordialsea':
 				case 'deltastream':
-					if (kwArgs.fail) {
-						this.activateAbility(poke, ability.name);
-					}
+					if (kwArgs.fail) { this.activateAbility(poke, ability.name); }
 					break;
 				default:
 					this.activateAbility(poke, ability.name);
 					break;
 				}
-			} else {
-				this.activateAbility(poke, ability.name);
-			}
+			} else { this.activateAbility(poke, ability.name); }
 			this.scene.updateWeather();
 			this.log(args, kwArgs);
 			break;
@@ -2448,10 +2227,7 @@ export class Battle {
 			let poke = this.getPokemon(args[1])!;
 			let ability = Dex.abilities.get(args[2]);
 			poke.ability = '(suppressed)';
-
-			if (ability.id) {
-				if (!poke.baseAbility) poke.baseAbility = ability.name;
-			}
+			if (ability.id) { if (!poke.baseAbility) poke.baseAbility = ability.name; }
 			this.log(args, kwArgs);
 			break;
 		}
@@ -2460,32 +2236,25 @@ export class Battle {
 			poke.removeVolatile('formechange' as ID);
 			poke.removeVolatile('typeadd' as ID);
 			poke.removeVolatile('typechange' as ID);
-
 			let newSpeciesForme = args[2];
 			let commaIndex = newSpeciesForme.indexOf(',');
 			if (commaIndex !== -1) {
 				let level = newSpeciesForme.substr(commaIndex + 1).trim();
-				if (level.startsWith('L')) {
-					poke.level = parseInt(level.substr(1), 10);
-				}
+				if (level.startsWith('L')) { poke.level = parseInt(level.substr(1), 10); }
 				newSpeciesForme = args[2].substr(0, commaIndex);
 			}
 			let species = this.dex.species.get(newSpeciesForme);
 			if (nextArgs) {
-				if (nextArgs[0] === '-mega') {
-					species = this.dex.species.get(this.dex.items.get(nextArgs[3]).megaStone);
-				} else if (nextArgs[0] === '-primal' && nextArgs.length > 2) {
+				if (nextArgs[0] === '-mega') { species = this.dex.species.get(this.dex.items.get(nextArgs[3]).megaStone); } 
+				else if (nextArgs[0] === '-primal' && nextArgs.length > 2) {
 					if (nextArgs[2] === 'Red Orb') species = this.dex.species.get('Groudon-Primal');
 					if (nextArgs[2] === 'Blue Orb') species = this.dex.species.get('Kyogre-Primal');
 				}
 			}
-
 			poke.speciesForme = newSpeciesForme;
 			poke.ability = poke.baseAbility = (species.abilities ? species.abilities['0'] : '');
-
 			poke.details = args[2];
 			poke.searchid = args[1].substr(0, 2) + args[1].substr(args[1].indexOf(':')) + '|' + args[2];
-
 			this.scene.animTransform(poke, true, true);
 			this.log(args, kwArgs);
 			break;
@@ -2495,11 +2264,7 @@ export class Battle {
 			let tpoke = this.getPokemon(args[2])!;
 			let effect = Dex.getEffect(kwArgs.from);
 			if (poke === tpoke) throw new Error("Transforming into self");
-
-			if (!kwArgs.silent) {
-				this.activateAbility(poke, effect);
-			}
-
+			if (!kwArgs.silent) { this.activateAbility(poke, effect); }
 			poke.boosts = { ...tpoke.boosts };
 			poke.copyTypesFrom(tpoke, true);
 			poke.ability = tpoke.ability;
@@ -2512,9 +2277,7 @@ export class Battle {
 			const level = tpoke.level;
 			poke.addVolatile('transform' as ID, pokemon, shiny, gender, level);
 			poke.addVolatile('formechange' as ID, speciesForme);
-			for (const trackedMove of tpoke.moveTrack) {
-				poke.rememberMove(trackedMove[0], 0);
-			}
+			for (const trackedMove of tpoke.moveTrack) { poke.rememberMove(trackedMove[0], 0); }
 			this.scene.animTransform(poke);
 			this.scene.resultAnim(poke, 'Transformed', 'good');
 			this.log(['-transform', args[1], args[2], tpoke.speciesForme], kwArgs);
@@ -2529,10 +2292,7 @@ export class Battle {
 				poke.removeVolatile('typechange' as ID);
 				if (this.gen >= 6) poke.removeVolatile('autotomize' as ID);
 			}
-
-			if (!kwArgs.silent) {
-				this.activateAbility(poke, fromeffect);
-			}
+			if (!kwArgs.silent) { this.activateAbility(poke, fromeffect); }
 			poke.addVolatile('formechange' as ID, species.name); // the formechange volatile reminds us to revert the sprite change on switch-out
 			this.scene.animTransform(poke, true);
 			this.log(args, kwArgs);
@@ -2541,9 +2301,7 @@ export class Battle {
 		case '-mega': {
 			let poke = this.getPokemon(args[1])!;
 			let item = Dex.items.get(args[3]);
-			if (args[3]) {
-				poke.item = item.name;
-			}
+			if (args[3]) { poke.item = item.name; }
 			this.log(args, kwArgs);
 			break;
 		}
@@ -2577,21 +2335,17 @@ export class Battle {
 			let effect = Dex.getEffect(args[2]);
 			let ofpoke = this.getPokemon(kwArgs.of);
 			let fromeffect = Dex.getEffect(kwArgs.from);
-
 			this.activateAbility(poke, effect);
 			this.activateAbility(ofpoke || poke, fromeffect);
 			switch (effect.id) {
 			case 'typechange':
 				if (poke.terastallized) break;
-				if (ofpoke && fromeffect.id === 'reflecttype') {
-					poke.copyTypesFrom(ofpoke);
-				} else {
+				if (ofpoke && fromeffect.id === 'reflecttype') { poke.copyTypesFrom(ofpoke); } 
+				else {
 					const types = Dex.sanitizeName(args[3] || '???');
 					poke.removeVolatile('typeadd' as ID);
 					poke.addVolatile('typechange' as ID, types);
-					if (!kwArgs.silent) {
-						this.scene.typeAnim(poke, types);
-					}
+					if (!kwArgs.silent) { this.scene.typeAnim(poke, types); }
 				}
 				this.scene.updateStatbar(poke);
 				break;
@@ -2687,11 +2441,8 @@ export class Battle {
 				break;
 			case 'autotomize':
 				this.scene.resultAnim(poke, 'Lightened', 'good');
-				if (poke.volatiles.autotomize) {
-					poke.volatiles.autotomize[1]++;
-				} else {
-					poke.addVolatile('autotomize' as ID, 1);
-				}
+				if (poke.volatiles.autotomize) { poke.volatiles.autotomize[1]++; } 
+				else { poke.addVolatile('autotomize' as ID, 1); }
 				break;
 			case 'focusenergy':
 				this.scene.resultAnim(poke, '+Crit rate', 'good');
@@ -2712,13 +2463,9 @@ export class Battle {
 				if (poke.lastMove === 'fly' || poke.lastMove === 'bounce') this.scene.animReset(poke);
 				break;
 			case 'substitute':
-				if (kwArgs.damage) {
-					this.scene.resultAnim(poke, 'Damage', 'bad');
-				} else if (kwArgs.block) {
-					this.scene.resultAnim(poke, 'Blocked', 'neutral');
-				}
+				if (kwArgs.damage) { this.scene.resultAnim(poke, 'Damage', 'bad'); } 
+				else if (kwArgs.block) { this.scene.resultAnim(poke, 'Blocked', 'neutral'); }
 				break;
-
 			// Gen 1-2
 			case 'mist':
 				this.scene.resultAnim(poke, 'Mist', 'good');
@@ -2731,9 +2478,7 @@ export class Battle {
 				this.scene.resultAnim(poke, 'Reflect', 'good');
 				break;
 			}
-			if (!(effect.id === 'typechange' && poke.terastallized)) {
-				poke.addVolatile(effect.id);
-			}
+			if (!(effect.id === 'typechange' && poke.terastallized)) { poke.addVolatile(effect.id); }
 			this.scene.updateStatbar(poke);
 			this.log(args, kwArgs);
 			break;
@@ -2743,7 +2488,6 @@ export class Battle {
 			let effect = Dex.getEffect(args[2]);
 			let fromeffect = Dex.getEffect(kwArgs.from);
 			poke.removeVolatile(effect.id);
-
 			if (kwArgs.silent && !(effect.id === 'protosynthesis' || effect.id === 'quarkdrive')) {
 				// do nothing
 			} else {
@@ -2758,17 +2502,13 @@ export class Battle {
 					this.scene.resultAnim(poke, 'Telekinesis&nbsp;ended', 'neutral');
 					break;
 				case 'skydrop':
-					if (kwArgs.interrupt) {
-						this.scene.anim(poke, { time: 100 });
-					}
+					if (kwArgs.interrupt) { this.scene.anim(poke, { time: 100 }); }
 					break;
 				case 'confusion':
 					this.scene.resultAnim(poke, 'Confusion&nbsp;ended', 'good');
 					break;
 				case 'leechseed':
-					if (fromeffect.id === 'rapidspin') {
-						this.scene.resultAnim(poke, 'De-seeded', 'good');
-					}
+					if (fromeffect.id === 'rapidspin') { this.scene.resultAnim(poke, 'De-seeded', 'good'); }
 					break;
 				case 'healblock':
 					this.scene.resultAnim(poke, 'Heal Block ended', 'good');
@@ -2828,12 +2568,8 @@ export class Battle {
 					break;
 				default:
 					if (effect.effectType === 'Move') {
-						if (effect.name === 'Doom Desire') {
-							this.scene.runOtherAnim('doomdesirehit' as ID, [poke]);
-						}
-						if (effect.name === 'Future Sight') {
-							this.scene.runOtherAnim('futuresighthit' as ID, [poke]);
-						}
+						if (effect.name === 'Doom Desire') { this.scene.runOtherAnim('doomdesirehit' as ID, [poke]); }
+						if (effect.name === 'Future Sight') { this.scene.runOtherAnim('futuresighthit' as ID, [poke]); }
 					}
 				}
 			}
@@ -2928,11 +2664,8 @@ export class Battle {
 				poke.rememberMove(kwArgs.move, Infinity);
 				break;
 			case 'substitute':
-				if (kwArgs.damage) {
-					this.scene.resultAnim(poke, 'Damage', 'bad');
-				} else if (kwArgs.block) {
-					this.scene.resultAnim(poke, 'Blocked', 'neutral');
-				}
+				if (kwArgs.damage) { this.scene.resultAnim(poke, 'Damage', 'bad'); } 
+				else if (kwArgs.block) { this.scene.resultAnim(poke, 'Blocked', 'neutral'); }
 				break;
 			case 'attract':
 				this.scene.runStatusAnim('attracted' as ID, [poke]);
@@ -2940,7 +2673,6 @@ export class Battle {
 			case 'bide':
 				this.scene.runOtherAnim('bidecharge' as ID, [poke]);
 				break;
-
 			// move activations
 			case 'aromatherapy':
 				this.scene.resultAnim(poke, 'Team Cured', 'good');
@@ -2997,7 +2729,6 @@ export class Battle {
 					this.activateAbility(target, targetability, true);
 				}
 				break;
-
 			// ability activations
 			case 'electromorphosis':
 			case 'windpower':
@@ -3008,12 +2739,8 @@ export class Battle {
 					target.rememberMove(kwArgs.move, 0);
 				} else {
 					let foeActive = [] as Pokemon[];
-					for (const maybeTarget of poke.side.foe.active) {
-						if (maybeTarget && !maybeTarget.fainted) foeActive.push(maybeTarget);
-					}
-					if (foeActive.length === 1) {
-						foeActive[0].rememberMove(kwArgs.move, 0);
-					}
+					for (const maybeTarget of poke.side.foe.active) { if (maybeTarget && !maybeTarget.fainted) foeActive.push(maybeTarget); }
+					if (foeActive.length === 1) { foeActive[0].rememberMove(kwArgs.move, 0); }
 				}
 				break;
 			case 'lingeringaroma':
@@ -3025,7 +2752,6 @@ export class Battle {
 				this.scene.wait(700);
 				this.activateAbility(target, effect.name, true);
 				break;
-
 			// item activations
 			case 'leppaberry':
 			case 'mysteryberry':
@@ -3052,7 +2778,6 @@ export class Battle {
 			let side = this.getSide(args[1]);
 			let effect = Dex.getEffect(args[2]);
 			side.addSideCondition(effect, !!kwArgs.persistent);
-
 			switch (effect.id) {
 			case 'tailwind':
 			case 'auroraveil':
@@ -3118,13 +2843,10 @@ export class Battle {
 			}
 			if (kwArgs.persistent) minTimeLeft += 2;
 			this.addPseudoWeather(effect.name, minTimeLeft, maxTimeLeft);
-
 			switch (effect.id) {
 			case 'gravity':
 				if (this.seeking !== null) break;
-				for (const active of this.getAllActive()) {
-					this.scene.runOtherAnim('gravity' as ID, [active]);
-				}
+				for (const active of this.getAllActive()) { this.scene.runOtherAnim('gravity' as ID, [active]); }
 				break;
 			}
 			this.log(args, kwArgs);
@@ -3259,7 +2981,6 @@ export class Battle {
 			if (!output.maxhp) output.maxhp = 100;
 			output.hp = output.maxhp * parseFloat(hp) / 100;
 		}
-
 		// status parse
 		if (!status) {
 			output.status = '';
@@ -3275,7 +2996,6 @@ export class Battle {
 	}
 	parsePokemonId(pokemonid: string) {
 		let name = pokemonid;
-
 		let siden = -1;
 		let slot = -1; // if there is an explicit slot for this pokemon
 		if (/^p[1-9]($|: )/.test(name)) {
@@ -3294,10 +3014,8 @@ export class Battle {
 		if (pokemonid === '??') throw new Error(`pokemonid not passed`);
 		const { name, siden, slot, pokemonid: parsedPokemonid } = this.parsePokemonId(pokemonid);
 		pokemonid = parsedPokemonid;
-
 		const searchid = `${pokemonid}|${details}`;
 		const side = this.sides[siden];
-
 		// search inactive revealed pokemon
 		for (let i = 0; i < side.pokemon.length; i++) {
 			let pokemon = side.pokemon[i];
@@ -3306,7 +3024,6 @@ export class Battle {
 			if (side.active.includes(pokemon)) continue;
 			// just switched out, can't be switching in
 			if (pokemon === side.lastPokemon && !side.active[slot]) continue;
-
 			if (pokemon.searchid === searchid) {
 				// exact match
 				if (slot >= 0) pokemon.slot = slot;
@@ -3319,7 +3036,6 @@ export class Battle {
 				return pokemon;
 			}
 		}
-
 		// pokemon not found, create a new pokemon object for it
 		const pokemon = side.addPokemon(name, pokemonid, details);
 		if (slot >= 0) pokemon.slot = slot;
@@ -3327,17 +3043,12 @@ export class Battle {
 	}
 	rememberTeamPreviewPokemon(sideid: string, details: string) {
 		const { siden } = this.parsePokemonId(sideid);
-
 		return this.sides[siden].addPokemon('', '', details);
 	}
 	findCorrespondingPokemon(serverPokemon: { ident: string, details: string }) {
 		const { siden } = this.parsePokemonId(serverPokemon.ident);
 		const searchid = `${serverPokemon.ident}|${serverPokemon.details}`;
-		for (const pokemon of this.sides[siden].pokemon) {
-			if (pokemon.searchid === searchid) {
-				return pokemon;
-			}
-		}
+		for (const pokemon of this.sides[siden].pokemon) { if (pokemon.searchid === searchid) { return pokemon; } }
 		return null;
 	}
 	getPokemon(pokemonid: string | undefined, faintedOnly = false) {
@@ -3346,14 +3057,11 @@ export class Battle {
 		}
 		const { siden, slot, pokemonid: parsedPokemonid } = this.parsePokemonId(pokemonid);
 		pokemonid = parsedPokemonid;
-
 		/** if true, don't match an active pokemon */
 		const isInactive = (slot < 0);
 		const side = this.sides[siden];
-
 		// search player's pokemon
 		if (!isInactive && side.active[slot]) return side.active[slot];
-
 		for (const pokemon of side.pokemon) {
 			if (isInactive && !this.compatMode && side.active.includes(pokemon)) continue;
 			if (faintedOnly && pokemon.hp) continue;
@@ -3362,7 +3070,6 @@ export class Battle {
 				return pokemon;
 			}
 		}
-
 		return null;
 	}
 	getSide(sidename: string): Side {
@@ -3379,10 +3086,8 @@ export class Battle {
 			id: sidename.replace(/ /g, ''),
 		} as any;
 	}
-
 	add(command?: string) {
 		if (command) this.stepQueue.push(command);
-
 		if (this.atQueueEnd && this.currentStep < this.stepQueue.length) {
 			this.atQueueEnd = false;
 			this.nextStep();
@@ -3392,7 +3097,6 @@ export class Battle {
 	 * PS's preempt system is intended to show chat messages immediately,
 	 * instead of waiting for the battle to get to the point where the
 	 * message was said.
-	 *
 	 * In addition to being a nice quality-of-life feature, it's also
 	 * important to make sure timer updates happen in real-time.
 	 */
@@ -3414,9 +3118,7 @@ export class Battle {
 			this.usesUpkeep = true;
 			this.updateTurnCounters();
 			// Prevents getSwitchedPokemon from skipping over a Pokemon that switched out mid turn (e.g. U-turn)
-			for (const side of this.sides) {
-				side.lastPokemon = null;
-			}
+			for (const side of this.sides) { side.lastPokemon = null; }
 			break;
 		}
 		case 'turn': {
@@ -3426,19 +3128,13 @@ export class Battle {
 		}
 		case 'tier': {
 			this.tier = args[1];
-			if (this.tier.endsWith('Random Battle')) {
-				this.speciesClause = true;
-			}
+			if (this.tier.endsWith('Random Battle')) { this.speciesClause = true; }
 			if (this.tier.endsWith(' (Blitz)')) {
 				this.messageFadeTime = 40;
 				this.isBlitz = true;
 			}
-			if (this.tier.includes(`Let's Go`)) {
-				this.dex = Dex.mod('gen7letsgo' as ID);
-			}
-			if (this.tier.includes('Super Staff Bros')) {
-				this.dex = Dex.mod('gen9ssb' as ID);
-			}
+			if (this.tier.includes(`Let's Go`)) { this.dex = Dex.mod('gen7letsgo' as ID); }
+			if (this.tier.includes('Super Staff Bros')) { this.dex = Dex.mod('gen9ssb' as ID); }
 			this.log(args);
 			break;
 		}
@@ -3453,14 +3149,12 @@ export class Battle {
 				if (!this.p4) this.p4 = new Side(this, 3);
 				this.p3.foe = this.p2;
 				this.p4.foe = this.p1;
-
 				if (args[1] === 'multi') {
 					this.p4.ally = this.p2;
 					this.p3.ally = this.p1;
 					this.p1.ally = this.p3;
 					this.p2.ally = this.p4;
 				}
-
 				this.p3.isFar = this.p1.isFar;
 				this.p4.isFar = this.p2.isFar;
 				this.sides = [this.p1, this.p2, this.p3, this.p4];
@@ -3522,12 +3216,8 @@ export class Battle {
 			} else if (args[1].endsWith(' seconds left.')) {
 				let hasIndex = args[1].indexOf(' has ');
 				let userid = window.app?.user?.get('userid') || window.PS?.user.userid;
-				if (toID(args[1].slice(0, hasIndex)) === userid) {
-					this.kickingInactive = parseInt(args[1].slice(hasIndex + 5), 10) || true;
-				}
-			} else if (args[1].endsWith(' 15 seconds left this turn.')) {
-				if (this.isBlitz) return;
-			}
+				if (toID(args[1].slice(0, hasIndex)) === userid) { this.kickingInactive = parseInt(args[1].slice(hasIndex + 5), 10) || true; }
+			} else if (args[1].endsWith(' 15 seconds left this turn.')) { if (this.isBlitz) return; }
 			this.log(args, undefined, preempt);
 			break;
 		}
@@ -3580,9 +3270,7 @@ export class Battle {
 				room.userList.remove(oldid);
 				room.userList.add(userid);
 			}
-			if (!this.ignoreSpects) {
-				this.log(args, undefined, preempt);
-			}
+			if (!this.ignoreSpects) { this.log(args, undefined, preempt); }
 			break;
 		}
 		case 'player': {
@@ -3625,11 +3313,8 @@ export class Battle {
 		}
 		case 'poke': {
 			let pokemon = this.rememberTeamPreviewPokemon(args[1], args[2]);
-			if (args[3] === 'mail') {
-				pokemon.item = '(mail)';
-			} else if (args[3] === 'item') {
-				pokemon.item = '(exists)';
-			}
+			if (args[3] === 'mail') { pokemon.item = '(mail)'; } 
+			else if (args[3] === 'item') { pokemon.item = '(exists)'; }
 			break;
 		}
 		case 'updatepoke': {
@@ -3660,9 +3345,7 @@ export class Battle {
 				const pokemon = side.addPokemon('', '', details);
 				if (set.item) pokemon.item = set.item;
 				if (set.ability) pokemon.rememberAbility(set.ability);
-				for (const move of set.moves) {
-					pokemon.rememberMove(move, 0);
-				}
+				for (const move of set.moves) { pokemon.rememberMove(move, 0); }
 				if (set.teraType) pokemon.teraType = set.teraType;
 			}
 			this.log(args, kwArgs);
@@ -3676,15 +3359,10 @@ export class Battle {
 			poke.removeVolatile('itemremoved' as ID);
 			poke.terastallized = (/tera:([a-z]+)$/i.exec(args[2]))?.[1] || '';
 			if (args[0] === 'switch') {
-				if (poke.side.active[slot]) {
-					poke.side.switchOut(poke.side.active[slot], kwArgs);
-				}
+				if (poke.side.active[slot]) { poke.side.switchOut(poke.side.active[slot], kwArgs); }
 				poke.side.switchIn(poke, kwArgs);
-			} else if (args[0] === 'replace') {
-				poke.side.replace(poke);
-			} else {
-				poke.side.dragIn(poke);
-			}
+			} else if (args[0] === 'replace') { poke.side.replace(poke); } 
+			else { poke.side.dragIn(poke); }
 			this.scene.updateWeather();
 			this.log(args, kwArgs);
 			break;
@@ -3775,7 +3453,6 @@ export class Battle {
 		}
 		}
 	}
-
 	run(str: string, preempt?: boolean) {
 		if (!preempt && this.preemptStepQueue.length && str === this.preemptStepQueue[0]) {
 			this.preemptStepQueue.shift();
@@ -3784,49 +3461,35 @@ export class Battle {
 		}
 		if (!str) return;
 		const { args, kwArgs } = BattleTextParser.parseBattleLine(str);
-
 		if (this.scene.maybeCloseMessagebar(args, kwArgs)) {
 			this.currentStep--;
 			this.activeMoveIsSpread = null;
 			return;
 		}
-
 		// parse the next line if it's a minor: runMinor needs it parsed to determine when to merge minors
 		let nextArgs: Args = [''];
 		let nextKwargs: KWArgs = {};
 		const nextLine = this.stepQueue[this.currentStep + 1] || '';
-		if (nextLine.startsWith('|-')) {
-			({ args: nextArgs, kwArgs: nextKwargs } = BattleTextParser.parseBattleLine(nextLine));
-		}
-
+		if (nextLine.startsWith('|-')) { ({ args: nextArgs, kwArgs: nextKwargs } = BattleTextParser.parseBattleLine(nextLine)); }
 		if (this.debug) {
-			if (args[0].startsWith('-') || args[0] === 'detailschange') {
-				this.runMinor(args, kwArgs, nextArgs, nextKwargs);
-			} else {
-				this.runMajor(args, kwArgs, preempt);
-			}
+			if (args[0].startsWith('-') || args[0] === 'detailschange') { this.runMinor(args, kwArgs, nextArgs, nextKwargs); } 
+			else { this.runMajor(args, kwArgs, preempt); }
 		} else {
 			try {
-				if (args[0].startsWith('-') || args[0] === 'detailschange') {
-					this.runMinor(args, kwArgs, nextArgs, nextKwargs);
-				} else {
-					this.runMajor(args, kwArgs, preempt);
-				}
+				if (args[0].startsWith('-') || args[0] === 'detailschange') { this.runMinor(args, kwArgs, nextArgs, nextKwargs); } 
+				else { this.runMajor(args, kwArgs, preempt); }
 			} catch (err: any) {
 				this.log(['majorerror', 'Error parsing: ' + str + ' (' + err + ')']);
 				if (err.stack) {
 					let stack = ('' + err.stack).split('\n');
 					for (const line of stack) {
-						if (/\brun\b/.test(line)) {
-							break;
-						}
+						if (/\brun\b/.test(line)) { break; }
 						this.log(['error', line]);
 					}
 				}
 				this.subscription?.('error');
 			}
 		}
-
 		if (nextLine.startsWith('|start') || args[0] === 'teampreview') {
 			if (this.turn === -1) {
 				this.turn = 0;
@@ -3841,7 +3504,6 @@ export class Battle {
 		}
 		return false;
 	}
-
 	pause() {
 		this.paused = true;
 		this.scene.pause();
@@ -3862,24 +3524,18 @@ export class Battle {
 		this.nextStep();
 		this.subscription?.('playing');
 	}
-	skipTurn() {
-		this.seekBy(1);
-	}
+	skipTurn() { this.seekBy(1); }
 	seekBy(deltaTurn: number) {
-		if (this.seeking === Infinity && deltaTurn < 0) {
-			return this.seekTurn(this.turn + 1);
-		}
+		if (this.seeking === Infinity && deltaTurn < 0) { return this.seekTurn(this.turn + 1); }
 		this.seekTurn((this.seeking ?? this.turn) + deltaTurn);
 	}
 	seekTurn(turn: number, forceReset?: boolean) {
 		if (isNaN(turn)) return;
 		turn = Math.max(Math.floor(turn), 0);
-
 		if (this.seeking !== null && turn > this.turn && !forceReset) {
 			this.seeking = turn;
 			return;
 		}
-
 		if (turn === 0) {
 			this.seeking = null;
 			this.resetStep();
@@ -3887,9 +3543,7 @@ export class Battle {
 			if (this.paused) this.subscription?.('paused');
 			return;
 		}
-
 		this.seeking = turn;
-
 		if (turn <= this.turn || forceReset) {
 			this.scene.animationOff();
 			this.resetStep();
@@ -3913,11 +3567,9 @@ export class Battle {
 	}
 	nextStep() {
 		if (!this.shouldStep()) return;
-
 		let time = Date.now();
 		this.scene.startAnimations();
 		let animations = undefined;
-
 		let interruptionCount: number;
 		do {
 			// modified in this.run() but idk how to tell TS that
@@ -3926,58 +3578,35 @@ export class Battle {
 				this.atQueueEnd = true;
 				if (!this.ended && this.isReplay) this.prematureEnd();
 				this.stopSeeking();
-				if (this.ended) {
-					this.scene.updateBgm();
-				}
+				if (this.ended) { this.scene.updateBgm(); }
 				this.subscription?.('atqueueend');
 				return;
 			}
-
 			this.run(this.stepQueue[this.currentStep]);
 			this.currentStep++;
-			if (this.waitForAnimations === true) {
-				animations = this.scene.finishAnimations();
-			} else if (this.waitForAnimations === 'simult') {
-				this.scene.timeOffset = 0;
-			}
-
+			if (this.waitForAnimations === true) { animations = this.scene.finishAnimations(); } 
+			else if (this.waitForAnimations === 'simult') { this.scene.timeOffset = 0; }
 			if (Date.now() - time > 300) {
 				interruptionCount = this.scene.interruptionCount;
-				setTimeout(() => {
-					if (interruptionCount === this.scene.interruptionCount) {
-						this.nextStep();
-					}
-				}, 1);
+				setTimeout(() => { if (interruptionCount === this.scene.interruptionCount) { this.nextStep(); } }, 1);
 				return;
 			}
 		} while (!animations && this.shouldStep());
-
 		if (this.paused && this.turn >= 0 && this.seeking === null) {
 			// initial Play button, team preview
 			this.scene.pause();
 			return;
 		}
-
 		if (!animations) return;
-
 		interruptionCount = this.scene.interruptionCount;
-		animations.done(() => {
-			if (interruptionCount === this.scene.interruptionCount) {
-				this.nextStep();
-			}
-		});
+		animations.done(() => { if (interruptionCount === this.scene.interruptionCount) { this.nextStep(); } });
 	}
-
 	setQueue(queue: string[]) {
 		this.stepQueue = queue;
 		this.resetStep();
 	}
-
-	setMute(mute: boolean) {
-		this.scene.setMute(mute);
-	}
+	setMute(mute: boolean) { this.scene.setMute(mute); }
 }
-
 declare const require: any;
 declare const global: any;
 if (typeof require === 'function') {
