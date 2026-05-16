@@ -10,20 +10,15 @@
 			this.choice = undefined;
 			/** are move/switch/team-preview controls currently being shown? */
 			this.controlsShown = false;
-
 			this.battlePaused = false;
 			this.autoTimerActivated = false;
-
 			this.isSideRoom = Dex.prefs('rightpanelbattles');
-
 			this.$el.addClass('ps-room-opaque').html('<div class="battle">Battle is here</div><div class="foehint"></div><div class="battle-log" aria-label="Battle Log" role="complementary"></div><div class="battle-log-add">Connecting...</div><ul class="battle-userlist userlist userlist-minimized"></ul><div class="battle-controls" role="complementary" aria-label="Battle Controls"></div><button class="battle-chat-toggle button" name="showChat"><i class="fa fa-caret-left"></i> Chat</button>');
-
 			this.$battle = this.$el.find('.battle');
 			this.$controls = this.$el.find('.battle-controls');
 			this.$chatFrame = this.$el.find('.battle-log');
 			this.$chatAdd = this.$el.find('.battle-log-add');
 			this.$foeHint = this.$el.find('.foehint');
-
 			BattleSound.setMute(Dex.prefs('mute'));
 			this.battle = new Battle({
 				id: this.id,
@@ -34,10 +29,8 @@
 			this.battle.joinButtons = true;
 			this.tooltips = this.battle.scene.tooltips;
 			this.tooltips.listen(this.$controls);
-
 			var self = this;
 			this.battle.subscribe(function () { self.updateControls(); });
-
 			this.users = {};
 			this.userCount = { users: 0 };
 			this.$userList = this.$('.userlist');
@@ -46,9 +39,7 @@
 				room: this
 			});
 			this.userList.construct();
-
 			this.$chat = this.$chatFrame.find('.inner');
-
 			this.$options = this.battle.scene.$options.html('<div style="padding-top: 3px; padding-right: 3px; text-align: right"><button class="icon button" name="openBattleOptions" title="Options">Battle Options</button></div>');
 		},
 		events: {
@@ -59,9 +50,7 @@
 			'change input[name=dynamax]': 'updateMaxMove'
 		},
 		battleEnded: false,
-		join: function () {
-			app.send('/join ' + this.id);
-		},
+		join: function () { app.send('/join ' + this.id); },
 		showChat: function () {
 			this.$('.battle-chat-toggle').attr('name', 'hideChat').html('Battle <i class="fa fa-caret-right"></i>');
 			this.$el.addClass('showing-chat');
@@ -83,11 +72,8 @@
 		},
 		updateLayout: function () {
 			var width = this.$el.width();
-			if (width < 950 || this.battle.hardcoreMode) {
-				this.battle.messageShownTime = 500;
-			} else {
-				this.battle.messageShownTime = 1;
-			}
+			if (width < 950 || this.battle.hardcoreMode) { this.battle.messageShownTime = 500; } 
+			else { this.battle.messageShownTime = 1; }
 			if (width && width < 640) {
 				var scale = (width / 640);
 				this.$battle.css('transform', 'scale(' + scale + ')');
@@ -106,9 +92,7 @@
 			Room.prototype.show.apply(this, arguments);
 			this.updateLayout();
 		},
-		receive: function (data) {
-			this.add(data);
-		},
+		receive: function (data) { this.add(data); },
 		focus: function (e) {
 			this.tooltips.hideTooltip();
 			if (this.battle.paused && !this.battlePaused) {
@@ -117,9 +101,7 @@
 			}
 			ConsoleRoom.prototype.focus.call(this, e);
 		},
-		blur: function () {
-			this.battle.pause();
-		},
+		blur: function () { this.battle.pause(); },
 		init: function (data) {
 			var log = data.split('\n');
 			if (data.substr(0, 6) === '|init|') log.shift();
@@ -137,9 +119,7 @@
 		},
 		add: function (data) {
 			if (!data) return;
-			if (data.substr(0, 6) === '|init|') {
-				return this.init(data);
-			}
+			if (data.substr(0, 6) === '|init|') { return this.init(data); }
 			if (data.substr(0, 11) === '|cantleave|') {
 				this.requireForfeit = true;
 				return;
@@ -150,16 +130,13 @@
 			}
 			if (data.substr(0, 9) === '|request|') {
 				data = data.slice(9);
-
 				var requestData = null;
 				var choiceText = null;
-
 				var nlIndex = data.indexOf('\n');
 				if (/[0-9]/.test(data.charAt(0)) && data.charAt(1) === '|') {
 					// message format:
 					//   |request|CHOICEINDEX|CHOICEDATA
 					//   REQUEST
-
 					// This is backwards compatibility with old code that violates the
 					// expectation that server messages can be streamed line-by-line.
 					// Please do NOT EVER push protocol changes without a pull request.
@@ -170,28 +147,21 @@
 					// message format:
 					//   |request|REQUEST
 					//   |sentchoice|CHOICE
-					if (data.slice(nlIndex + 1, nlIndex + 13) === '|sentchoice|') {
-						choiceText = data.slice(nlIndex + 13);
-					}
+					if (data.slice(nlIndex + 1, nlIndex + 13) === '|sentchoice|') { choiceText = data.slice(nlIndex + 13); }
 					data = data.slice(0, nlIndex);
 				}
-
-				try {
-					requestData = JSON.parse(data);
-				} catch (err) {}
+				try { requestData = JSON.parse(data); } 
+				catch (err) {}
 				return this.receiveRequest(requestData, choiceText);
 			}
-
 			var log = data.split('\n');
 			for (var i = 0; i < log.length; i++) {
 				var logLine = log[i];
-
 				if (logLine === '|') {
 					this.callbackWaiting = false;
 					this.controlsShown = false;
 					this.$controls.html('');
 				}
-
 				if (logLine.substr(0, 10) === '|callback|') {
 					// TODO: Maybe a more sophisticated UI for this.
 					// In singles, this isn't really necessary because some elements of the UI will be
@@ -208,11 +178,7 @@
 						this.battle.stepQueue.push('|message|' + pokeName + ' is trapped and cannot switch!');
 						break;
 					case 'cant':
-						for (var i = 0; i < requestData.moves.length; i++) {
-							if (requestData.moves[i].id === args[3]) {
-								requestData.moves[i].disabled = true;
-							}
-						}
+						for (var i = 0; i < requestData.moves.length; i++) { if (requestData.moves[i].id === args[3]) { requestData.moves[i].disabled = true; } }
 						args.splice(1, 1, pokemon.getIdent());
 						this.battle.stepQueue.push('|' + args.join('|'));
 						break;
@@ -224,9 +190,7 @@
 					this.battle.stepQueue.push(logLine);
 				} else if (logLine.substr(0, 6) === '|chat|' || logLine.substr(0, 3) === '|c|' || logLine.substr(0, 4) === '|c:|' || logLine.substr(0, 9) === '|chatmsg|' || logLine.substr(0, 10) === '|inactive|') {
 					this.battle.instantAdd(logLine);
-				} else {
-					this.battle.stepQueue.push(logLine);
-				}
+				} else { this.battle.stepQueue.push(logLine); }
 			}
 			this.battle.add();
 			if (Dex.prefs('noanim')) this.battle.seekTurn(Infinity);
@@ -251,29 +215,21 @@
 			this.$('.hcmode-style').remove();
 			this.updateLayout(); // set animation delay
 			if (mode) this.$el.prepend('<style class="hcmode-style">' + id + '.battle .turn,' + id + '.battle-history{display:none !important;}</style>');
-			if (this.choice && this.choice.waiting) {
-				this.updateControlsForPlayer();
-			}
+			if (this.choice && this.choice.waiting) { this.updateControlsForPlayer(); }
 		},
-
 		/*********************************************************
 		 * Battle stuff
 		 *********************************************************/
-
 		updateControls: function () {
 			if (this.battle.scene.customControls) return;
 			var controlsShown = this.controlsShown;
 			var switchViewpointButton = '<p><button class="button" name="switchViewpoint"><i class="fa fa-random"></i> Switch viewpoint</button></p>';
 			this.controlsShown = false;
-
 			if (this.battle.seeking !== null) {
-
 				// battle is seeking
 				this.$controls.html('');
 				return;
-
 			} else if (!this.battle.atQueueEnd) {
-
 				// battle is playing or paused
 				if (!this.side || this.battleEnded) {
 					// spectator
@@ -297,40 +253,27 @@
 					this.$controls.html('<p>' + this.getTimerHTML() + '<button class="button" name="skipTurn"><i class="fa fa-step-forward"></i><br />Skip turn</button> <button class="button" name="goToEnd"><i class="fa fa-fast-forward"></i><br />Skip to end</button></p>');
 				}
 				return;
-
 			}
-
 			if (this.battle.ended) {
-
 				var replayDownloadButton = '<span style="float:right;"><a href="//' + Config.routes.replays + '/download" class="button replayDownloadButton"><i class="fa fa-download"></i> Download replay</a><br /><br /><button class="button" name="saveReplay"><i class="fa fa-upload"></i> Upload and share replay</button></span>';
-
 				// battle has ended
 				if (this.side) {
 					// was a player
 					this.closeNotification('choice');
 					this.$controls.html('<div class="controls"><p>' + replayDownloadButton + '<button class="button" name="instantReplay"><i class="fa fa-undo"></i><br />Instant replay</button></p><p><button class="button" name="closeAndMainMenu"><strong>Main menu</strong><br /><small>(closes this battle)</small></button> <button class="button" name="closeAndRematch"><strong>Rematch</strong><br /><small>(closes this battle)</small></button></p></div>');
-				} else {
-					this.$controls.html('<div class="controls"><p>' + replayDownloadButton + '<button class="button" name="instantReplay"><i class="fa fa-undo"></i><br />Instant replay</button></p>' + switchViewpointButton + '</div>');
-				}
+				} else { this.$controls.html('<div class="controls"><p>' + replayDownloadButton + '<button class="button" name="instantReplay"><i class="fa fa-undo"></i><br />Instant replay</button></p>' + switchViewpointButton + '</div>'); }
 
 			} else if (this.side) {
-
 				// player
 				this.controlsShown = true;
 				if (!controlsShown || this.choice === undefined || this.choice && this.choice.waiting) {
 					// don't update controls (and, therefore, side) if `this.choice === null`: causes damage miscalculations
 					this.updateControlsForPlayer();
-				} else {
-					this.updateTimer();
-				}
-
+				} else { this.updateTimer(); }
 			} else if (!this.battle.nearSide.name || !this.battle.farSide.name) {
-
 				// empty battle
 				this.$controls.html('<p><em>Waiting for players...</em></p>');
-
 			} else {
-
 				// full battle
 				if (this.battle.paused) {
 					// paused
@@ -347,38 +290,25 @@
 						switchViewpointButton + '<p><em>Waiting for players...</em></p>'
 					);
 				}
-
 			}
-
 			// This intentionally doesn't happen if the battle is still playing,
 			// since those early-return.
 			app.topbar.updateTabbar();
 		},
 		updateControlsForPlayer: function () {
 			this.callbackWaiting = true;
-
 			var act = '';
 			var switchables = [];
 			if (this.request) {
 				// TODO: investigate when to do this
 				this.updateSide();
-				if (this.request.ally) {
-					this.addAlly(this.request.ally);
-				}
-
+				if (this.request.ally) { this.addAlly(this.request.ally); }
 				act = this.request.requestType;
-				if (this.request.side) {
-					switchables = this.battle.myPokemon;
-				}
+				if (this.request.side) { switchables = this.battle.myPokemon; }
 				if (!this.finalDecision) this.finalDecision = !!this.request.noCancel;
 			}
-
-			if (this.choice && this.choice.waiting) {
-				act = '';
-			}
-
+			if (this.choice && this.choice.waiting) { act = ''; }
 			var type = this.choice ? this.choice.type : '';
-
 			// The choice object:
 			// !this.choice = nothing has been chosen
 			// this.choice.choices = array of choice strings
@@ -387,7 +317,6 @@
 			// this.choice.freedomDegrees = in a switch request: number of empty slots that can't be replaced
 			// this.choice.type = determines what the current choice screen to be displayed is
 			// this.choice.waiting = true if the choice has been sent and we're just waiting for the next turn
-
 			switch (act) {
 			case 'move':
 				if (!this.choice) {
@@ -399,7 +328,6 @@
 				}
 				this.updateMoveControls(type);
 				break;
-
 			case 'switch':
 				if (!this.choice) {
 					this.choice = {
@@ -409,7 +337,6 @@
 						freedomDegrees: 0,
 						canSwitch: 0
 					};
-
 					if (this.request.forceSwitch !== true) {
 						var faintedLength = _.filter(this.request.forceSwitch, function (fainted) { return fainted; }).length;
 						var freedomDegrees = faintedLength - _.filter(switchables.slice(this.battle.pokemonControlled), function (mon) { return !mon.fainted; }).length;
@@ -419,7 +346,6 @@
 				}
 				this.updateSwitchControls(type);
 				break;
-
 			case 'team':
 				if (this.battle.mySide.pokemon && !this.battle.mySide.pokemon.length) {
 					// too early, we can't determine `this.choice.count` yet
@@ -434,32 +360,19 @@
 						done: 0,
 						count: 1
 					};
-					if (this.battle.gameType === 'multi') {
-						this.choice.count = 1;
-					}
-					if (this.battle.gameType === 'doubles') {
-						this.choice.count = 2;
-					}
-					if (this.battle.gameType === 'triples' || this.battle.gameType === 'rotation') {
-						this.choice.count = 3;
-					}
+					if (this.battle.gameType === 'multi') { this.choice.count = 1; }
+					if (this.battle.gameType === 'doubles') { this.choice.count = 2; }
+					if (this.battle.gameType === 'triples' || this.battle.gameType === 'rotation') { this.choice.count = 3; }
 					// Request full team order if one of our Pokémon has Illusion
-					for (var i = 0; i < switchables.length && i < 6; i++) {
-						if (toID(switchables[i].baseAbility) === 'illusion') {
-							this.choice.count = this.battle.myPokemon.length;
-						}
-					}
+					for (var i = 0; i < switchables.length && i < 6; i++) { if (toID(switchables[i].baseAbility) === 'illusion') { this.choice.count = this.battle.myPokemon.length; } }
 					if (this.battle.teamPreviewCount) {
 						var requestCount = parseInt(this.battle.teamPreviewCount, 10);
-						if (requestCount > 0 && requestCount <= switchables.length) {
-							this.choice.count = requestCount;
-						}
+						if (requestCount > 0 && requestCount <= switchables.length) { this.choice.count = requestCount; }
 					}
 					this.choice.choices = new Array(this.choice.count);
 				}
 				this.updateTeamControls(type);
 				break;
-
 			default:
 				this.updateWaitControls();
 				break;
@@ -469,7 +382,6 @@
 		getTimerHTML: function (nextTick) {
 			var time = 'Timer';
 			var timerTicking = (this.battle.kickingInactive && this.request && !this.request.wait && !(this.choice && this.choice.waiting)) ? ' timerbutton-on' : '';
-
 			if (!nextTick) {
 				var self = this;
 				if (this.timerInterval) {
@@ -478,9 +390,8 @@
 				}
 				if (timerTicking) this.timerInterval = setInterval(function () {
 					var $timerButton = self.$('.timerbutton');
-					if ($timerButton.length) {
-						$timerButton.replaceWith(self.getTimerHTML(true));
-					} else {
+					if ($timerButton.length) { $timerButton.replaceWith(self.getTimerHTML(true)); } 
+					else {
 						clearInterval(self.timerInterval);
 						self.timerInterval = 0;
 					}
@@ -490,13 +401,11 @@
 				if (this.battle.graceTimeLeft) this.battle.graceTimeLeft--;
 				else if (this.battle.totalTimeLeft) this.battle.totalTimeLeft--;
 			}
-
 			if (this.battle.kickingInactive) {
 				var secondsLeft = this.battle.kickingInactive;
 				if (secondsLeft !== true) {
 					if (secondsLeft <= 10 && timerTicking) {
-						timerTicking = ' timerbutton-critical';
-					}
+						timerTicking = ' timerbutton-critical'; }
 					var minutesLeft = Math.floor(secondsLeft / 60);
 					secondsLeft -= minutesLeft * 60;
 					time = '' + minutesLeft + ':' + (secondsLeft < 10 ? '0' : '') + secondsLeft;
@@ -1047,15 +956,10 @@
 									// Targeting your own side in doubles / triples
 									targetActive = this.battle.nearSide.active;
 									targetPos = -targetPos;
-									if (this.battle.gameType !== 'freeforall') {
-										target += 'your ';
-									}
+									if (this.battle.gameType !== 'freeforall') { target += 'your '; }
 								}
-								if (targetActive[targetPos - 1]) {
-									target += targetActive[targetPos - 1].speciesForme;
-								} else {
-									target += 'slot ' + targetPos; // targeting an empty slot
-								}
+								if (targetActive[targetPos - 1]) { target += targetActive[targetPos - 1].speciesForme; } 
+								else { target += 'slot ' + targetPos;  } // targeting an empty slot
 							}
 						}
 						buf += 'use ' + Dex.moves.get(move).name + (target ? ' at ' + target : '') + '.<br />';
@@ -1077,26 +981,20 @@
 				}
 			}
 			buf += '</small></p>';
-			if (!this.finalDecision && !this.battle.hardcoreMode) {
-				buf += '<p><small><em>Waiting for opponent...</em></small> <button class="button" name="undoChoice">Cancel</button></p>';
-			}
+			if (!this.finalDecision && !this.battle.hardcoreMode) { buf += '<p><small><em>Waiting for opponent...</em></small> <button class="button" name="undoChoice">Cancel</button></p>'; }
 			return buf;
 		},
-
 		/**
 		 * Sends a decision; pass it an array of choices like ['move 1', 'switch 2']
 		 * and it'll send `/choose move 1,switch 2|3`
 		 * (where 3 is the rqid).
-		 *
 		 * (The rqid helps verify that the decision is sent in response to the
 		 * correct request.)
 		 */
 		sendDecision: function (message) {
 			if (!$.isArray(message)) return this.send('/' + message + '|' + this.request.rqid);
 			var buf = '/choose ';
-			for (var i = 0; i < message.length; i++) {
-				if (message[i]) buf += message[i] + ',';
-			}
+			for (var i = 0; i < message.length; i++) { if (message[i]) buf += message[i] + ','; }
 			this.send(buf.substr(0, buf.length - 1) + '|' + this.request.rqid);
 		},
 		request: null,
@@ -1105,27 +1003,18 @@
 				this.side = '';
 				return;
 			}
-
 			if (!this.autoTimerActivated && Storage.prefs('autotimer') && !this.battle.ended) {
 				this.setTimer('on');
 				this.autoTimerActivated = true;
 			}
-
 			request.requestType = 'move';
-			if (request.forceSwitch) {
-				request.requestType = 'switch';
-			} else if (request.teamPreview) {
-				request.requestType = 'team';
-			} else if (request.wait) {
-				request.requestType = 'wait';
-			}
-
+			if (request.forceSwitch) { request.requestType = 'switch'; } 
+			else if (request.teamPreview) { request.requestType = 'team'; } 
+			else if (request.wait) { request.requestType = 'wait'; }
 			this.choice = choiceText ? { waiting: true } : null;
 			this.finalDecision = this.finalDecisionMove = this.finalDecisionSwitch = false;
 			this.request = request;
-			if (request.side) {
-				this.updateSideLocation(request.side);
-			}
+			if (request.side) { this.updateSideLocation(request.side); }
 			this.notifyRequest();
 			this.controlsShown = false;
 			this.updateControls();
@@ -1183,43 +1072,26 @@
 				pokemonData.side = this.battle.mySide.ally;
 			}
 		},
-
 		// buttons
-		joinBattle: function () {
-			this.send('/joinbattle');
-		},
-		setTimer: function (setting) {
-			this.send('/timer ' + setting);
-		},
-		forfeit: function () {
-			this.send('/forfeit');
-		},
-		saveReplay: function () {
-			this.send('/savereplay');
-		},
-		openBattleOptions: function () {
-			app.addPopup(BattleOptionsPopup, { battle: this.battle, room: this });
-		},
+		joinBattle: function () { this.send('/joinbattle'); },
+		setTimer: function (setting) { this.send('/timer ' + setting); },
+		forfeit: function () { this.send('/forfeit'); },
+		saveReplay: function () { this.send('/savereplay'); },
+		openBattleOptions: function () { app.addPopup(BattleOptionsPopup, { battle: this.battle, room: this }); },
 		clickReplayDownloadButton: function (e) {
 			var filename = (this.battle.tier || 'Battle').replace(/[^A-Za-z0-9]/g, '');
-
 			// ladies and gentlemen, JavaScript dates
 			var date = new Date();
 			filename += '-' + date.getFullYear();
 			filename += (date.getMonth() >= 9 ? '-' : '-0') + (date.getMonth() + 1);
 			filename += (date.getDate() >= 10 ? '-' : '-0') + date.getDate();
-
 			filename += '-' + toID(this.battle.p1.name);
 			filename += '-' + toID(this.battle.p2.name);
-
 			e.currentTarget.href = BattleLog.createReplayFileHref(this);
 			e.currentTarget.download = filename + '.html';
-
 			e.stopPropagation();
 		},
-		switchViewpoint: function () {
-			this.battle.switchViewpoint();
-		},
+		switchViewpoint: function () { this.battle.switchViewpoint(); },
 		pause: function () {
 			this.tooltips.hideTooltip();
 			this.battlePaused = true;
@@ -1239,17 +1111,9 @@
 			this.battle.reset();
 			this.battle.play();
 		},
-		skipTurn: function () {
-			this.battle.skipTurn();
-		},
-		rewindTurn: function () {
-			if (this.battle.turn) {
-				this.battle.seekTurn(this.battle.turn - 1);
-			}
-		},
-		goToEnd: function () {
-			this.battle.seekTurn(Infinity);
-		},
+		skipTurn: function () { this.battle.skipTurn(); },
+		rewindTurn: function () { if (this.battle.turn) { this.battle.seekTurn(this.battle.turn - 1); } },
+		goToEnd: function () { this.battle.seekTurn(Infinity); },
 		register: function (userid) {
 			var registered = app.user.get('registered');
 			if (registered && registered.userid !== userid) registered = false;
@@ -1264,22 +1128,17 @@
 		closeAndRematch: function () {
 			app.once('response:fullformat', function (data) {
 				app.rooms[''].requestNotifications();
-				if (data) {
-					app.rooms[''].challenge(this.battle.farSide.name, data);
-				} else {
-					app.rooms[''].challenge(this.battle.farSide.name, this.battle.tier);
-				}
+				if (data) { app.rooms[''].challenge(this.battle.farSide.name, data); } 
+				else { app.rooms[''].challenge(this.battle.farSide.name, this.battle.tier); }
 				this.close();
 				app.focusRoom('');
 			}, this);
 			app.send('/cmd fullformat ' + this.id);
 		},
-
 		// choice buttons
 		chooseMove: function (pos, e) {
 			if (!this.choice) return;
 			this.tooltips.hideTooltip();
-
 			if (pos !== undefined) { // pos === undefined if called by chooseMoveTarget()
 				var nearActive = this.battle.nearSide.active;
 				var isMega = !!(this.$('input[name=megaevo]')[0] || '').checked;
@@ -1289,11 +1148,9 @@
 				var isUltraBurst = !!(this.$('input[name=ultraburst]')[0] || '').checked;
 				var isDynamax = !!(this.$('input[name=dynamax]')[0] || '').checked;
 				var isTerastal = !!(this.$('input[name=terastallize]')[0] || '').checked;
-
 				var target = e.getAttribute('data-target');
 				var choosableTargets = { normal: 1, any: 1, adjacentAlly: 1, adjacentAllyOrSelf: 1, adjacentFoe: 1 };
 				if (this.battle.gameType === 'freeforall') delete choosableTargets['adjacentAllyOrSelf'];
-
 				this.choice.choices.push('move ' + pos + (isMega ? ' mega' : '') + (isMegaX ? ' megax' : isMegaY ? ' megay' : '') + (isZMove ? ' zmove' : '') + (isUltraBurst ? ' ultra' : '') + (isDynamax ? ' dynamax' : '') + (isTerastal ? ' terastallize' : ''));
 				if (nearActive.length > 1 && target in choosableTargets) {
 					this.choice.type = 'movetarget';
@@ -1302,7 +1159,6 @@
 					return false;
 				}
 			}
-
 			this.endChoice();
 		},
 		chooseMoveTarget: function (posString) {
@@ -1312,7 +1168,6 @@
 		chooseFight: function () {
 			if (!this.choice) return;
 			this.tooltips.hideTooltip();
-
 			// TODO?: change this action
 			this.choice.choices.push('testfight');
 			this.endChoice();
@@ -1320,24 +1175,20 @@
 		chooseShift: function () {
 			if (!this.choice) return;
 			this.tooltips.hideTooltip();
-
 			this.choice.choices.push('shift');
 			this.endChoice();
 		},
 		chooseSwitch: function (pos) {
 			if (!this.choice) return;
 			this.tooltips.hideTooltip();
-
 			if (this.battle.myPokemon[this.choice.choices.length].reviving) {
 				this.choice.choices.push('switch ' + (parseInt(pos, 10) + 1));
 				this.endChoice();
 				return;
 			}
-
 			if (pos !== undefined) { // pos === undefined if called by chooseSwitchTarget()
 				this.choice.switchFlags[pos] = true;
-				if (this.choice.freedomDegrees >= 1) {
-					// Request selection of a Pokémon that will be switched out.
+				if (this.choice.freedomDegrees >= 1) { // Request selection of a Pokémon that will be switched out.
 					this.choice.type = 'switchposition';
 					this.updateControlsForPlayer();
 					return false;
@@ -1348,7 +1199,6 @@
 				this.endChoice();
 				return;
 			}
-
 			// After choosing the position to which a pokemon will switch in (Doubles/Triples end-game).
 			if (!this.request || this.request.requestType !== 'switch') return false; // ??
 			if (this.choice.canSwitch > _.filter(this.choice.choices, function (choice) { return choice; }).length) {
@@ -1357,7 +1207,6 @@
 				this.updateControlsForPlayer();
 				return false;
 			}
-
 			this.endTurn();
 		},
 		chooseSwitchTarget: function (posString) {
@@ -1380,55 +1229,35 @@
 				var temp = this.choice.teamPreview[pos];
 				this.choice.teamPreview[pos] = this.choice.teamPreview[this.choice.done];
 				this.choice.teamPreview[this.choice.done] = temp;
-
 				this.choice.done++;
-
 				if (this.choice.done < Math.min(this.choice.teamPreview.length, this.choice.count)) {
 					this.choice.type = 'team2';
 					this.updateControlsForPlayer();
 					return false;
 				}
-			} else {
-				this.choice.teamPreview = [pos + 1];
-			}
-
+			} else { this.choice.teamPreview = [pos + 1]; }
 			this.endTurn();
 		},
 		chooseDisabled: function (data) {
 			this.tooltips.hideTooltip();
 			data = data.split(',');
-			if (data[1] === 'fainted') {
-				app.addPopupMessage("" + data[0] + " has no energy left to battle!");
-			} else if (data[1] === 'notMine') {
-				app.addPopupMessage("You cannot decide for your partner!");
-			} else if (data[1] === 'trapped') {
-				app.addPopupMessage("You are trapped and cannot select " + data[0] + "!");
-			} else if (data[1] === 'active') {
-				app.addPopupMessage("" + data[0] + " is already in battle!");
-			} else if (data[1] === 'notfainted') {
-				app.addPopupMessage("" + data[0] + " still has energy to battle!");
-			} else {
-				app.addPopupMessage("" + data[0] + " is already selected!");
-			}
+			if (data[1] === 'fainted') { app.addPopupMessage("" + data[0] + " has no energy left to battle!"); } 
+			else if (data[1] === 'notMine') { app.addPopupMessage("You cannot decide for your partner!"); } 
+			else if (data[1] === 'trapped') { app.addPopupMessage("You are trapped and cannot select " + data[0] + "!"); } 
+			else if (data[1] === 'active') { app.addPopupMessage("" + data[0] + " is already in battle!"); } 
+			else if (data[1] === 'notfainted') { app.addPopupMessage("" + data[0] + " still has energy to battle!"); } 
+			else { app.addPopupMessage("" + data[0] + " is already selected!"); }
 		},
 		endChoice: function () {
 			var choiceIndex = this.choice.choices.length - 1;
-			if (!this.nextChoice()) {
-				this.endTurn();
-			} else if (this.request.partial) {
-				for (var i = choiceIndex; i < this.choice.choices.length; i++) {
-					this.sendDecision(this.choice.choices[i]);
-				}
-			}
+			if (!this.nextChoice()) { this.endTurn(); } 
+			else if (this.request.partial) { for (var i = choiceIndex; i < this.choice.choices.length; i++) { this.sendDecision(this.choice.choices[i]); } }
 		},
 		nextChoice: function () {
 			var choices = this.choice.choices;
 			var nearActive = this.battle.nearSide.active;
-
 			if (this.request.requestType === 'switch' && this.request.forceSwitch !== true) {
-				while (choices.length < this.battle.pokemonControlled && !this.request.forceSwitch[choices.length]) {
-					choices.push('pass');
-				}
+				while (choices.length < this.battle.pokemonControlled && !this.request.forceSwitch[choices.length]) { choices.push('pass'); }
 				if (choices.length < this.battle.pokemonControlled) {
 					this.choice.type = 'switch2';
 					this.updateControlsForPlayer();
@@ -1439,58 +1268,38 @@
 				while (
 					choices.length < this.battle.pokemonControlled &&
 					(!nearActive[choices.length] || requestDetails[choices.length].commanding)
-				) {
-					choices.push('pass');
-				}
-
+				) { choices.push('pass'); }
 				if (choices.length < this.battle.pokemonControlled) {
 					this.choice.type = 'move2';
 					this.updateControlsForPlayer();
 					return true;
 				}
 			}
-
 			return false;
 		},
 		endTurn: function () {
 			var act = this.request && this.request.requestType;
 			if (act === 'team') {
-				if (this.choice.teamPreview.length >= 10) {
-					this.sendDecision('team ' + this.choice.teamPreview.join(','));
-				} else {
-					this.sendDecision('team ' + this.choice.teamPreview.join(''));
-				}
+				if (this.choice.teamPreview.length >= 10) { this.sendDecision('team ' + this.choice.teamPreview.join(',')); } 
+				else { this.sendDecision('team ' + this.choice.teamPreview.join('')); }
 			} else {
-				if (act === 'switch') {
-					// Assert that the remaining Pokémon won't switch, even though
-					// the player could have decided otherwise.
-					for (var i = 0; i < this.battle.pokemonControlled; i++) {
-						if (!this.choice.choices[i]) this.choice.choices[i] = 'pass';
-					}
+				if (act === 'switch') { // Assert that the remaining Pokémon won't switch, even though the player could have decided otherwise.
+					for (var i = 0; i < this.battle.pokemonControlled; i++) { if (!this.choice.choices[i]) this.choice.choices[i] = 'pass'; }
 				}
-
-				if (this.choice.choices.length >= (this.choice.count || this.battle.pokemonControlled || this.request.active.length)) {
-					this.sendDecision(this.choice.choices);
-				}
-
+				if (this.choice.choices.length >= (this.choice.count || this.battle.pokemonControlled || this.request.active.length)) { this.sendDecision(this.choice.choices); }
 				if (!this.finalDecision) {
 					var lastChoice = this.choice.choices[this.choice.choices.length - 1];
-					if (lastChoice.substr(0, 5) === 'move ' && this.finalDecisionMove) {
-						this.finalDecisionMove = true;
-					} else if (lastChoice.substr(0, 7) === 'switch' && this.finalDecisionSwitch) {
-						this.finalDecisionSwitch = true;
-					}
+					if (lastChoice.substr(0, 5) === 'move ' && this.finalDecisionMove) { this.finalDecisionMove = true; } 
+					else if (lastChoice.substr(0, 7) === 'switch' && this.finalDecisionSwitch) { this.finalDecisionSwitch = true; }
 				}
 			}
 			this.closeNotification('choice');
-
 			this.choice.waiting = true;
 			this.updateControlsForPlayer();
 		},
 		undoChoice: function (pos) {
 			this.send('/undo');
 			this.notifyRequest();
-
 			this.clearChoice();
 		},
 		clearChoice: function () {
@@ -1524,20 +1333,14 @@
 					title = html.slice(titleStart + 7, titleEnd - 1);
 					var colonIndex = title.indexOf(':');
 					var hyphenIndex = title.lastIndexOf('-');
-					if (hyphenIndex > colonIndex + 2) {
-						title = title.substring(colonIndex + 2, hyphenIndex - 1);
-					} else {
-						title = title.substring(colonIndex + 2);
-					}
+					if (hyphenIndex > colonIndex + 2) { title = title.substring(colonIndex + 2, hyphenIndex - 1); } 
+					else { title = title.substring(colonIndex + 2); }
 				}
 				var index1 = html.indexOf('<script type="text/plain" class="battle-log-data">');
 				var index2 = html.indexOf('<script type="text/plain" class="log">');
 				if (index1 < 0 && index2 < 0) return alert("Unrecognized HTML file: Only replay files are supported.");
-				if (index1 >= 0) {
-					html = html.slice(index1 + 50);
-				} else if (index2 >= 0) {
-					html = html.slice(index2 + 38);
-				}
+				if (index1 >= 0) { html = html.slice(index1 + 50); }
+				else if (index2 >= 0) { html = html.slice(index2 + 38); }
 				var index3 = html.indexOf('</script>');
 				html = html.slice(0, index3);
 				html = html.replace(/\\\//g, '/');
@@ -1547,35 +1350,25 @@
 			reader.readAsText(file);
 		}
 	});
-
 	var ForfeitPopup = this.ForfeitPopup = Popup.extend({
 		type: 'semimodal',
 		initialize: function (data) {
 			this.room = data.room;
 			this.gameType = data.gameType;
 			var buf = '<form><p>';
-			if (this.gameType === 'battle') {
-				buf += 'Forfeiting makes you lose the battle.';
-			} else if (this.gameType === 'help') {
-				buf += 'Leaving the room will close the ticket.';
-			} else if (this.gameType === 'room') {
-				buf += 'Are you sure you want to exit this room?';
-			} else {
-				// game
-				buf += 'Forfeiting makes you lose the game.';
-			}
+			if (this.gameType === 'battle') { buf += 'Forfeiting makes you lose the battle.'; } 
+			else if (this.gameType === 'help') { buf += 'Leaving the room will close the ticket.'; } 
+			else if (this.gameType === 'room') { buf += 'Are you sure you want to exit this room?'; } 
+			else { buf += 'Forfeiting makes you lose the game.'; } // game
 			if (this.gameType === 'help') {
 				buf += ' Are you sure?</p><p><label><input type="checkbox" name="closeroom" checked /> Close room</label></p>';
 				buf += '<p><button type="submit" class="button"><strong>Close ticket</strong></button> ';
-			} else if (this.gameType === 'room') {
-				buf += ' </p><p><button type="submit" name="leaveRoom" class="button"><strong>Close room</strong></button>';
-			} else {
+			} else if (this.gameType === 'room') { buf += ' </p><p><button type="submit" name="leaveRoom" class="button"><strong>Close room</strong></button>'; } 
+			else {
 				buf += ' Are you sure?</p><p><label class="checkbox"><input type="checkbox" name="closeroom" checked /> Close after forfeiting</label></p>';
 				buf += '<p><button type="submit" class="button"><strong>Forfeit</strong></button> ';
 			}
-			if (this.gameType === 'battle' && this.room.battle && !this.room.battle.rated) {
-				buf += '<button type="button" name="replacePlayer" class="button">Replace player</button> ';
-			}
+			if (this.gameType === 'battle' && this.room.battle && !this.room.battle.rated) { buf += '<button type="button" name="replacePlayer" class="button">Replace player</button> '; }
 			buf += '<button type="button" name="close" class="button autofocus">Cancel</button></p></form>';
 			this.$el.html(buf);
 		},
@@ -1593,9 +1386,7 @@
 		submit: function (data) {
 			this.room.send('/forfeit');
 			if (this.gameType === 'battle') this.room.battle.forfeitPending = true;
-			if (this.$('input[name=closeroom]')[0].checked) {
-				app.removeRoom(this.room.id);
-			}
+			if (this.$('input[name=closeroom]')[0].checked) { app.removeRoom(this.room.id); }
 			this.close();
 		},
 		leaveRoom: function (data) {
@@ -1603,7 +1394,6 @@
 			return app.removeRoom(this.room.id);
 		}
 	});
-
 	var BattleOptionsPopup = this.BattleOptionsPopup = Popup.extend({
 		initialize: function (data) {
 			this.battle = data.battle;
@@ -1634,22 +1424,16 @@
 		},
 		toggleHardcoreMode: function (e) {
 			this.room.setHardcoreMode(!!e.currentTarget.checked);
-			if (this.battle.hardcoreMode) {
-				this.battle.add('Hardcore mode ON: Information not available in-game is now hidden.');
-			} else {
-				this.battle.add('Hardcore mode OFF: Information not available in-game is now shown.');
-			}
+			if (this.battle.hardcoreMode) { this.battle.add('Hardcore mode ON: Information not available in-game is now hidden.'); } 
+			else { this.battle.add('Hardcore mode OFF: Information not available in-game is now shown.'); }
 		},
 		toggleIgnoreSpects: function (e) {
 			this.battle.ignoreSpects = !!e.currentTarget.checked;
 			this.battle.add('Spectators ' + (this.battle.ignoreSpects ? '' : 'no longer ') + 'ignored.');
 			var $messages = $('.battle-log').find('.chat').has('small').not(':contains(\u2605), :contains(\u2606)');
 			if (!$messages.length) return;
-			if (this.battle.ignoreSpects) {
-				$messages.hide();
-			} else {
-				$messages.show();
-			}
+			if (this.battle.ignoreSpects) { $messages.hide(); } 
+			else { $messages.show(); }
 		},
 		toggleAllIgnoreSpects: function (e) {
 			var ignoreSpects = !!e.currentTarget.checked;
@@ -1680,19 +1464,13 @@
 				this.room.autoTimerActivated = true;
 			}
 		},
-		toggleRightPanelBattles: function (e) {
-			Storage.prefs('rightpanelbattles', !!e.currentTarget.checked);
-		}
+		toggleRightPanelBattles: function (e) { Storage.prefs('rightpanelbattles', !!e.currentTarget.checked); }
 	});
-
 	var TimerPopup = this.TimerPopup = Popup.extend({
 		initialize: function (data) {
 			this.room = data.room;
-			if (this.room.battle.kickingInactive) {
-				this.$el.html('<p><button name="timerOff"><strong>Stop timer</strong></button></p>');
-			} else {
-				this.$el.html('<p><button name="timerOn"><strong>Start timer</strong></button></p>');
-			}
+			if (this.room.battle.kickingInactive) { this.$el.html('<p><button name="timerOff"><strong>Stop timer</strong></button></p>'); } 
+			else { this.$el.html('<p><button name="timerOn"><strong>Start timer</strong></button></p>'); }
 		},
 		timerOff: function () {
 			this.room.setTimer('off');
@@ -1703,5 +1481,4 @@
 			this.close();
 		}
 	});
-
 }).call(this, jQuery);

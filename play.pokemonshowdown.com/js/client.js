@@ -3,12 +3,9 @@ function toId() {
 	// toId has been renamed toID
 	alert("You have an old extension/script for Pokemon Showdown which is incompatible with this client. It needs to be removed or updated.");
 }
-
 (function ($) {
-
 	Config.sockjsprefix = '/showdown';
 	Config.root = '/';
-
 	if (window.nodewebkit) {
 		window.gui = require('nw.gui');
 		window.nwWindow = gui.Window.get();
@@ -19,7 +16,6 @@ function toId() {
 		window.isiOS = true;
 		$('head').append('<meta name="apple-mobile-web-app-capable" content="yes" />');
 	}
-
 	$(document).on('keydown', function (e) {
 		if (e.keyCode === 27) { // Esc
 			e.preventDefault();
@@ -30,58 +26,39 @@ function toId() {
 	});
 	$(window).on('dragover', function (e) {
 		if (/^text/.test(e.target.type)) return; // Ignore text fields
-
 		e.preventDefault();
 	});
 	$(document).on('dragenter', function (e) {
 		if (/^text/.test(e.target.type)) return; // Ignore text fields
-
 		e.preventDefault();
-
 		if (!app.dragging && app.curRoom.id === 'teambuilder') {
 			var dataTransfer = e.originalEvent.dataTransfer;
 			if (dataTransfer.files && dataTransfer.files[0]) {
 				var file = dataTransfer.files[0];
-				if (file.name.slice(-4) === '.txt') {
-					// Someone dragged in a .txt file, hand it to the teambuilder
-					app.curRoom.defaultDragEnterTeam(e);
-				}
-			} else if (dataTransfer.items && dataTransfer.items[0]) {
-				// no files or no permission to access files
+				if (file.name.slice(-4) === '.txt') { app.curRoom.defaultDragEnterTeam(e); } // Someone dragged in a .txt file, hand it to the teambuilder
+			} else if (dataTransfer.items && dataTransfer.items[0]) { // no files or no permission to access files
 				var item = dataTransfer.items[0];
-				if (item.kind === 'file' && item.type === 'text/plain') {
-					// Someone dragged in a .txt file, hand it to the teambuilder
-					app.curRoom.defaultDragEnterTeam(e);
-				}
+				if (item.kind === 'file' && item.type === 'text/plain') { app.curRoom.defaultDragEnterTeam(e); } // Someone dragged in a .txt file, hand it to the teambuilder
 			}
 		}
-
 		// dropEffect !== 'none' prevents buggy bounce-back animation in
 		// Chrome/Safari/Opera
 		e.originalEvent.dataTransfer.dropEffect = 'move';
 	});
 	$(window).on('drop', function (e) {
 		if (/^text/.test(e.target.type)) return; // Ignore text fields
-
-		// The default team drop action for Firefox is to open the team as a
-		// URL, which needs to be prevented.
-		// The default file drop action for most browsers is to open the file
-		// in the tab, which is generally undesirable anyway.
+		// The default team drop action for Firefox is to open the team as a URL, which needs to be prevented.
+		// The default file drop action for most browsers is to open the file in the tab, which is generally undesirable anyway.
 		e.preventDefault();
 		if (app.dragging && app.draggingRoom) {
 			app.rooms[app.draggingRoom].defaultDropTeam(e);
 		} else if (e.originalEvent.dataTransfer.files && e.originalEvent.dataTransfer.files[0]) {
 			var file = e.originalEvent.dataTransfer.files[0];
-			if (file.name.slice(-4) === '.txt' && app.curRoom.id === 'teambuilder') {
-				// Someone dragged in a .txt file, hand it to the teambuilder
+			if (file.name.slice(-4) === '.txt' && app.curRoom.id === 'teambuilder') { // Someone dragged in a .txt file, hand it to the teambuilder
 				app.curRoom.defaultDragEnterTeam(e);
 				app.curRoom.defaultDropTeam(e);
-			} else if (file.type && file.type.substr(0, 6) === 'image/') {
-				// It's an image file, try to set it as a background
-				CustomBackgroundPopup.readFile(file);
-			} else if (file.type && file.type === 'text/html') {
-				BattleRoom.readReplayFile(file);
-			}
+			} else if (file.type && file.type.substr(0, 6) === 'image/') { CustomBackgroundPopup.readFile(file); } // It's an image file, try to set it as a background
+			else if (file.type && file.type === 'text/html') { BattleRoom.readReplayFile(file); }
 		}
 	});
 	if (window.nodewebkit) {
@@ -90,55 +67,38 @@ function toId() {
 			var target = e.target;
 			var isEditable = (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT');
 			var menu = new gui.Menu();
-
 			if (isEditable) menu.append(new gui.MenuItem({
 				label: "Cut",
-				click: function () {
-					document.execCommand("cut");
-				}
+				click: function () { document.execCommand("cut"); }
 			}));
 			var link = $(target).closest('a')[0];
 			if (link) menu.append(new gui.MenuItem({
 				label: "Copy Link URL",
-				click: function () {
-					gui.Clipboard.get().set(link.href);
-				}
+				click: function () { gui.Clipboard.get().set(link.href); }
 			}));
 			if (target.tagName === 'IMG') menu.append(new gui.MenuItem({
 				label: "Copy Image URL",
-				click: function () {
-					gui.Clipboard.get().set(target.src);
-				}
+				click: function () { gui.Clipboard.get().set(target.src); }
 			}));
 			menu.append(new gui.MenuItem({
 				label: "Copy",
-				click: function () {
-					document.execCommand("copy");
-				}
+				click: function () { document.execCommand("copy"); }
 			}));
 			if (isEditable) menu.append(new gui.MenuItem({
 				label: "Paste",
 				enabled: !!gui.Clipboard.get().get(),
-				click: function () {
-					document.execCommand("paste");
-				}
+				click: function () { document.execCommand("paste"); }
 			}));
-
 			menu.popup(e.originalEvent.x, e.originalEvent.y);
 		});
 	}
-
 	// support Safari 6 notifications
-	if (!window.Notification && window.webkitNotification) {
-		window.Notification = window.webkitNotification;
-	}
-
+	if (!window.Notification && window.webkitNotification) { window.Notification = window.webkitNotification; }
 	// this is called being lazy
 	window.selectTab = function (tab) {
 		app.tryJoinRoom(tab);
 		return false;
 	};
-
 	var User = this.User = Backbone.Model.extend({
 		defaults: {
 			name: '',
@@ -152,41 +112,25 @@ function toId() {
 		},
 		initialize: function () {
 			app.addGlobalListeners();
-			app.on('response:userdetails', function (data) {
-				if (data.userid === this.get('userid')) {
-					this.set('avatar', '' + data.avatar);
-				}
-			}, this);
+			app.on('response:userdetails', function (data) { if (data.userid === this.get('userid')) { this.set('avatar', '' + data.avatar); } }, this);
 			var self = this;
 			this.on('change:name', function () {
-				if (!self.get('named')) {
-					self.nameRegExp = null;
-				} else {
+				if (!self.get('named')) { self.nameRegExp = null; } 
+				else {
 					var escaped = self.get('name').replace(/[^A-Za-z0-9]+$/, '');
 					// we'll use `,` as a sentinel character to mean "any non-alphanumeric char"
 					// unicode characters can be replaced with any non-alphanumeric char
-					for (var i = escaped.length - 1; i > 0; i--) {
-						if (/[^\ -\~]/.test(escaped[i])) {
-							escaped = escaped.slice(0, i) + ',' + escaped.slice(i + 1);
-						}
-					}
+					for (var i = escaped.length - 1; i > 0; i--) { if (/[^\ -\~]/.test(escaped[i])) { escaped = escaped.slice(0, i) + ',' + escaped.slice(i + 1); } }
 					escaped = escaped.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
 					escaped = escaped.replace(/,/g, "[^A-Za-z0-9]?");
 					self.nameRegExp = new RegExp('(?:\\b|(?!\\w))' + escaped + '(?:\\b|\\B(?!\\w))', 'i');
 				}
 			});
-			this.on('change:settings', function () {
-				Storage.prefs('serversettings', self.get('settings'));
-			});
-
+			this.on('change:settings', function () { Storage.prefs('serversettings', self.get('settings')); });
 			var replaceList = { 'A': 'ＡⱯȺ', 'B': 'ＢƂƁɃ', 'C': 'ＣꜾȻ', 'D': 'ＤĐƋƊƉꝹ', 'E': 'ＥƐƎ', 'F': 'ＦƑꝻ', 'G': 'ＧꞠꝽꝾ', 'H': 'ＨĦⱧⱵꞍ', 'I': 'ＩƗ', 'J': 'ＪɈ', 'K': 'ＫꞢ', 'L': 'ＬꝆꞀ', 'M': 'ＭⱮƜ', 'N': 'ＮȠƝꞐꞤ', 'O': 'ＯǪǬØǾƆƟꝊꝌ', 'P': 'ＰƤⱣꝐꝒꝔ', 'Q': 'ＱꝖꝘɊ', 'R': 'ＲɌⱤꝚꞦꞂ', 'S': 'ＳẞꞨꞄ', 'T': 'ＴŦƬƮȾꞆ', 'U': 'ＵɄ', 'V': 'ＶƲꝞɅ', 'W': 'ＷⱲ', 'X': 'Ｘ', 'Y': 'ＹɎỾ', 'Z': 'ＺƵȤⱿⱫꝢ', 'a': 'ａąⱥɐ', 'b': 'ｂƀƃɓ', 'c': 'ｃȼꜿↄ', 'd': 'ｄđƌɖɗꝺ', 'e': 'ｅɇɛǝ', 'f': 'ｆḟƒꝼ', 'g': 'ｇɠꞡᵹꝿ', 'h': 'ｈħⱨⱶɥ', 'i': 'ｉɨı', 'j': 'ｊɉ', 'k': 'ｋƙⱪꝁꝃꝅꞣ', 'l': 'ｌſłƚɫⱡꝉꞁꝇ', 'm': 'ｍɱɯ', 'n': 'ｎƞɲŉꞑꞥ', 'o': 'ｏǫǭøǿɔꝋꝍɵ', 'p': 'ｐƥᵽꝑꝓꝕ', 'q': 'ｑɋꝗꝙ', 'r': 'ｒɍɽꝛꞧꞃ', 's': 'ｓꞩꞅẛ', 't': 'ｔŧƭʈⱦꞇ', 'u': 'ｕưừứữửựųṷṵʉ', 'v': 'ｖʋꝟʌ', 'w': 'ｗⱳ', 'x': 'ｘ', 'y': 'ｙɏỿ', 'z': 'ｚƶȥɀⱬꝣ', 'AA': 'Ꜳ', 'AE': 'ÆǼǢ', 'AO': 'Ꜵ', 'AU': 'Ꜷ', 'AV': 'ꜸꜺ', 'AY': 'Ꜽ', 'DZ': 'ǱǄ', 'Dz': 'ǲǅ', 'LJ': 'Ǉ', 'Lj': 'ǈ', 'NJ': 'Ǌ', 'Nj': 'ǋ', 'OI': 'Ƣ', 'OO': 'Ꝏ', 'OU': 'Ȣ', 'TZ': 'Ꜩ', 'VY': 'Ꝡ', 'aa': 'ꜳ', 'ae': 'æǽǣ', 'ao': 'ꜵ', 'au': 'ꜷ', 'av': 'ꜹꜻ', 'ay': 'ꜽ', 'dz': 'ǳǆ', 'hv': 'ƕ', 'lj': 'ǉ', 'nj': 'ǌ', 'oi': 'ƣ', 'ou': 'ȣ', 'oo': 'ꝏ', 'ss': 'ß', 'tz': 'ꜩ', 'vy': 'ꝡ' };
 			var normalizeList = { 'A': 'ÀÁÂẦẤẪẨÃĀĂẰẮẴẲȦǠÄǞẢÅǺǍȀȂẠẬẶḀĄ', 'B': 'ḂḄḆ', 'C': 'ĆĈĊČÇḈƇ', 'D': 'ḊĎḌḐḒḎ', 'E': 'ÈÉÊỀẾỄỂẼĒḔḖĔĖËẺĚȄȆẸỆȨḜĘḘḚ', 'F': 'Ḟ', 'G': 'ǴĜḠĞĠǦĢǤƓ', 'H': 'ĤḢḦȞḤḨḪ', 'I': 'ÌÍÎĨĪĬİÏḮỈǏȈȊỊĮḬ', 'J': 'Ĵ', 'K': 'ḰǨḲĶḴƘⱩꝀꝂꝄ', 'L': 'ĿĹĽḶḸĻḼḺŁȽⱢⱠꝈ', 'M': 'ḾṀṂ', 'N': 'ǸŃÑṄŇṆŅṊṈ', 'O': 'ÒÓÔỒỐỖỔÕṌȬṎŌṐṒŎȮȰÖȪỎŐǑȌȎƠỜỚỠỞỢỌỘ', 'P': 'ṔṖ', 'Q': '', 'R': 'ŔṘŘȐȒṚṜŖṞ', 'S': 'ŚṤŜṠŠṦṢṨȘŞⱾ', 'T': 'ṪŤṬȚŢṰṮ', 'U': 'ÙÚÛŨṸŪṺŬÜǛǗǕǙỦŮŰǓȔȖƯỪỨỮỬỰỤṲŲṶṴ', 'V': 'ṼṾ', 'W': 'ẀẂŴẆẄẈ', 'X': 'ẊẌ', 'Y': 'ỲÝŶỸȲẎŸỶỴƳ', 'Z': 'ŹẐŻŽẒẔ', 'a': 'ẚàáâầấẫẩãāăằắẵẳȧǡäǟảåǻǎȁȃạậặḁ', 'b': 'ḃḅḇ', 'c': 'ćĉċčçḉƈ', 'd': 'ḋďḍḑḓḏ', 'e': 'èéêềếễểẽēḕḗĕėëẻěȅȇẹệȩḝęḙḛ', 'f': '', 'g': 'ǵĝḡğġǧģǥ', 'h': 'ĥḣḧȟḥḩḫẖ', 'i': 'ìíîĩīĭïḯỉǐȉȋịįḭ', 'j': 'ĵǰ', 'k': 'ḱǩḳķḵ', 'l': 'ŀĺľḷḹļḽḻ', 'm': 'ḿṁṃ', 'n': 'ǹńñṅňṇņṋṉ', 'o': 'òóôồốỗổõṍȭṏōṑṓŏȯȱöȫỏőǒȍȏơờớỡởợọộ', 'p': 'ṕṗ', 'q': '', 'r': 'ŕṙřȑȓṛṝŗṟ', 's': 'śṥŝṡšṧṣṩșşȿ', 't': 'ṫẗťṭțţṱṯ', 'u': 'ùúûũṹūṻŭüǜǘǖǚủůűǔȕȗụṳ', 'v': 'ṽṿ', 'w': 'ẁẃŵẇẅẘẉ', 'x': 'ẋẍ', 'y': 'ỳýŷỹȳẏÿỷẙỵƴ', 'z': 'źẑżžẓẕ' };
-			for (var i in replaceList) {
-				replaceList[i] = new RegExp('[' + replaceList[i] + ']', 'g');
-			}
-			for (var i in normalizeList) {
-				normalizeList[i] = new RegExp('[' + normalizeList[i] + ']', 'g');
-			}
+			for (var i in replaceList) { replaceList[i] = new RegExp('[' + replaceList[i] + ']', 'g'); }
+			for (var i in normalizeList) { normalizeList[i] = new RegExp('[' + normalizeList[i] + ']', 'g'); }
 			this.replaceList = replaceList;
 			this.normalizeList = normalizeList;
 		},
@@ -218,12 +162,8 @@ function toId() {
 		 */
 		getActionPHP: function () {
 			var ret = '/~~' + Config.server.id + '/action.php';
-			if (Config.testclient) {
-				ret = 'https://' + Config.routes.client + ret;
-			}
-			return (this.getActionPHP = function () {
-				return ret;
-			})();
+			if (Config.testclient) { ret = 'https://' + Config.routes.client + ret; }
+			return (this.getActionPHP = function () { return ret; })();
 		},
 		/**
 		 * Process a signed assertion returned from the login server.
@@ -239,8 +179,7 @@ function toId() {
 		 *     triggered if the login server did not return a response
 		 */
 		finishRename: function (name, assertion) {
-			if (assertion.slice(0, 14).toLowerCase() === '<!doctype html') {
-				// some sort of MitM proxy; ignore it
+			if (assertion.slice(0, 14).toLowerCase() === '<!doctype html') { // some sort of MitM proxy; ignore it
 				var endIndex = assertion.indexOf('>');
 				if (endIndex > 0) assertion = assertion.slice(endIndex + 1);
 			}
@@ -250,15 +189,11 @@ function toId() {
 				app.addPopupMessage("Something is interfering with our connection to the login server. Most likely, your internet provider needs you to re-log-in, or your internet provider is blocking Pokémon Showdown.");
 				return;
 			}
-			if (assertion === ';') {
-				this.trigger('login:authrequired', name);
-			} else if (assertion === ';;@gmail') {
-				this.trigger('login:authrequired', name, '@gmail');
-			} else if (assertion.substr(0, 2) === ';;') {
-				this.trigger('login:invalidname', name, assertion.substr(2));
-			} else if (assertion.indexOf('\n') >= 0 || !assertion) {
-				app.addPopupMessage("Something is interfering with our connection to the login server.");
-			} else {
+			if (assertion === ';') { this.trigger('login:authrequired', name); } 
+			else if (assertion === ';;@gmail') { this.trigger('login:authrequired', name, '@gmail'); } 
+			else if (assertion.substr(0, 2) === ';;') { this.trigger('login:invalidname', name, assertion.substr(2)); } 
+			else if (assertion.indexOf('\n') >= 0 || !assertion) { app.addPopupMessage("Something is interfering with our connection to the login server."); } 
+			else {
 				app.trigger('loggedin');
 				app.send('/trn ' + name + ',0,' + assertion);
 			}
@@ -274,18 +209,13 @@ function toId() {
 		rename: function (name) {
 			// | , ; are not valid characters in names
 			name = name.replace(/[\|,;]+/g, '');
-			for (var i in this.replaceList) {
-				name = name.replace(this.replaceList[i], i);
-			}
-			for (var i in this.normalizeList) {
-				name = name.replace(this.normalizeList[i], i);
-			}
+			for (var i in this.replaceList) { name = name.replace(this.replaceList[i], i); }
+			for (var i in this.normalizeList) { name = name.replace(this.normalizeList[i], i); }
 			var userid = toUserid(name);
 			if (!userid) {
 				app.addPopupMessage("Usernames must contain at least one letter.");
 				return;
 			}
-
 			if (this.get('userid') !== userid) {
 				var self = this;
 				$.post(this.getActionPHP(), {
