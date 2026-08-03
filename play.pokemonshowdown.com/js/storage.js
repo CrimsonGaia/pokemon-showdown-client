@@ -393,7 +393,24 @@ Storage.initTestClient = function () {
 	if (typeof POKEMON_SHOWDOWN_TESTCLIENT_KEY === 'string') { sid = POKEMON_SHOWDOWN_TESTCLIENT_KEY.replace(/\%2C/g, ','); }
 	Storage.whenAppLoaded(function (app) {
 		var get = $.get;
+		var post = $.post;
+		var isLocalProxyUri = function (uri) {
+			if (typeof uri !== 'string') return false;
+			if (uri.indexOf(Dex.resourcePrefix + '~~') === 0) return true;
+			if (uri.indexOf('/~~') === 0) return true;
+			var hostPath = '://' + location.host + '/~~';
+			return uri.indexOf(hostPath) !== -1;
+		};
+		var isLocalTestclientKeyUri = function (uri) {
+			if (typeof uri !== 'string') return false;
+			var keyPath = 'config/testclient-key.js';
+			if (uri.indexOf(keyPath, uri.length - keyPath.length) !== -1) return true;
+			return false;
+		};
 		$.get = function (uri, data, callback, type) {
+			if (isLocalTestclientKeyUri(uri)) {
+				return get(uri, data, callback, type);
+			}
 			if (type === 'html') { uri += '&testclient'; }
 			if (data) {
 				uri += '?testclient';
@@ -401,23 +418,37 @@ Storage.initTestClient = function () {
 			}
 			if (uri[0] === '/') { uri = Dex.resourcePrefix + uri.substr(1); } // relative URI
 			if (sid) {
+				data = data || {};
 				data.sid = sid;
-				get(uri, data, callback, type);
-			} else { app.addPopup(ProxyPopup, { uri: uri, callback: callback }); }
+				return get(uri, data, callback, type);
+			} else if (isLocalProxyUri(uri)) {
+				return get(uri, data, callback, type);
+			} else {
+				return app.addPopup(ProxyPopup, { uri: uri, callback: callback });
+			}
 		};
-		var post = $.post;
 		$.post = function (uri, data, callback, type) {
 			if (type === 'html') { uri += '&testclient'; }
-			if (uri[0] === '/') {  uri = Dex.resourcePrefix + uri.substr(1); } // relative URI
+			if (uri[0] === '/') { uri = Dex.resourcePrefix + uri.substr(1); } // relative URI
 			if (sid) {
+				data = data || {};
 				data.sid = sid;
 				post(uri, data, callback, type);
+			} else if (isLocalProxyUri(uri)) {
+				post(uri, data, callback, type);
 			} else {
-				var src = '<!DOCTYPE html><html><body><form action="' + BattleLog.escapeHTML(uri) + '" method="POST">';
-				src += '<input type="hidden" name="testclient">';
-				for (var i in data) { src += '<input type=hidden name="' + i + '" value="' + BattleLog.escapeHTML(data[i]) + '">'; }
-				src += '<input type=submit value="Please click this button first."></form></body></html>';
-				app.addPopup(ProxyPopup, { uri: "data:text/html;charset=UTF-8," + encodeURIComponent(src), callback: callback });
+				var configUrl = Dex.resourcePrefix + 'config/testclient-key.js';
+				$.getScript(configUrl).done(function () {
+					if (typeof POKEMON_SHOWDOWN_TESTCLIENT_KEY === 'string') {
+						sid = POKEMON_SHOWDOWN_TESTCLIENT_KEY.replace(/\%2C/g, ',');
+						data.sid = sid;
+						post(uri, data, callback, type);
+					} else {
+						app.addPopup(ProxyPopup, { uri: uri, callback: callback });
+					}
+				}).fail(function () {
+					app.addPopup(ProxyPopup, { uri: uri, callback: callback });
+				});
 			}
 		};
 		Storage.whenPrefsLoaded.load();
