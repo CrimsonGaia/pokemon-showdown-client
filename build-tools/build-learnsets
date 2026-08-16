@@ -88,6 +88,7 @@ try {
 }
 // update learnsets-g6
 process.stdout.write("Updating file `data/learnsets-g6`... ");
+const learnsetsStartTime = Date.now();
 let learnsetsStats;
 let learnsetsG6Stats;
 let learnsetsG6ToUpdate = true;
@@ -118,6 +119,6 @@ if (learnsetsG6ToUpdate && (
 			let stack = err.stack || '';
 			stack = "File `data/learnsets-g6` failed to update.\n" + stack;
 			console.error(stack);
-		} else { console.log("DONE"); }
+		} else { console.log(`DONE in ${((Date.now() - learnsetsStartTime) / 1000).toFixed(1)}s`); }
 	});
 } else { console.log("CACHED"); }

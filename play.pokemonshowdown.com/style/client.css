@@ -436,7 +436,7 @@ body .mainmenuwrapper > .ps-room:nth-child(even) {
 .ps-overlay .ps-popup {
 	position: static;
 	margin: 80px auto 20px auto;
-	max-width: 320px;
+	max-width: 400px;
 }
 .ps-popup p {
 	margin: 4px 0;
@@ -535,7 +535,7 @@ p.or:after {
 	box-shadow: inset 0px 1px 2px #D2D2D2, 0px 0px 5px #2266AA;
 }
 .select.teamselect {
-	height: 50px;
+	height: 82px;
 	white-space: nowrap;
 	overflow: hidden;
 }
@@ -554,6 +554,11 @@ p.or:after {
 .teamselect small {
 	margin: -1px 0 0 -3px;
 	display: block;
+	width: 185px;
+	position: relative;
+    left: 10px;
+    top: 4px;
+	white-space: normal;
 }
 .teamselect small .picon {
 	margin: 0 -3px;
@@ -1651,7 +1656,7 @@ p.or:after {
 .guardbutton {
 	float: right;
 	width: 56px;
-	height: 36px;
+	height: 24px;
 	position: relative;
 	overflow: hidden;
 	padding: 0;
@@ -1710,8 +1715,7 @@ p.or:after {
 .guardbutton .guard-count {
 	position: absolute;
 	top: 4px;
-	left: 0;
-	right: 0;
+	right: 26px;
 	z-index: 2;
 	font-size: 10px;
 	font-weight: bold;
@@ -1733,6 +1737,8 @@ p.or:after {
 }
 .guardbutton.ready .guard-icon {
 	opacity: 1;
+	top: 2px;
+	left: 26px;
 }
 .guardbutton.ready .guard-count {
 	display: none;
@@ -2484,9 +2490,6 @@ p.or:after {
 .setcol-affinity {
 	width: 170px;
 }
-.setcell {
-	float: left;
-}
 .setcell-details {
 	float: none;
 }
@@ -2495,8 +2498,8 @@ p.or:after {
 }
 .setcol-details .itemicon {
 	display: block;
-	width: 24px;
-	height: 24px;
+	width: 36px;
+	height: 36px;
 	background-image: transparent none no-repeat scroll center center;
 	opacity: 0.8;
 }
@@ -3292,8 +3295,8 @@ p.or:after {
 	position: absolute;
 	left: 6px;
 	top: 6px;
-	width: 24px;
-	height: 24px;
+	width: 32px;
+	height: 32px;
 }
 
 .itemrow .itemnamecol {
@@ -3461,16 +3464,16 @@ p.or:after {
 }
 
 .itemiconcol {
-	width: 26px;
-	min-width: 26px;
+	width: 32px;
+	min-width: 32px;
 	text-align: center;
 	vertical-align: middle;
 }
 
 .itemrow-icon {
 	display: inline-block;
-	width: 24px;
-	height: 24px;
+	width: 48px;
+	height: 48px;
 	background-repeat: no-repeat;
 	background-position: center center;
 	opacity: 1;
@@ -3840,6 +3843,26 @@ p.or:after {
 	background: #b7d4f5;
 }
 
+/* mega popup */
+.mega-stat:nth-child(1) {
+	background: #b7d78a;
+}
+.mega-stat:nth-child(2) {
+	background: #e9a2a2;
+}
+.mega-stat:nth-child(3) {
+	background: #e8c18d;
+}
+.mega-stat:nth-child(4) {
+	background: #e3b6e9;
+}
+.mega-stat:nth-child(5) {
+	background: #c6b2e6;
+}
+.mega-stat:nth-child(6) {
+	background: #b7d4f5;
+}
+
 /*Item Grid View*/
 
 
@@ -3903,7 +3926,7 @@ p.or:after {
 	gap: 1px;
 	margin-bottom: 3px;
 	align-content: start;
-	padding-right: 26px;
+	padding-right: 38px;
 	box-sizing: border-box;
 }
 
@@ -3919,7 +3942,7 @@ p.or:after {
 
 .utilichart.item-grid-view > li.result.item-grid-card > a {
 	display: block;
-	width: 100%;
+	width: 97%;
 	height: auto !important;
 	min-height: 0 !important;
 	margin: 0 !important;
@@ -3961,25 +3984,25 @@ p.or:after {
 	overflow: visible !important;
 }
 .item-grid-top {
-	margin-bottom: 3px;
+	margin-bottom: 6px;
 	padding-right: 26px;
 }
 
 .item-grid-icon {
 	position: absolute;
-	top: 3px;
-	right: 2px;
+	top: -10px;
+	right: -4px;
 	display: flex;
 	align-items: flex-start;
 	justify-content: flex-end;
-	width: 24px;
-	height: 24px;
+	width: 48px;
+	height: 48px;
 	pointer-events: none;
 }
 
 .item-grid-name {
 	font-weight: bold;
-	font-size: 12px;
+	font-size: 13px;
 	line-height: 1.2;
 	margin: 0;
 	overflow: hidden;
@@ -4034,4 +4057,67 @@ p.or:after {
 		rgba(140, 110, 20, 0.86) 100%
 	);
 	color: #000000;
+}
+
+.mega-sidebar {
+    width: 190px;
+    border-left: 1px solid #ccc;
+    display: flex;
+    flex-direction: column;
+}
+
+.mega-stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 2px 0;
+    font-size: 11px;
+}
+
+.mega-stat-label {
+    width: 26px;
+    font-weight: bold;
+}
+
+.mega-stat-base,
+.mega-stat-mega {
+    width: 28px;
+    text-align: center;
+}
+
+.mega-stat-arrow {
+    width: 16px;
+    text-align: center;
+    color: #777;
+}
+
+.mega-ability {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #ddd;
+}
+
+.mega-ability-label {
+    font-size: 10px;
+    color: #777;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.mega-ability-name {
+    font-weight: bold;
+}
+
+.ps-overlay .ps-popup.mega-popup {
+    max-width: 95vw;
+}
+
+.ps-overlay .ps-popup.type-popup {
+    max-width: 95vw;
+    width: 860px;
+}
+.typechart-icon-wrap img {
+    width: 100%;
+    height: 100%;
+    display: block;
 }

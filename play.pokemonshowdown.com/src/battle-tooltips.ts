@@ -263,17 +263,9 @@ export class BattleTooltips {
 		let buf: string;
 		switch (type) {
 		case 'move':
-		case 'zmove':
-		case 'maxmove': { // move|MOVE|ACTIVEPOKEMON|[GMAXMOVE]
-			let move = this.battle.dex.moves.get(args[1]);
-			let teamIndex = parseInt(args[2], 10);
-			let pokemon = this.battle.nearSide.active[teamIndex + this.battle.pokemonControlled * Math.floor(this.battle.mySide.n / 2)];
-			let gmaxMove = args[3] ? this.battle.dex.moves.get(args[3]) : undefined;
-			if (!pokemon) return false;
-			let serverPokemon = this.battle.myPokemon![teamIndex];
-			buf = this.showMoveTooltip(move, type, pokemon, serverPokemon, gmaxMove);
+		case 'guardactioninfo':
+			buf = this.showGuardActionTooltip();
 			break;
-		}
 		case 'guardaction': { // guardaction|MOVEID|ACTIVEPOKEMON|CUR|MAX
 			let move = this.battle.dex.moves.get(args[1]);
 			let teamIndex = parseInt(args[2], 10);
@@ -282,7 +274,7 @@ export class BattleTooltips {
 			let serverPokemon = this.battle.myPokemon![teamIndex];
 			let cur = parseInt(args[3], 10) || 0;
 			let max = parseInt(args[4], 10) || 0;
-			buf = this.showGuardActionTooltip(move, pokemon, serverPokemon, cur, max);
+			buf = this.showGuardActionCDTooltip(move, pokemon, serverPokemon, cur, max);
 			break;
 		}
 		case 'pokemon': { // pokemon|SIDE|POKEMON
@@ -552,7 +544,17 @@ export class BattleTooltips {
 		}
 		return text;
 	}
-	showGuardActionTooltip(move: Dex.Move, pokemon: Pokemon, serverPokemon: ServerPokemon, cur: number, max: number) {
+	showGuardActionTooltip() {
+		return `
+			<p>New Battle Option [like moves, switch, bag, run]</p>
+			<p>Each available move has their own Guard Action cooldown, which only goes down if the user acts during a turn.<br>
+			For example, if you switch, or get flinched, your Guard Action cooldown will not go down</p>
+			<p><strong>GUARD ACTION DOES NOT GET COPIED WHEN TRANSFORMED</strong>, but can be changed by forme changes</p>
+			<p>Some abilities, items, and move effects can forcibly change your Guard Action, or upgrade specific Guard Actions. The priority goes as such: ITEM -&gt; DEBUFFS -&gt; BUFFS -&gt; ABILITY 1 -&gt; ABILITY 2</p>
+			<p>Guard Action is stored on the pokemon so unless the effect is volatile it will stick for the rest of the battle</p>
+		`;
+	}
+	showGuardActionCDTooltip(move: Dex.Move, pokemon: Pokemon, serverPokemon: ServerPokemon, cur: number, max: number) {
 		const remaining = Math.max(0, max - cur);
 		const cooldownText = cur >= max ?
 			`Guard Action Cooldown: Ready` :
@@ -1015,14 +1017,10 @@ export class BattleTooltips {
 			// Transformed move
 			move = this.battle.dex.moves.get(moveName.substr(1));
 			maxpp = 5;
-		} else {
-			move = this.battle.dex.moves.get(moveName);
-			maxpp = (move.pp === 1 || move.noPPBoosts ? move.pp : move.pp * 8 / 5);
-			if (this.battle.gen < 3) maxpp = Math.min(61, maxpp);
-		}
+		} else { move = this.battle.dex.moves.get(moveName); }
 		const bullet = moveName.startsWith('*')? '<span style="color:#888">&#8226;</span>' : '&#8226;';
-		if (ppUsed === Infinity) { return `${bullet} ${move.name} <small>(0/${maxpp})</small>`; }
-		if (ppUsed || moveName.startsWith('*')) { return `${bullet} ${move.name} <small>(${maxpp - ppUsed}/${maxpp})</small>`; }
+		if (ppUsed === Infinity) { return `${bullet} ${move.name} <small>(0/${move.pp})</small>`; }
+		if (ppUsed || moveName.startsWith('*')) { return `${bullet} ${move.name} <small>(${move.pp - ppUsed}/${move.pp})</small>`; }
 		return `${bullet} ${move.name} ${showKnown ? ' <small>(revealed)</small>' : ''}`;
 	}
 	ppUsed(move: Dex.Move, pokemon: Pokemon) {
@@ -1182,9 +1180,7 @@ export class BattleTooltips {
 				}
 				if (value.abilityModify(0, 'Normalize')) moveType = 'Normal';
 			}
-			// There aren't any max moves with the sound flag, but if there were, Liquid Voice would make them water type
-			const isSound = !!(forMaxMove ? this.getMaxMoveFromType(moveType, forMaxMove !== true && forMaxMove || undefined) : move).flags['sound'];
-			if (isSound && value.abilityModify(0, 'Liquid Voice')) { moveType = 'Water'; }
+			if (move.flags['sound'] && value.abilityModify(0, 'Liquid Voice')) { moveType = 'Water'; }
 		}
 		if (move.id === 'photongeyser' || move.id === 'lightthatburnsthesky' ||
 			(move.id === 'terablast' && pokemon.terastallized) ||

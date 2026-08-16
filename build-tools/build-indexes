@@ -7,31 +7,14 @@ const rootDir = path.resolve(__dirname, '..');
 const SERVER_PATH = path.resolve(rootDir, '../pokemon-showdown');
 process.chdir(rootDir);
 if (!fs.existsSync(SERVER_PATH)) { throw new Error(`Local pokemon-showdown server not found.\nExpected at: ${SERVER_PATH}`); }
+const buildStartTime = Date.now();
 process.stdout.write("Using local pokemon-showdown server... ");
+const serverBuildStartTime = Date.now();
 child_process.execSync('npm run build', {
   cwd: SERVER_PATH,
   stdio: 'inherit',
 });
-console.log("DONE");
-//loadmod data
-function loadModData(relPath, kind) {
-  let mod;
-  try { mod = requireServer(relPath); } 
-  catch {  return null; }
-  if (!mod) return null;
-  switch (kind) {
-    case 'abilities':
-      return mod.BattleAbilities || mod.Abilities || mod.default || null;
-    case 'abilitiesText':
-      return mod.AbilitiesText || mod.default || mod || null;
-    case 'moves':
-      return mod.BattleMovedex || mod.Moves || mod.default || null;
-    case 'movesText':
-      return mod.MovesText || mod.default || mod || null;
-    default:
-      throw new Error(`Unknown mod data kind: ${kind}`);
-  }
-}
+console.log(`DONE (server build took ${((Date.now() - serverBuildStartTime) / 1000).toFixed(1)}s)`);
 const Dex = require(path.join(SERVER_PATH, 'dist/sim/dex')).Dex;
 const CompoundWordNames =
 require(path.join(SERVER_PATH, 'dist/data/aliases')).CompoundWordNames;
@@ -57,7 +40,6 @@ function requireNoCache(...args) {
 //region Overlay helpers
 const CLIENT_DATA_DIR = path.join(rootDir, 'play.pokemonshowdown.com', 'data');
 const MOD_ID = 'gen9indigostarstorm';
-const MOD_OUT_DIR = path.join(CLIENT_DATA_DIR, 'mods', MOD_ID);
 function ensureDir(dir) { fs.mkdirSync(dir, {recursive: true}); }
 function pickExport(mod, keys) {
 	for (const k of keys) { if (mod && mod[k] && typeof mod[k] === 'object') return mod[k]; }
@@ -71,54 +53,11 @@ function writeBattleExport(outPath, exportName, data) {
 	ensureDir(path.dirname(outPath));
 	fs.writeFileSync(outPath, buf);
 }
-function writeBattleModData(outPath, modid, key, data) {
-	if (!data || typeof data !== 'object') { throw new Error(`Refusing to write ${outPath}: mod export ${modid}.${key} is not an object`); }
-	const buf =
-    `exports.BattleModData = exports.BattleModData || Object.create(null);\n` +
-    `exports.BattleModData['${modid}'] = exports.BattleModData['${modid}'] || Object.create(null);\n` +
-    `exports.BattleModData['${modid}']['${key}'] = ` + es3stringify(data) + `;\n`;
-  if (!buf || buf.includes('undefined')) { throw new Error(`Serialization failed for ${outPath} (BattleModData['${modid}']['${key}'])`); }
-  ensureDir(path.dirname(outPath));
-  fs.writeFileSync(outPath, buf);
-}
 function cloneObjTable(src) {
   const out = {};
   for (const id in src) out[id] = {...src[id]};
   return out;
 }
-/**
- * Build a "patch" table for a mod: includes
- * - brand new entries (not in base)
- * - entries whose selected keys differ (or full compare if keys=null)
- */
-function buildPatchTable(baseTable, modTable, keys = null) {
-  const patch = {};
-  for (const id in modTable) {
-    const m = modTable[id];
-    const b = baseTable[id];
-    if (!b || id === 'silverpowder' || id === 'corrosiveshot' || id === 'mudslide' || id === 'rootburst') { patch[id] = {...m}; continue; }
-    if (!keys) {
-      if (JSON.stringify(m) !== JSON.stringify(b)) patch[id] = {...m};
-      continue;
-    }
-    let changed = false;
-    const diff = {};
-    for (const k of keys) {
-      if (JSON.stringify(m[k]) !== JSON.stringify(b[k])) {
-        diff[k] = m[k];
-        changed = true;
-      }
-    }
-    if (changed) patch[id] = diff;
-  }
-  return patch;
-}
-// Load custom mod data for search index
-process.stdout.write("Loading custom mod data... ");
-const modMoves = loadModData('dist/data/mods/gen9indigostarstorm/moves.js', 'moves');
-const modItemsData =requireNoCache(path.join(SERVER_PATH,'dist/data/mods/gen9indigostarstorm/items.js')).Items;
-console.log("DONE");
-console.log(`Loaded ${Object.keys(modItemsData).length} items from mod data`);
 // Load item text descriptions
 process.stdout.write("Loading item text descriptions... ");
 const ItemsText = requireNoCache(path.join(SERVER_PATH,'dist/data/text/items.js')).ItemsText;
@@ -130,10 +69,8 @@ console.log(`Merged descriptions for ${Object.keys(ItemsText).length} items`);
 {
 	process.stdout.write("Building `data/search-index.js`... ");
 	let index = [];
-	const modMovesData = loadModData('dist/data/mods/gen9indigostarstorm/moves.js', 'moves') || {};
 	index = index.concat(Object.keys(Dex.data.Pokedex).map(x => x + ' pokemon'));
 	index = index.concat(Object.keys(Dex.data.Moves).map(x => x + ' move'));
-	for (const id of Object.keys(modMovesData)) { if (!Dex.data.Moves[id]) index.push(id + ' move'); }
 	index = index.concat(Object.keys(Dex.data.Items).map(x => x + ' item'));
 	index = index.concat(Object.keys(Dex.data.Abilities).map(x => x + ' ability'));
 	index = index.concat(Object.keys(Dex.data.TypeChart).map(x => toID(x) + ' type'));
@@ -200,20 +137,9 @@ console.log(`Merged descriptions for ${Object.keys(ItemsText).length} items`);
 	}
 	for (const id in Dex.data.Moves) {
 		const move = Dex.data.Moves[id];
-		const modMove = modMovesData[id] || {};
 		const name = move.name;
 		generateAlias(id, name, 'move');
-		const desc =
-		modMove.shortDesc ||
-		move.shortDesc ||
-		move.desc ||
-		'';
 	}
-	for (const id in modMovesData) {
-  if (Dex.data.Moves[id]) continue;
-  const move = modMovesData[id];
-  if (move?.name) generateAlias(id, move.name, 'move');
-}
 	let fragileCount = 0;
 	let volatileCount = 0;
 	let pokeballCount = 0;
@@ -225,13 +151,11 @@ console.log(`Merged descriptions for ${Object.keys(ItemsText).length} items`);
 		generateAlias(id, name, 'item');
 		// Add item classification tags for searchability
 		const item = Dex.data.Items[id];
-		const modItem = modItemsData[id] || {};
-		const desc = modItem.shortDesc || item.shortDesc || item.desc || '';
-		// Fragile/Volatile classification (check mod data first)
-		if (modItem.isFragile || item.isFragile) {
+		const desc = item.shortDesc || item.desc || '';
+		if (item.isFragile) {
 			fragileCount++;
 			if (fragileCount <= 3) console.log(`  Tagged fragile: ${id}`);
-		} else if (modItem.isMildlyFragile || item.isMildlyFragile) {
+		} else if (item.isMildlyFragile) {
 			volatileCount++;
 			if (volatileCount <= 3) console.log(`  Tagged volatile: ${id}`);
 		}
@@ -241,7 +165,7 @@ console.log(`Merged descriptions for ${Object.keys(ItemsText).length} items`);
 		const isEvolution = desc.includes('Evolves') || isEvolutionStone;
 		const isTradeEvo = desc.includes('when traded');
 		const isSingleUse = desc.includes('Single use');
-		if (modItem.isPokeball || item.isPokeball) {
+		if (item.isPokeball) {
 			pokeballCount++;
 			if (pokeballCount <= 3) console.log(`  Tagged pokeball: ${id}`);
 		} else if (isTradeEvo) {
@@ -250,7 +174,7 @@ console.log(`Merged descriptions for ${Object.keys(ItemsText).length} items`);
 		} else if (isEvolution) {
 			evolutionCount++;
 			if (evolutionCount <= 3) console.log(`  Tagged evolution: ${id}`);
-		} else if (modItem.isBerry || item.isBerry || modItem.isGem || item.isGem || isSingleUse) {
+		} else if (item.isBerry || item.isGem || isSingleUse) {
 			consumableCount++;
 			if (consumableCount <= 3) console.log(`  Tagged consumable: ${id}`);
 		}
@@ -304,7 +228,7 @@ console.log(`Merged descriptions for ${Object.keys(ItemsText).length} items`);
 		let name = '';
 		switch (entry[1]) {
 		case 'pokemon': name = Dex.species.get(id).name; break;
-		case 'move': name = (modMovesData?.[id]?.name || Dex.moves.get(id).name); break;
+		case 'move': name = Dex.moves.get(id).name; break;
 		case 'item': name = Dex.items.get(id).name; break;
 		case 'ability': name = Dex.abilities.get(id).name; break;
 		case 'article': name = BattleArticleTitles[id] || ''; break;
@@ -774,13 +698,8 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 	BattleTeambuilderTable['gen9indigostarstorm'] = {};
 	BattleTeambuilderTable['gen9indigostarstorm'].learnsets = {};
 	console.log('Building tier table for gen9indigostarstorm...');
-	const islDex = Dex.mod('gen9indigostarstorm');
-	let rawFDMod = null;
-	try { rawFDMod = requireServer('dist/data/mods/gen9indigostarstorm/formats-data'); } catch {}
-	if (!rawFDMod) { try { rawFDMod = requireServer('data/mods/gen9indigostarstorm/formats-data'); } catch {} }
-	if (!rawFDMod) throw new Error("Could not load gen9indigostarstorm formats-data module.");
-	const rawFormatsData =
-	rawFDMod.FormatsData || (rawFDMod.default && (rawFDMod.default.FormatsData || rawFDMod.default)) || {};
+	const islDex = Dex;
+	const rawFormatsData = Dex.data.FormatsData || {};
 	// The ONLY regs we want the teambuilder to slice by
 	const regs = ['Reg α','Reg Δ','Reg ι','Reg β','Reg ζ','Reg γ','Reg Θ','Reg ε','Reg λ','Reg ψ','Reg ν','Reg φ'];
 	const buckets = Object.fromEntries(regs.map(r => [r, []]));
@@ -825,8 +744,8 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 	// Build item list for gen9indigostarstorm from the mod Dex (separate from vanilla)
 	console.log('Building item list for gen9indigostarstorm...');
 	{
-		const islDex = Dex.mod('gen9indigostarstorm');
-		const itemIDs = Object.keys(modItemsData);
+		const islDex = Dex;
+		const itemIDs = Object.keys(Dex.data.Items);
 		itemIDs.sort();
 		const greatItems = [['header', "Popular items"]];
 		const goodItems = [['header', "Items"]];
@@ -911,101 +830,6 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 			Object.keys(BattleTeambuilderTable['gen9indigostarstorm'].learnsets.poltchageistartisan || {}).length
 		);
 	} catch (e) { console.log('Note: Could not build mod learnsets from islDex.data.Learnsets:', e && e.message ? e.message : e); }
-	// Client relevant data that should be overridden by past gens and mods
-	const overrideSpeciesKeys = ['abilities', 'baseStats', 'cosmeticFormes', 'isNonstandard', 'requiredItems', 'types', 'unreleasedHidden', 'infusibleSlots'];
-	const overrideMoveKeys = ['accuracy', 'basePower', 'category', 'critRatio', 'desc', 'flags', 'isNonstandard', 'pp', 'priority', 'shortDesc', 'target', 'type',];
-	const overrideAbilityKeys = ['desc', 'flags', 'isNonstandard', 'rating', 'shortDesc'];
-	const overrideItemKeys = ['desc', 'fling', 'isNonstandard', 'naturalGift', 'shortDesc', 'itemClass'];
-	const overrideTypeChartKeys = ['damageTaken'];
-	// Build overrideSpeciesData for gen9indigostarstorm (for custom abilities, stats, types, etc.)
-	console.log('Building overrideSpeciesData for gen9indigostarstorm...');
-	const baseGen9Dex = Dex.mod('gen9');
-	const islOverrideSpeciesData = {};
-	for (const id of Object.keys(rawFormatsData)) {
-		const islSpecies = islDex.species.get(id);
-		const baseSpecies = baseGen9Dex.species.get(id);
-		// Skip if species doesn't exist in base gen9 (new mod Pokemon don't need override)
-		if (!baseSpecies || !baseSpecies.exists) continue;
-		// Skip cosmetic formes
-		if (islSpecies.isCosmeticForme) continue;
-		// Debug for poltchageist
-		if (id === 'poltchageist') {
-			console.log('DEBUG poltchageist - mod abilities:', JSON.stringify(islSpecies.abilities));
-			console.log('DEBUG poltchageist - base abilities:', JSON.stringify(baseSpecies.abilities));
-			console.log('DEBUG poltchageist - same?', JSON.stringify(islSpecies.abilities) === JSON.stringify(baseSpecies.abilities));
-		}
-		// Check each key that might be different
-		for (const key of overrideSpeciesKeys) {
-			if (JSON.stringify(islSpecies[key]) !== JSON.stringify(baseSpecies[key])) {
-				if (!islOverrideSpeciesData[id]) islOverrideSpeciesData[id] = {};
-				islOverrideSpeciesData[id][key] = islSpecies[key];
-			}
-		}
-	}
-	BattleTeambuilderTable['gen9indigostarstorm'].overrideSpeciesData = islOverrideSpeciesData;
-	try {
-		// base gen9 vs modded gen9indigostarstorm
-		const baseGen9Dex = Dex.mod('gen9');
-		const islDex = Dex.mod(MOD_ID);
-		// Build patch objects that only include changed keys (plus also supports entirely-new moves/items/abilities)
-		const islOverrideMoveData = buildPatchTable(
-			baseGen9Dex.data.Moves,
-			islDex.data.Moves,
-			overrideMoveKeys
-		);
-		const baseItemsForOverride = cloneObjTable(baseGen9Dex.data.Items);
-		const modItemsForOverride = cloneObjTable(islDex.data.Items);
-		for (const id in baseItemsForOverride) {
-			const it = baseGen9Dex.items.get(id);
-			if (it?.desc && !baseItemsForOverride[id].desc) baseItemsForOverride[id].desc = it.desc;
-			if (it?.shortDesc && !baseItemsForOverride[id].shortDesc) baseItemsForOverride[id].shortDesc = it.shortDesc;
-		}
-		for (const id in modItemsForOverride) {
-			const it = islDex.items.get(id);
-			if (!it?.exists) continue;
-			modItemsForOverride[id].name ||= it.name;
-			if (it?.desc && !modItemsForOverride[id].desc) modItemsForOverride[id].desc = it.desc;
-			if (it?.shortDesc && !modItemsForOverride[id].shortDesc) modItemsForOverride[id].shortDesc = it.shortDesc;
-		}
-		const islOverrideItemData = buildPatchTable(
-			baseItemsForOverride,
-			modItemsForOverride,
-			overrideItemKeys
-		);
-		const islOverrideAbilityData = buildPatchTable(
-			baseGen9Dex.data.Abilities,
-			islDex.data.Abilities,
-			overrideAbilityKeys
-		);
-		// Attach to the teambuilder table so the client can override vanilla text/data
-		BattleTeambuilderTable[MOD_ID].overrideMoveData = islOverrideMoveData;
-		BattleTeambuilderTable[MOD_ID].overrideItemData = islOverrideItemData;
-		BattleTeambuilderTable[MOD_ID].overrideAbilityData = islOverrideAbilityData;
-		//Build overrideTypeChart from the mod Dex
-	try {
-		const baseGen9Dex = Dex.mod('gen9');
-		const islDex = Dex.mod(MOD_ID);
-		const islOverrideTypeChart = buildPatchTable(
-			baseGen9Dex.data.TypeChart,
-			islDex.data.TypeChart,
-			overrideTypeChartKeys
-		);
-		BattleTeambuilderTable[MOD_ID].overrideTypeChart = islOverrideTypeChart;
-		console.log(`DEBUG: teambuilder overrideTypeChart built from Dex: types=${Object.keys(islOverrideTypeChart).length}`);
-	} 
-	catch (e) { console.log('Note: Could not build mod overrideTypeChart from Dex:', e && e.message ? e.message : e); }
-		console.log(
-			`DEBUG: teambuilder overrides built from Dex: ` +
-			`moves=${Object.keys(islOverrideMoveData).length}, ` +
-			`items=${Object.keys(islOverrideItemData).length}, ` +
-			`abilities=${Object.keys(islOverrideAbilityData).length}`
-		);
-	} 
-	catch (e) { console.log('Note: Could not build mod override*Data patches from Dex:', e && e.message ? e.message : e); }
-		console.log(`Built ${Object.keys(islOverrideSpeciesData).length} species overrides for gen9indigostarstorm`);
-		// Debug: Check a few entries
-		if (islOverrideSpeciesData['bulbasaur']) { console.log('DEBUG: bulbasaur override:', JSON.stringify(islOverrideSpeciesData['bulbasaur'])); }
-		if (islOverrideSpeciesData['poltchageist']) { console.log('DEBUG: poltchageist override:', JSON.stringify(islOverrideSpeciesData['poltchageist'])); }
 		{ // Infusible moves
 			BattleTeambuilderTable.infusibleMoves = Object.keys(Dex.data.Moves)
 				.filter(id => Dex.data.Moves[id] && Dex.data.Moves[id].flags && Dex.data.Moves[id].flags.infusible)
@@ -1038,53 +862,6 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 		}
 		writeBattleExport(path.join(CLIENT_DATA_DIR, 'pokedex.js'), 'BattlePokedex', Pokedex);
 		fs.writeFileSync(path.join(CLIENT_DATA_DIR, 'pokedex.json'), JSON.stringify(Pokedex));
-		// MOD OVERLAY
-		const baseDex = Dex.mod('gen9');
-		const modDex = Dex.mod(MOD_ID);
-		// Create a patch that contains:
-		// - new mons: full entry
-		// - existing mons: only keys that differ
-		// plus tier/isNonstandard/unreleasedHidden diffs from FormatsData
-		const patch = {};
-		const patchKeys = [
-			'abilities', 'baseStats', 'types', 'weightkg', 'isNonstandard', 'requiredItems', 
-			'formeOrder', 'infusibleSlots', 'tags',
-		];
-		for (const id in modDex.data.Pokedex) {
-			const modSpecies = modDex.species.get(id);
-			const baseSpecies = baseDex.species.get(id);
-			if (!baseSpecies?.exists) {
-				patch[id] = {...modSpecies};
-				continue;
-			}
-			const diff = {};
-			for (const k of patchKeys) {
-				const modVal = modSpecies[k];
-				const baseVal = baseSpecies[k];
-				// --- FORCE REPLACE FIELDS ---
-				if (k === 'tags') {
-					// Always overwrite tags completely (fixes Sub-Legendary issue)
-					diff.tags = modVal ?? [];
-					continue;
-				}
-				// --- NORMAL DIFF LOGIC ---
-				if (modVal === undefined) continue;
-				if (JSON.stringify(modVal) !== JSON.stringify(baseVal)) { diff[k] = modVal; }
-			}
-			// FormatsData-based tier/nonstandard overrides
-			const baseFD = baseDex.data.FormatsData?.[id] || null;
-			const modFD = modDex.data.FormatsData?.[id] || null;
-			if (modFD) {
-				if (!baseFD || modFD.tier !== baseFD.tier) diff.tier = modFD.tier;
-				if (!baseFD || modFD.isNonstandard !== baseFD.isNonstandard) diff.isNonstandard = modFD.isNonstandard;
-				if (!baseFD || modFD.unreleasedHidden !== baseFD.unreleasedHidden) diff.unreleasedHidden = modFD.unreleasedHidden;
-			}
-			if (Object.keys(diff).length) patch[id] = diff;
-		}
-		ensureDir(MOD_OUT_DIR);
-		writeBattleModData(path.join(MOD_OUT_DIR, 'pokedex.js'), MOD_ID, 'Pokedex', patch);
-		fs.writeFileSync(path.join(MOD_OUT_DIR, 'pokedex.json'), JSON.stringify(patch));
-		console.log(`Built ${Object.keys(patch).length} ${MOD_ID} pokedex overlay entries`);
 	}
 	console.log("DONE");
 
@@ -1106,26 +883,6 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 		}
 		writeBattleExport(path.join(CLIENT_DATA_DIR, 'moves.js'), 'BattleMovedex', baseMovesTable);
 		fs.writeFileSync(path.join(CLIENT_DATA_DIR, 'moves.json'), JSON.stringify(baseMovesTable));
-		// MOD MOVES OVERLAY (PATCH)
-		const modDex = Dex.mod(MOD_ID);
-		const modMovesFull = {};
-		for (const move of modDex.moves.all()) { modMovesFull[move.id] = {...move}; }
-		for (const id in modMovesFull) {
-			const m = modDex.moves.get(id);
-			if (m?.desc && !modMovesFull[id].desc) modMovesFull[id].desc = m.desc;
-			if (m?.shortDesc && !modMovesFull[id].shortDesc) modMovesFull[id].shortDesc = m.shortDesc;
-		}
-		// Only ship differences/new moves as overlay patch
-		const movePatchKeys = [
-			'accuracy', 'basePower', 'category', 'critRatio',
-			'desc', 'shortDesc', 'flags', 'pp', 'priority',
-			'target', 'type', 'isNonstandard',
-		];
-		const movesPatch = buildPatchTable(baseMovesTable, modMovesFull, movePatchKeys);
-		ensureDir(MOD_OUT_DIR);
-		writeBattleModData(path.join(MOD_OUT_DIR, 'moves.js'), MOD_ID, 'Movedex', movesPatch);
-		fs.writeFileSync(path.join(MOD_OUT_DIR, 'moves.json'), JSON.stringify(movesPatch));
-		console.log(`Built ${Object.keys(movesPatch).length} ${MOD_ID} move overlay entries`);
 		console.log('DONE building moves.js');
 	}
 
@@ -1142,35 +899,6 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 			if (it?.shortDesc && !Items[id].shortDesc) Items[id].shortDesc = it.shortDesc;
 		}
 		writeBattleExport(path.join(CLIENT_DATA_DIR, 'items.js'), 'BattleItems', Items);
-		// MOD ITEMS OVERLAY (PATCH)
-		const modDex = Dex.mod(MOD_ID);
-		const modItemsFull = {};
-		// Pull full mod item table from the modded dex (includes new items)
-		for (const id in modDex.data.Items) {
-			const it = modDex.items.get(id);
-			if (!it?.exists) continue;
-			modItemsFull[id] = {...modDex.data.Items[id]};
-			// Ensure name exists
-			modItemsFull[id].name ||= it.name;
-			// Ensure text exists
-			if (it?.desc && !modItemsFull[id].desc) modItemsFull[id].desc = it.desc;
-			if (it?.shortDesc && !modItemsFull[id].shortDesc) modItemsFull[id].shortDesc = it.shortDesc;
-		}
-		const itemPatchKeys = [
-			'desc',
-			'shortDesc',
-			'fling',
-			'naturalGift',
-			'isNonstandard',
-			'isPokeball',
-			'isFragile',
-			'isMildlyFragile',
-			'itemClass',
-		];
-		const itemsPatch = buildPatchTable(Items, modItemsFull, itemPatchKeys);
-		ensureDir(MOD_OUT_DIR);
-		writeBattleModData(path.join(MOD_OUT_DIR, 'items.js'), MOD_ID, 'Items', itemsPatch);
-		console.log(`Built ${Object.keys(itemsPatch).length} ${MOD_ID} item overlay entries`);
 	}
 
 
@@ -1185,22 +913,6 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 			if (a?.shortDesc && !Abilities[id].shortDesc) Abilities[id].shortDesc = a.shortDesc;
 		}
 		writeBattleExport(path.join(CLIENT_DATA_DIR, 'abilities.js'), 'BattleAbilities', Abilities);
-		// MOD ABILITIES OVERLAY (PATCH)
-		const modDex = Dex.mod(MOD_ID);
-		const modAbilitiesFull = {};
-		for (const id in modDex.data.Abilities) {
-			const a = modDex.abilities.get(id);
-			if (!a?.exists) continue;
-			modAbilitiesFull[id] = {...modDex.data.Abilities[id]};
-			modAbilitiesFull[id].name ||= a.name;
-			if (a?.desc && !modAbilitiesFull[id].desc) modAbilitiesFull[id].desc = a.desc;
-			if (a?.shortDesc && !modAbilitiesFull[id].shortDesc) modAbilitiesFull[id].shortDesc = a.shortDesc;
-		}
-		const abilityPatchKeys = ['desc', 'shortDesc', 'flags', 'rating', 'isNonstandard'];
-		const abilitiesPatch = buildPatchTable(Abilities, modAbilitiesFull, abilityPatchKeys);
-		ensureDir(MOD_OUT_DIR);
-		writeBattleModData(path.join(MOD_OUT_DIR, 'abilities.js'), MOD_ID, 'Abilities', abilitiesPatch);
-		console.log(`Built ${Object.keys(abilitiesPatch).length} ${MOD_ID} ability overlay entries`);
 	}
 
 
@@ -1211,19 +923,6 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 		const TypeChart = pickExport(serverTypechartModule, ['TypeChart', 'BattleTypeChart', 'default']);
 		if (!TypeChart || typeof TypeChart !== 'object') { throw new Error('Server dist/data/typechart.js did not export TypeChart'); }
 		writeBattleExport(path.join(CLIENT_DATA_DIR, 'typechart.js'), 'BattleTypeChart', TypeChart);
-		// MOD TYPECHART OVERLAY (PATCH)
-		{
-			console.log(`Building \`data/mods/${MOD_ID}/typechart.js\` overlay...`);
-			const baseTypeChart = Dex.data.TypeChart;
-			const modDex = Dex.mod(MOD_ID);
-			const modTypeChart = modDex.data.TypeChart;
-			if (!modTypeChart || typeof modTypeChart !== 'object') { throw new Error(`Dex.mod(${MOD_ID}) did not provide data.TypeChart`); }
-			// Only patch what matters for effectiveness in tooltips.
-			const typechartPatch = buildPatchTable(baseTypeChart, modTypeChart, ['damageTaken']);
-			ensureDir(MOD_OUT_DIR);
-			writeBattleModData(path.join(MOD_OUT_DIR, 'typechart.js'), MOD_ID, 'TypeChart', typechartPatch);
-			console.log(`Built ${Object.keys(typechartPatch).length} ${MOD_ID} typechart overlay entries`);
-		}
 		console.log('DONE building typechart.js');
 	}
 
@@ -1269,36 +968,12 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 	//region Build learnsets.js
 	{
 		console.log('Building `data/learnsets.js` (base) + mod overlay...');
-		// BASE LEARNSETS (VANILLA)
 		const serverLearnsetsModule = requireServer('dist/data/learnsets.js');
 		const baseLearnsets = pickExport(serverLearnsetsModule, ['BattleLearnsets', 'Learnsets', 'default']);
 		if (!baseLearnsets) throw new Error('Server dist/data/learnsets.js did not export Learnsets/BattleLearnsets');
 		writeBattleExport(path.join(CLIENT_DATA_DIR, 'learnsets.js'), 'BattleLearnsets', baseLearnsets);
 		fs.writeFileSync(path.join(CLIENT_DATA_DIR, 'learnsets.json'), JSON.stringify(baseLearnsets));
-		// MOD LEARNSETS OVERLAY (PATCH)
-		const modDex = Dex.mod(MOD_ID);
-		const modLearnsets = modDex.data.Learnsets || {};
-		// Patch includes:
-		// - new mons learnsets
-		// - only mons whose learnset differs (simple stringify compare)
-		const learnsetsPatch = {};
-		for (const id in modLearnsets) {
-			const modEntry = modLearnsets[id];
-			if (!modEntry?.learnset) continue;
-			const baseEntry = baseLearnsets[id];
-			if (!baseEntry?.learnset) {
-				learnsetsPatch[id] = {learnset: {...modEntry.learnset}};
-				continue;
-			}
-			// If any difference, ship the whole learnset entry for that mon
-			if (JSON.stringify(modEntry.learnset) !== JSON.stringify(baseEntry.learnset)) { learnsetsPatch[id] = {learnset: {...modEntry.learnset}}; }
-		}
-		ensureDir(MOD_OUT_DIR);
-		writeBattleModData(path.join(MOD_OUT_DIR, 'learnsets.js'), MOD_ID, 'Learnsets', learnsetsPatch);
-		fs.writeFileSync(path.join(MOD_OUT_DIR, 'learnsets.json'), JSON.stringify(learnsetsPatch));
-		console.log(`Built ${Object.keys(learnsetsPatch).length} ${MOD_ID} learnset overlay entries`);
 	}
-
 
 
 	//region Build flags.js
@@ -1319,13 +994,10 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 		console.log(`DONE building flags.js (${Object.keys(flagsTable).length} entries)`);
 	}
 
-
-
 	
 	//region Build text-desc.js (DO NOT overwrite battle text.js)
 	{
 		const textDataDefault = Dex.loadTextData();
-		const textDataIndigo = Dex.loadTextData('gen9indigostarstorm');
 		function buildTextTable(textData) {
 			const Text = {};
 			function assignData(id, entry) {
@@ -1340,13 +1012,10 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 			for (const id in textData.Items) assignData(id, textData.Items[id]);
 			return Text;
 		}
-		const out = {
-			default: buildTextTable(textDataDefault.Default),
-			gen9indigostarstorm: buildTextTable(textDataIndigo.Default),
-		};
+		const out = { default: buildTextTable(textDataDefault.Default), };
 		fs.writeFileSync(
 			'play.pokemonshowdown.com/data/text-desc.js',
 			'exports.BattleTextDesc = ' + es3stringify(out) + ';'
 		);
 	}
-	console.log("DONE");
+	console.log(`DONE. Total build-indexes time: ${((Date.now() - buildStartTime) / 1000).toFixed(1)}s`);

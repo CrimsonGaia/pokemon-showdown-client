@@ -1031,6 +1031,7 @@ export class Move implements Effect {
 	readonly secondaries: readonly any[] | null;
 	readonly num: number;
 	readonly isInfusible: boolean;
+	readonly guardActionCD: number;
 	constructor(id: ID, name: string, data: any) {
 		if (!data || typeof data !== 'object') data = {};
 		if (data.name) name = data.name;
@@ -1064,6 +1065,7 @@ export class Move implements Effect {
 		this.secondaries = data.secondaries || (data.secondary ? [data.secondary] : null);
 		this.num = data.num || 0;
 		this.isInfusible = !!data.isInfusible;
+		this.guardActionCD = data.guardActionCD || 0;
 		if (!this.gen) {
 			if (this.num >= 743) { this.gen = 8; } 
 			else if (this.num >= 622) { this.gen = 7; } 
@@ -1270,8 +1272,8 @@ export class Species implements Effect {
 }
 export interface Type extends Effect {
 	damageTaken?: Record<Dex.TypeName, Dex.WeaknessType>;
-	HPivs?: Partial<Dex.StatsTable>;
-	HPdvs?: Partial<Dex.StatsTable>;
+	affinity?: Record<string, number>;
+	aversion?: Record<string, number>;
 }
 declare const require: any;
 declare const global: any;

@@ -13,6 +13,7 @@ const SERVER_PATH = process.env.PS_SERVER_PATH
         : path.resolve(repoRoot, 'pokemon-showdown')
     );
 console.log('Building `data/commands.json` index...');
+const startTime = Date.now();
 const noop = () => null;
 Object.assign(globalThis, {
   Config: { routes: { root: '' } },
@@ -44,8 +45,11 @@ Chat.pages = Object.create(null);
 const oldCwd = process.cwd();
 process.chdir(SERVER_PATH);
 try {
+  console.log('  loading chat-commands...');
   Chat.loadPluginDirectory('dist/server/chat-commands');
+  console.log('  loading tournaments plugin...');
   Chat.loadPlugin(globalThis.Tournaments, 'tournaments');
+  console.log('  loading chat-plugins...');
   Chat.loadPluginDirectory('dist/server/chat-plugins');
 } finally { process.chdir(oldCwd); }
 const recurseCommands = (table = Chat.commands, namespace = '', results = {}) => {
@@ -70,5 +74,5 @@ fs.writeFileSync(
   'play.pokemonshowdown.com/data/commands.js',
   `exports.BattleChatCommands = ${JSON.stringify(recurseCommands())}`
 );
-console.log('DONE');
+console.log(`DONE in ${((Date.now() - startTime) / 1000).toFixed(1)}s`);
 process.exit(0);

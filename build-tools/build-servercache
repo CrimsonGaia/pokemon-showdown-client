@@ -16,20 +16,23 @@
  */
 
 'use strict';
-
 const fs = require('fs');
 const path = require('path');
-
+const crypto = require('crypto');
 const repoRoot = path.resolve(__dirname, '..');
-
 const SERVER_PATH = process.env.PS_SERVER_PATH
   ? path.resolve(process.env.PS_SERVER_PATH)
   : path.resolve(repoRoot, '..', 'pokemon-showdown');
-
 const SRC_DIR = path.resolve(repoRoot, 'play.pokemonshowdown.com');
 const DEST_DIR = path.resolve(SERVER_PATH, 'server', 'static');
-
 const DO_DELETE = process.env.PS_CACHE_DELETE !== '0';
+// Where individually large sprite subfolders live. Everything else under sprites/
+// is small enough to sync normally - only these get skipped entirely.
+const IGNORED_SPRITE_DIRS = new Set(['ani', 'ani-back', 'gen5ani', 'gen5ani-back']);
+// Persistent hash cache, so unchanged files don't get re-copied (or even re-hashed)
+// on every run just because a build step bumped their mtime without changing their content.
+const CACHE_DIR = path.resolve(repoRoot, '.build-cache');
+const CACHE_FILE = path.resolve(CACHE_DIR, 'servercache.json');
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, {recursive: true});
@@ -39,11 +42,21 @@ function statSafe(p) {
   try { return fs.statSync(p); } catch { return null; }
 }
 
-function sameEnough(srcStat, dstStat) {
-  if (!dstStat) return false;
-  if (srcStat.size !== dstStat.size) return false;
-  // tolerate filesystem timestamp resolution differences
-  return Math.abs(srcStat.mtimeMs - dstStat.mtimeMs) < 2000;
+function loadCache() {
+  try {
+    return JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+function saveCache(cache) {
+  ensureDir(CACHE_DIR);
+  fs.writeFileSync(CACHE_FILE, JSON.stringify(cache));
+}
+
+function hashFile(absPath) {
+  return crypto.createHash('md5').update(fs.readFileSync(absPath)).digest('hex');
 }
 
 function isIgnored(rel) {
@@ -52,12 +65,12 @@ function isIgnored(rel) {
   // always ignore dev junk
   if (parts.includes('.git') || parts.includes('node_modules')) return true;
 
-  // ignore sprite assets (huge)
-  if (parts[0] === 'sprites') return true;
+  // only skip the genuinely huge animated-sprite subfolders - everything else in
+  // sprites/ (icons, item sprites, misc, etc.) syncs normally like any other asset.
+  if (parts[0] === 'sprites' && IGNORED_SPRITE_DIRS.has(parts[1])) return true;
 
   return false;
 }
-
 
 function walkFiles(root, cb, base = root) {
   const entries = fs.readdirSync(root, {withFileTypes: true});
@@ -78,6 +91,12 @@ function collectFileSet(root) {
   return s;
 }
 
+function countFiles(root) {
+  let n = 0;
+  if (fs.existsSync(root)) walkFiles(root, () => { n++; }, root);
+  return n;
+}
+
 function copyFile(absSrc, absDst, srcStat) {
   ensureDir(path.dirname(absDst));
   fs.copyFileSync(absSrc, absDst);
@@ -85,36 +104,98 @@ function copyFile(absSrc, absDst, srcStat) {
   console.log(`[copy] ${path.relative(SRC_DIR, absSrc)} -> ${path.relative(DEST_DIR, absDst)}`);
 }
 
+function formatDuration(ms) {
+  if (ms < 1000) return `${ms}ms`;
+  return `${(ms / 1000).toFixed(1)}s`;
+}
+
 function syncDirs(srcDir, destDir) {
   ensureDir(destDir);
 
-  // Copy new/changed
-  walkFiles(srcDir, (absSrc, rel) => {
-    const absDst = path.join(destDir, rel);
-    const srcStat = fs.statSync(absSrc);
-    const dstStat = statSafe(absDst);
+  const cache = loadCache();
+  const totalFiles = countFiles(srcDir);
+  console.log(`  found ${totalFiles} files to check`);
 
-    if (!sameEnough(srcStat, dstStat)) {
-      copyFile(absSrc, absDst, srcStat);
+  const stats = {checked: 0, skippedCached: 0, skippedUnchanged: 0, copied: 0, hashed: 0};
+  const startTime = Date.now();
+  let lastProgressLog = startTime;
+
+  walkFiles(srcDir, (absSrc, rel) => {
+    stats.checked++;
+
+    const srcStat = fs.statSync(absSrc);
+    const absDst = path.join(destDir, rel);
+    const dstStat = statSafe(absDst);
+    const cached = cache[rel];
+
+    // Fast path: nothing about the source has changed since our last successful copy
+    // (same size, same mtime), and the destination is still the right size - trust it
+    // completely, no hashing needed at all.
+    if (
+      dstStat && cached &&
+      cached.size === srcStat.size && cached.mtimeMs === srcStat.mtimeMs &&
+      dstStat.size === srcStat.size
+    ) {
+      stats.skippedCached++;
+    } else {
+      // Something looks different (new file, touched mtime, size change, or no cache
+      // entry yet) - only now do we actually pay for a hash.
+      const hash = hashFile(absSrc);
+      stats.hashed++;
+
+      if (dstStat && cached && cached.hash === hash && dstStat.size === srcStat.size) {
+        // Content is byte-identical to what we last copied (e.g. rebuilt with the same
+        // output) - just refresh the cache's bookkeeping, skip the actual file copy.
+        cache[rel] = {size: srcStat.size, mtimeMs: srcStat.mtimeMs, hash};
+        stats.skippedUnchanged++;
+      } else {
+        copyFile(absSrc, absDst, srcStat);
+        cache[rel] = {size: srcStat.size, mtimeMs: srcStat.mtimeMs, hash};
+        stats.copied++;
+      }
+    }
+
+    const now = Date.now();
+    if (now - lastProgressLog > 2000) {
+      const pct = totalFiles ? Math.floor((stats.checked / totalFiles) * 100) : 100;
+      console.log(`  ...${stats.checked}/${totalFiles} checked (${pct}%), ${stats.copied} copied so far`);
+      lastProgressLog = now;
     }
   }, srcDir);
+
+  saveCache(cache);
+
+  console.log(
+    `  checked ${stats.checked} files in ${formatDuration(Date.now() - startTime)}: ` +
+    `${stats.copied} copied, ${stats.skippedUnchanged} unchanged (content matched, cache refreshed), ` +
+    `${stats.skippedCached} skipped via cache (no hash needed), ${stats.hashed} hashed`
+  );
 
   // Delete removed (mirror)
   if (DO_DELETE && fs.existsSync(destDir)) {
     const srcSet = collectFileSet(srcDir);
     const dstSet = collectFileSet(destDir);
 
+    let deleted = 0;
     for (const rel of dstSet) {
       if (!srcSet.has(rel)) {
         const absDst = path.join(destDir, rel);
         fs.unlinkSync(absDst);
+        delete cache[rel];
         console.log(`[del]  ${path.relative(DEST_DIR, absDst)}`);
+        deleted++;
       }
+    }
+    if (deleted) {
+      saveCache(cache);
+      console.log(`  deleted ${deleted} stale file(s)`);
     }
   }
 }
 
 function main() {
+  const startTime = Date.now();
+
   if (!fs.existsSync(SRC_DIR)) {
     console.error(`Client output folder not found: ${SRC_DIR}`);
     console.error(`Run "node build full" first.`);
@@ -134,7 +215,7 @@ function main() {
   console.log(`  src : ${SRC_DIR}`);
   console.log(`  dest: ${DEST_DIR}`);
   syncDirs(SRC_DIR, DEST_DIR);
-  console.log(`Sync complete.`);
+  console.log(`Sync complete in ${formatDuration(Date.now() - startTime)}.`);
 }
 
 main();

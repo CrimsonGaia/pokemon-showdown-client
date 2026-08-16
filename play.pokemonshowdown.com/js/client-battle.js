@@ -17,6 +17,11 @@
 			this.canMegaEvoLetter = null;
 			this.battlePaused = false;
 			this.autoTimerActivated = false;
+			this.mySeat = 'p1';
+			this.dualSeat = false;
+			this.companionRoom = null;
+			this.isCompanionSeat = false;
+			this.rawLog = [];
 			this.isSideRoom = Dex.prefs('rightpanelbattles');
 			this.$el.addClass('ps-room-opaque').html('<div class="battle">Battle is here</div><div class="foehint"></div><div class="battle-log" aria-label="Battle Log" role="complementary"></div><div class="battle-log-add">Connecting...</div><ul class="battle-userlist userlist userlist-minimized"></ul><div class="battle-controls" role="complementary" aria-label="Battle Controls"></div><button class="battle-chat-toggle button" name="showChat"><i class="fa fa-caret-left"></i> Chat</button>');
 			this.$battle = this.$el.find('.battle');
@@ -60,7 +65,11 @@
 			'mouseleave .terachargebutton': 'teraChargeHoverOff',
 		},
 		battleEnded: false,
-		join: function () { app.send('/join ' + this.id); },
+		send: function (data) { app.send(data, this.isCompanionSeat ? this.battleRoomId : this.id); },
+		join: function () {
+			if (this.isCompanionSeat) return;
+			app.send('/join ' + this.id);
+		},
 		showChat: function () {
 			this.$('.battle-chat-toggle').attr('name', 'hideChat').html('Battle <i class="fa fa-caret-right"></i>');
 			this.$el.addClass('showing-chat');
@@ -70,10 +79,16 @@
 			this.$el.removeClass('showing-chat');
 		},
 		leave: function () {
+			if (this.isCompanionSeat) {
+				if (this.battle) this.battle.destroy();
+				return;
+			}
 			if (!this.expired) app.send('/noreply /leave ' + this.id);
 			if (this.battle) this.battle.destroy();
+			if (this.companionRoom) { app.removeRoom(this.companionRoom.id); this.companionRoom = null; }
 		},
 		requestLeave: function (e) {
+			if (this.isCompanionSeat) return true;
 			if ((this.side || this.requireForfeit) && this.battle && !this.battleEnded && !this.expired && !this.battle.forfeitPending) {
 				app.addPopup(ForfeitPopup, { room: this, sourceEl: e && e.currentTarget, gameType: 'battle' });
 				return false;
@@ -100,7 +115,12 @@
 			Room.prototype.show.apply(this, arguments);
 			this.updateLayout();
 		},
-		receive: function (data) { this.add(data); },
+		receive: function (data) {
+			var hadCompanion = !!this.companionRoom;
+			this.rawLog.push(data);
+			this.add(data);
+			if (hadCompanion && this.companionRoom) this.companionRoom.add(data);
+		},
 		focus: function (e) {
 			this.tooltips.hideTooltip();
 			if (this.battle.paused && !this.battlePaused) {
@@ -568,6 +588,16 @@
 			}
 			this.updateMegaCharge();
 		},
+		getGuardActionColorStyle: function (guardType) {
+			var typeColor = {
+				Normal:'#A8A878', Fire:'#F08030', Water:'#6890F0', Electric:'#F8D030', Grass:'#78C850',
+				Ice:'#98D8D8', Fighting:'#C03028', Poison:'#A040A0', Ground:'#E0C068',
+				Flying:'#A890F0', Psychic:'#F85888', Bug:'#A8B820', Rock:'#B8A038',
+				Ghost:'#705898', Dragon:'#7038F8', Dark:'#705848', Steel:'#B8B8D0', Fairy:'#EE99AC'
+			};
+			var c = typeColor[guardType] || '#888';
+			return 'background-color:' + c + ';';
+		},
 		getGuardState: function (active) {
 			if (!active || active.guardAction == null) return null;
 			return {
@@ -596,11 +626,8 @@
 			var guardType = st.type || 'Normal';
 			var tooltipArgs = 'guardaction|' + st.id + '|' + pos + '|' + st.cur + '|' + st.max;
 			var btn = '' +
-				'<button class="button guardbutton has-tooltip' + (ready ? ' ready' : '') + '" type="button" name="guard" ' +
-					(ready ? '' : 'disabled ') +
-					'data-tooltip="' + BattleLog.escapeHTML(tooltipArgs) + '" ' +
-					'style="' + this.getGuardActionColorStyle(guardType) + '" ' +
-					'aria-label="Guard Action: ' + BattleLog.escapeHTML(st.name) + '">' +
+				'<button class="button guardbutton has-tooltip' + (ready ? ' ready' : '') + '" type="button" name="guard" ' + (ready ? '' : 'disabled ') +
+					'data-tooltip="' + BattleLog.escapeHTML(tooltipArgs) + '" ' + 'style="' + this.getGuardActionColorStyle(guardType) + '" ' + 'aria-label="Guard Action: ' + BattleLog.escapeHTML(st.name) + '">' +
 					'<span class="guard-fill" style="width:' + d.pct + '%"></span>' +
 					'<span class="guard-count">' + (ready ? '' : turns) + '</span>' +
 					'<span class="guard-icon"><i class="fa fa-shield"></i></span>' +
@@ -1316,12 +1343,15 @@
 		/**
 		 * Sends a decision; pass it an array of choices like ['move 1', 'switch 2'] and it'll send `/choose move 1,switch 2|3` (where 3 is the rqid).
 		 * (The rqid helps verify that the decision is sent in response to the correct request.)
+		 * In a dual-seat test battle, suffixes with this window's seat (`:p1`/`:p2`) so the
+		 * server knows which of the two seats the choice belongs to.
 		 */
 		sendDecision: function (message) {
-			if (!$.isArray(message)) return this.send('/' + message + '|' + this.request.rqid);
+			var seatSuffix = this.dualSeat ? ':' + this.mySeat : '';
+			if (!$.isArray(message)) return this.send('/' + message + '|' + this.request.rqid + seatSuffix);
 			var buf = '/choose ';
 			for (var i = 0; i < message.length; i++) { if (message[i]) buf += message[i] + ','; }
-			this.send(buf.substr(0, buf.length - 1) + '|' + this.request.rqid);
+			this.send(buf.substr(0, buf.length - 1) + '|' + this.request.rqid + seatSuffix);
 		},
 		request: null,
 		receiveRequest: function (request, choiceText) {
@@ -1329,6 +1359,18 @@
 				this.side = '';
 				return;
 			}
+			if (request.seat) {
+				this.dualSeat = true;
+				if (request.seat !== this.mySeat) {
+					// Not this window's seat. Only the primary (p1) window opens a companion;
+					// the companion just discards mirrored requests that aren't its own seat.
+					if (!this.isCompanionSeat && !this.companionRoom) this.openCompanionSeat(request.seat);
+					return;
+				}
+			}
+			this.activateRequest(request, choiceText);
+		},
+		activateRequest: function (request, choiceText) {
 			if (!this.autoTimerActivated && Storage.prefs('autotimer') && !this.battle.ended) {
 				this.setTimer('on');
 				this.autoTimerActivated = true;
@@ -1344,6 +1386,23 @@
 			this.notifyRequest();
 			this.controlsShown = false;
 			this.updateControls();
+		},
+		// Opens the p2 companion window in the side panel the first time a request
+		// comes in for a seat this window doesn't own. Only ever called on the p1 room.
+		openCompanionSeat: function (seat) {
+			var companionId = this.id + '--' + seat;
+			app.addRoom(companionId, 'battle', true, this.title + ' (' + (seat === 'p1' ? 'Player 1' : 'Player 2') + ')');
+			var companion = app.rooms[companionId];
+			if (!companion) return; // room creation failed - nothing more we can do here
+			companion.isCompanionSeat = true;
+			companion.mySeat = seat;
+			companion.dualSeat = true;
+			companion.battleRoomId = this.id;
+			this.companionRoom = companion;
+			for (var i = 0; i < this.rawLog.length; i++) { companion.add(this.rawLog[i]); }
+			if (companion.battle) companion.battle.seekTurn(Infinity, true);
+			if (typeof app.focusRoomRight === 'function') app.focusRoomRight(companionId);
+			app.updateLayout();
 		},
 		notifyRequest: function () {
 			var oName = this.battle.farSide.name;
@@ -1504,7 +1563,8 @@
 			if (e) { e.preventDefault(); e.stopPropagation(); }
 			if (!this.choice) return;
 			this.tooltips.hideTooltip();
-			this.sendDecision('guard');
+			this.choice.choices.push('guard');
+			this.endChoice();
 		},
 		chooseMove: function (pos, el) {
 			if (!this.choice) return;
@@ -1537,7 +1597,6 @@
 			'move ' + pos +
 			(megaLetter ? ' mega' + megaLetter.toLowerCase() : '') +
 			(isUltraBurst ? ' ultra' : '') +
-			(isDynamax ? ' dynamax' : '') +
 			(isTerastal ? ' terastallize' : '') +
 			(isTeraEmpower ? ' teraempower' : '');
 			console.log('CLIENT built move choice:', builtChoice, {
