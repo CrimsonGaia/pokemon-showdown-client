@@ -1270,7 +1270,6 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 			{label: 'Mega Stones', tags: ['megastone', '!fling', '!pokeball', '!nouse']},
 			{label: 'Z-Crystals', tags: ['zcrystals', '!fling', '!pokeball', '!nouse']},
 			{label: 'TM/TR/HM', tags: ['!fling', '!nouse']},
-			{label: 'Alcremie Sweets', tags: ['sweets', '!fling', '!nouse']},
 			{label: 'Fling Only', tags: ['fling', '!nouse']},
 			{label: 'Evolution Items without an effect', tags: ['evolution', 'tradeevo', '!nouse']},
 			{label: 'Poké Balls', tags: ['pokeball', '!nouse']},

@@ -1625,7 +1625,7 @@ p.or:after {
 }
 .terachargebutton {
 	float: right;
-	width: 140px;
+	width: 100px;
 	position: relative;
 	overflow: hidden;
 	padding: 0 10px;
@@ -1653,6 +1653,24 @@ p.or:after {
 	z-index: 1;
 	font-weight: bolder;
 }
+.megachargebutton {
+	float: right;
+	width: 100px;
+	position: relative;
+	overflow: hidden;
+	padding: 0 10px;
+	height: 24px;
+	line-height: 24px;
+}
+.megachargebutton .megacharge-text {
+	z-index: 1;
+	font-weight: bolder;
+}
+.megachargebutton.megacharge-armed {
+	border-color: rgb(247 85 197 / 30%);
+	box-shadow: 0 0 0 2px rgba(139,95,191,0.5) inset;
+	background: rgba(139,95,191,0.15);
+}
 .guardbutton {
 	float: right;
 	width: 56px;
@@ -1676,8 +1694,8 @@ p.or:after {
 .guard-divider {
 	float: right;
 	width: 1px;
-	height: 36px;
-	margin: 0 6px 0 2px;
+	height: 24px;
+	margin: 0 4px 0 6px;
 	background: rgba(0, 0, 0, 0.2);
 }
 .dark .guard-divider {
@@ -1751,13 +1769,47 @@ p.or:after {
 	margin: 2px 0 8px 0;
 	padding: 0 8px;
 }
+.battle-controls .whatdo-hpline {
+	margin: 0;
+	padding: 0 8px;
+	line-height: 1.2;
+}
 .battle-controls .whatdo {
 	margin-top: -2px;
 	padding: 0 8px;
 	font-size: 9pt;
 	color: #555555;
+	display: flex;
+	align-items: center;
+	flex-wrap: nowrap;
+	gap: 0;
 }
-.battle-controls .whatdo small {
+.battle-controls .whatdo-left {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex: 1 1 auto;
+	min-width: 0;
+	gap: 4px;
+}
+.battle-controls .whatdo-title {
+	min-width: 0;
+}
+.battle-controls .whatdo-guard {
+	flex: none;
+	display: flex;
+	align-items: center;
+}
+.battle-controls .whatdo-right {
+	display: flex;
+	align-items: center;
+	flex: none;
+	gap: 6px;
+	padding-left: 8px;
+	margin-left: 8px;
+}
+.battle-controls .whatdo small,
+.battle-controls .whatdo-hpline small {
 	padding: 1px 2px;
 	border: 1px solid #999999;
 	border-radius: 4px;

@@ -100,6 +100,7 @@
 			'click button.typechart': 'typeChartSelect',
 			'click button.mega': 'megaSelect',
 			'click button.infusion': 'infusionSelect',
+			'click button.ultraburst': 'ultraBurstSelect',
 			'click button[name=formeToggle]': 'formeToggleSelect',
 			'click button[name=genderToggle]': 'genderToggleChange',
 			// stats
@@ -1302,7 +1303,9 @@
 			}
 			// Mega icons 
 			buf += this.getMegaIconsHTML(set, species);
-			// Infusion 
+			// Ultra Burst
+			buf += this.getUltraBurstIconHTML(set, species);
+			// Infusion
 			var infusibleSlots = species.infusibleSlots || 0;
 			for (var slot = 0; slot < infusibleSlots; slot++) {
 				var move = (set.moves && set.moves[slot])? this.curTeam.dex.moves.get(set.moves[slot]): null;
@@ -2817,7 +2820,7 @@
 				var desc = move.shortDesc || move.desc || '';
 				return (
 					'<li class="result" style="list-style:none;">' +
-					'<a class="' + (isCur ? 'cur' : '') + '" data-entry="guardAction|' + BattleLog.escapeHTML(move.name) + '" style="display:block; padding:4px 6px;">' +
+					'<a class="' + (isCur ? 'cur' : '') + '" data-entry="guardAction|' + BattleLog.escapeHTML(move.name) + '" style="display:block; height: 60px; padding:4px 6px;">' +
 						'<div style="display:flex; align-items:center; gap:6px;">' +
 							'<span style="font-size: 13pt; font-weight:bold;">' + BattleLog.escapeHTML(move.name) + '</span>' +
 							Dex.getTypeIcon(move.type) +
@@ -2911,23 +2914,23 @@
 				var defendTypeData = Dex.types.get(defendType);
 				if (!defendTypeData.damageTaken) return;
 				for (var key in defendTypeData.damageTaken) {
-				if (allTypeNames.indexOf(key) !== -1 || key === 'Stellar' || key === 'Banal') continue; 
-				if (key === 'trapped' || key === 'flinch' ) continue; 
-				flagSet[key] = true;
-			}
+					if (allTypeNames.indexOf(key) !== -1 || key === 'Stellar' || key === 'Banal') continue; 
+					if (key === 'trapped' || key === 'flinch' ) continue; 
+					flagSet[key] = true;
+				}
 			});
 			Object.keys(flagSet).sort().forEach(function (flag) {
-				var typeMod = 0;
+				var multiplier = 1;
 				var immune = false;
 				defTypes.forEach(function (defendType) {
 					var defendTypeData = Dex.types.get(defendType);
 					var val = defendTypeData.damageTaken ? defendTypeData.damageTaken[flag] : undefined;
-					if (val === 3) immune = true;
-					if (val === 1) typeMod += 0.585;
-					if (val === 2) typeMod -= 0.415;
+					if (val === 3) { immune = true; } 
+					else if (val === 1) { multiplier *= 1.5; } 
+					else if (val === 2) { multiplier *= 0.5; }
 				});
 				if (immune) { immunities.push({ kind: 'flag', name: flag }); } 
-				else if (typeMod !== 0) { defense.push({ kind: 'flag', name: flag, typeMod: typeMod, thick: false }); }
+				else if (multiplier !== 1) { defense.push({ kind: 'flag', name: flag, multiplier: multiplier, thick: false }); }
 			});
 			var offense = [];
 			offense.push({ kind: 'stab', name: 'Single-type STAB', multiplier: 1.5, thick: true, type1: defTypes[0] || null });
@@ -2955,15 +2958,15 @@
 			var iconHtml, iconWidth, iconHeight;
 			if (entry.kind === 'flag' && Dex.isStatusName(entry.name)) {
 				iconHtml = Dex.getStatusIcon(entry.name);
-				iconWidth = 58; iconHeight = 14;
+				iconWidth = 60; iconHeight = 14;
 			}
 			else if (entry.kind === 'flag' && Dex.isFieldEffectName(entry.name)) {
 				iconHtml = Dex.getFieldEffectIcon(entry.name);
-				iconWidth = 58; iconHeight = 14;
+				iconWidth = 60; iconHeight = 14;
 			}
 			else if (entry.kind === 'flag') {
 				iconHtml = Dex.getFlagIcon(entry.name);
-				iconWidth = 58; iconHeight = 14;
+				iconWidth = 66; iconHeight = 16;
 			}
 			else if (entry.kind === 'stab') {
 				if (entry.type2) {
@@ -3038,8 +3041,8 @@
 					var isStatus = isFlag && Dex.isStatusName(immunity.name);
 					var isFieldEffect = isFlag && !isStatus && Dex.isFieldEffectName(immunity.name);
 					var iconHtml = isStatus ? Dex.getStatusIcon(immunity.name) : (isFieldEffect ? Dex.getFieldEffectIcon(immunity.name) : (isFlag ? Dex.getFlagIcon(immunity.name) : Dex.getTypeIcon(immunity.name)));
-					var iconWidth = isStatus ? 58 : (isFieldEffect ? 16 : (isFlag ? 58 : 32));
-					var iconHeight = isStatus ? 14 : (isFieldEffect ? 16 : (isFlag ? 14 : 14));
+					var iconWidth = isStatus ? 60 : (isFieldEffect ? 16 : (isFlag ? 66 : 32));
+					var iconHeight = isStatus ? 14 : (isFieldEffect ? 16 : (isFlag ? 16 : 14));
 					var label = immunity.name.charAt(0).toUpperCase() + immunity.name.slice(1);
 					buf += '<div class="typechart-icon-wrap" style="width:' + iconWidth + 'px; height:' + iconHeight + 'px; display:inline-flex; align-items:center; white-space:nowrap;" title="' + BattleLog.escapeHTML(label) + ' (0x)">';
 					buf += iconHtml;
@@ -3136,6 +3139,35 @@
 			var species = this.curTeam.dex.species.get(set.species);
 			var $target = $scope ? $scope.find('.mega-icons') : this.$('.mega-icons');
 			$target.replaceWith(this.getMegaIconsHTML(set, species));
+		},
+		getUltraBurstSpecies: function (species) {
+			var dex = this.curTeam.dex;
+			var baseSpecies = species.baseSpecies ? dex.species.get(species.baseSpecies) : species;
+			if (baseSpecies.name !== 'Necrozma') return null;
+			var otherFormes = baseSpecies.otherFormes || [];
+			for (var j = 0; j < otherFormes.length; j++) {
+				var forme = dex.species.get(otherFormes[j]);
+				if (forme.exists && forme.forme === 'Ultra') return forme;
+			}
+			return null;
+		},
+		getUltraBurstIconHTML: function (set, species) {
+			var ultraSpecies = this.getUltraBurstSpecies(species);
+			if (!ultraSpecies) return '<span class="ultraburst-icon"></span>';
+			var imgStyle = 'width:30px;height:30px;object-fit:contain; position: relative; top: -5px; right: 5px;display:block;';
+			var buf = '<span class="ultraburst-icon">';
+			buf += '<button type="button" class="ultraburst" style="background:none;border:none;padding:0;cursor:pointer;width:20px;height:20px;margin-left:8px;position:relative;top:4px;">';
+			buf += '<img src="' + Dex.resourcePrefix + 'sprites/misc/UltraBurstSymbol.png" alt="' + ultraSpecies.name + '" class="ultraburst-icon-img" style="' + imgStyle + '" />';
+			buf += '</button>';
+			buf += '</span>';
+			return buf;
+		},
+		refreshUltraBurstIcon: function (set, $scope) {
+			set = set || this.curSet;
+			if (!set) return;
+			var species = this.curTeam.dex.species.get(set.species);
+			var $target = $scope ? $scope.find('.ultraburst-icon') : this.$('.ultraburst-icon');
+			$target.replaceWith(this.getUltraBurstIconHTML(set, species));
 		},
 		//#region Set Detail Form
 		updateDetailsForm: function () {
@@ -3346,6 +3378,21 @@
 			var species = this.curTeam.dex.species.get(set.species);
 			var groups = this.getMegaFormeGroups(species);
 			app.addPopup(MegaPopup, { curSet: set, index: i, room: this, species: species, groups: groups, });
+		},
+		ultraBurstSelect: function (e) {
+			var set, i;
+			if (this.curSet) {
+				set = this.curSet;
+				i = this.curSetLoc;
+			} else {
+				i = +$(e.currentTarget).closest('li').attr('value');
+				set = this.curSetList[i];
+			}
+			if (!set) return;
+			var species = this.curTeam.dex.species.get(set.species);
+			var ultraSpecies = this.getUltraBurstSpecies(species);
+			if (!ultraSpecies) return;
+			app.addPopup(UltraBurstPopup, { curSet: set, room: this, species: species, ultraSpecies: ultraSpecies, });
 		},
 		infusionSelect: function (e) {
 			var set, i;
@@ -3651,6 +3698,7 @@
 				this.curSet.item = val;
 				this.updatePokemonSprite();
 				this.refreshMegaIcons();
+				this.refreshUltraBurstIcon();
 				if (selectNext) this.$(this.$('input[name=ability]').length ? 'input[name=ability]' : 'input[name=move' + (this.slot + 1) + ']').select();
 				break;
 			case 'ability':
@@ -4337,6 +4385,89 @@
 				.attr('src', Dex.resourcePrefix + 'sprites/types/Tera' + teraType + '.png')
 				.attr('alt', teraType);
 			this.room.refreshMegaIcons(this.curSet, $teamchart);
+		}
+	});
+	//region Ultra Burst popup
+	var UltraBurstPopup = this.UltraBurstPopup = Popup.extend({
+		type: 'semimodal',
+		initialize: function (data) {
+			this.room = data.room;
+			this.curSet = data.curSet;
+			this.species = data.species;
+			this.ultraSpecies = data.ultraSpecies;
+			var dex = this.room.curTeam.dex;
+			var species = this.species;
+			var ultraSpecies = this.ultraSpecies;
+			var cardWidth = 500;
+			this.$el.addClass('mega-popup');
+			var requiredItem = 'Ultranecrozium Z';
+			var stoneItem = dex.items.get(requiredItem);
+			var baseForCompare = dex.species.get(species.baseSpecies || species.name);
+			var formeStats = ultraSpecies.baseStats || {};
+			var baseStatsForCompare = baseForCompare.baseStats || {};
+			var spriteName = ultraSpecies.id;
+			var cardBuf = '';
+			cardBuf += '<div style="display:flex; width:' + 'px; flex-shrink:0; gap:0;">';
+			cardBuf += '<div style="border:3px solid #7c3aed; border-radius:10px 0 0 10px; padding-bottom:6px; display:flex; flex-direction:column; height: 145px; width:140px; overflow:hidden;">';
+			cardBuf += '<div style="position:relative; width:128px; height:128px; right:4px; margin:0 auto;">';
+			cardBuf += '<div style="position:absolute; top:4px; left:4px; z-index:2; display:flex; flex-direction:column; gap:1px;">';
+			var formeTypes = ultraSpecies.types || [];
+			for (var ti = 0; ti < formeTypes.length; ti++) { cardBuf += Dex.getTypeIcon(formeTypes[ti]); }
+			cardBuf += '</div>';
+			cardBuf += '<img src="' + Dex.resourcePrefix + 'sprites/dex2d/necrozma-ultra.png" ' + 'alt="' + BattleLog.escapeHTML(ultraSpecies.name) + '" ' + 'style="width:150px; height:150px; position: relative; top: 6px; object-fit:contain;" />';
+			cardBuf += '<img src="' + Dex.resourcePrefix + 'sprites/misc/UltraBurstSymbol.png" ' + 'alt="" ' + 'style="position:absolute; top:0px; right:-12px; width:40px; height:40px; object-fit:contain; z-index:2;" />';
+			cardBuf += '</div>';
+			cardBuf += '<span style="font-size: 14px; font-weight: bold; text-align:center;">' + 'Ultra Necrozma' + '</span>';
+			cardBuf += '</div>';
+			cardBuf += '</div>'; // card (no button — nothing to select)
+			cardBuf += '<div class="mega-sidebar" style="background:#e5e5e5; width:110px; gap:2px;">';
+			var statList = [ ['HP', 'hp'], ['Atk', 'atk'], ['Def', 'def'], ['SpA', 'spa'], ['SpD', 'spd'], ['Spe', 'spe'],];
+			for (var st = 0; st < statList.length; st++) {
+				var label = statList[st][0];
+				var key = statList[st][1];
+				var oldValue = baseStatsForCompare[key] || 0;
+				var newValue = formeStats[key] || 0;
+				var color = '#888';
+				if (newValue > oldValue) color = '#3b82f6';
+				if (newValue < oldValue) color = '#dc2626';
+				cardBuf += '<div style="display:flex; align-items:center; border-radius:4px; padding:0px 1px; font-size:12px; gap:2px;">';
+				cardBuf += '<span style="font-weight:bold; width:28px;">' + label + '</span>';
+				cardBuf += '<span style="width:25px; text-align:center;">' + oldValue + '</span>';
+				cardBuf += '→ ';
+				cardBuf += '<span style="color:' + color + '; width:25px; text-align:center; font-weight:bold;">' + newValue + '</span>';
+				cardBuf += '</div>';
+			}
+			cardBuf += '<div style="border-radius:4px; padding:1px; font-size:12px;">';
+			cardBuf += '<b>Guard Action</b>';
+			var guardActions = ultraSpecies.guardAction || [];
+			if (!Array.isArray(guardActions)) guardActions = [guardActions];
+			if (guardActions.length) {
+				for (var ga = 0; ga < guardActions.length; ga++) {
+					var guardMove = dex.moves.get(guardActions[ga]);
+					if (guardMove && guardMove.exists) { cardBuf += '<div>' + BattleLog.escapeHTML(guardMove.name) + '</div>'; }
+				}
+			} else { cardBuf += '<div style="margin-top:2px;">None</div>'; }
+			cardBuf += '</div>';
+			cardBuf += '<div style="border-radius:4px; padding:1px; font-size:12px;">';
+			cardBuf += '<b>Ability Set</b>';
+			var primaryAbility = (ultraSpecies.abilities && ultraSpecies.abilities['0']) || '&mdash;';
+			var secondaryAbility = (ultraSpecies.abilities && ultraSpecies.abilities['1']) || '&mdash;';
+			cardBuf += '<div style="margin-top:2px;">' + BattleLog.escapeHTML(primaryAbility || 'Unknown') + '</div>';
+			cardBuf += '<div style="margin-top:1px;">' + BattleLog.escapeHTML(secondaryAbility || 'Unknown') + '</div>';
+			cardBuf += '</div>';
+			cardBuf += '</div>'; // sidebar
+			cardBuf += '</div>'; // card wrapper
+			var buf = '';
+			buf += '<div style="width:100%; max-width:95vw;">';
+			buf += '<p style="font-size:20px;">' + '<strong>Ultra Burst</strong> ' + '<button name="close" class="button">Close</button>' + '</p>';
+			buf += '<p style="width:unset;">Necrozma can regain its true form by performing Ultra Burst.</p>';
+			buf += '<p style="width:unset;">If Necrozma, Necrozma-Dawn-Wings, or Necrozma-Dusk-Mane are hit with a light move, their Ultra Burst Counter will go down. After (surviving) the 3rd hit over the course of a battle, Necrozma will Ultra Burst automatically.</p>';
+			buf += '<div style="display:flex; flex-direction:row; flex-wrap:nowrap; gap:0; padding-bottom:8px; width:100%;">';
+			buf += cardBuf;
+			buf += '</div>';
+			buf += '</div>';
+			this.$el.html(buf).appendTo('body');
+			this.$el.css({ width: cardWidth + 'px', maxWidth: '95vw', boxSizing: 'border-box' });
 		}
 	});
 	//region Type popup

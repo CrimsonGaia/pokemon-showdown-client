@@ -276,7 +276,7 @@
 				this.updateControlsForPlayer();
 			}
 		},
-		 //region Battle stuff
+		//region Battle stuff
 		updateControls: function () {
 			if (this.battle.scene.customControls) return;
 			var controlsShown = this.controlsShown;
@@ -306,14 +306,12 @@
 						);
 					}
 				} else {
-					// is a player — KEEP tera visible during animations
 					this.$controls.html(
-					'<p>' +
-						this.getTeraChargeHTML() + 
-						this.getMegaChargeHTML() +
-						this.getTimerHTML() +
-						'<button class="button" name="skipTurn"><i class="fa fa-step-forward"></i><br />Skip turn</button> ' +
-						'<button class="button" name="goToEnd"><i class="fa fa-fast-forward"></i><br />Skip to end</button>' +
+					'<p class="whatdo">' +
+						this.getWhatDoHTML('', '', true,
+							'<button class="button" name="skipTurn"><i class="fa fa-step-forward"></i><br />Skip turn</button> ' +
+							'<button class="button" name="goToEnd"><i class="fa fa-fast-forward"></i><br />Skip to end</button>'
+						) +
 					'</p>'
 					);
 				}
@@ -515,7 +513,7 @@
 						'background:rgba(255,0,0,0.65);display:none;pointer-events:none;z-index:1;"></span>' +
 					// Foreground content
 					'<span class="teracharge-left" style="position:relative;z-index:2;float:left;margin-right:-40px">' + d.cur + '</span>' +
-					'<span class="teracharge-text" style="position:relative;z-index:2;display:block;text-align:center">Tera</span>' +
+					'<span class="teracharge-text" style="position:relative;z-index:2;display:block;text-align:right; padding-right: 4px;">Tera</span>' +
 					'<span class="teracharge-typeicon" style="position:absolute;z-index:2;right:6px;top:50%;transform:translateY(-50%);display:none">' +
 					'<img class="teracharge-typeicon-img" alt="" style="height:25px;width:25px;margin-top:9px;" />' +
 					'</span>' +
@@ -533,7 +531,7 @@
 		},
 		getMegaChargeHTML: function () {
 			var st = this.getMyMegaChargeState();
-			if (!st) return ''; // no bar until we know the side's charge (mirrors getTeraChargeHTML)
+			if (!st) return '';
 			var letter = this.canMegaEvoLetter;
 			var cur = Math.max(0, Math.min(100, Math.round(st.cur / (st.max || 100) * 100)));
 			return '' +
@@ -542,18 +540,14 @@
 				'style="position:relative;overflow:hidden;">' +
 					'<span class="megacharge-fill" style="' +
 						'position:absolute;left:0;top:0;bottom:0;width:' + cur + '%;' +
-						'background-color:#8b5fbf;display:block;pointer-events:none;z-index:0;' +
+						'background-color:rgb(247 85 197 / 30%);display:block;pointer-events:none;z-index:0;' +
 						'transition:width 0.4s ease-out;"></span>' +
-					'<span class="megacharge-left" style="position:relative;z-index:2;float:left;margin-right:-40px">' + st.cur + '</span>' +
-					'<span class="megacharge-text" style="position:relative;z-index:2;display:block;text-align:center">Mega</span>' +
-					// Letter icon renders when the currently-selected Pokemon can actually Mega
-					(letter ? (
-					'<span class="megacharge-letter" style="' +
-						'position:absolute;z-index:2;right:6px;top:50%;transform:translateY(-50%);' +
-						'font-weight:bold;font-size:16px;' +
-						'opacity:' + (cur >= 100 ? '1' : '0.2') + ';' +
-						'transition:opacity 0.4s ease-out;">' + letter + '</span>'
-					) : '') +
+					'<span class="megacharge-left" style="' +
+						'position:relative;z-index:2;float:left;margin-right:-40px;">' +
+						(cur >= 100 && letter ? letter : st.cur) +
+					'</span>' +
+					'<span class="megacharge-text" style="' +
+						'position:relative;z-index:2;display:block;text-align:right;padding-right:4px;">Mega</span>' +
 				'</button>';
 		},
 		updateMegaCharge: function () {
@@ -587,6 +581,16 @@
 				this.megaEvoArmedLetter = letter;
 			}
 			this.updateMegaCharge();
+		},
+		getWhatDoHTML: function (requestTitle, guardHTML, includeMega, extraLeftHTML) {
+			var title = (requestTitle || '') + (extraLeftHTML || '');
+			var right = '';
+			if (includeMega !== false) right += this.getMegaChargeHTML();
+			right += this.getTeraChargeHTML();
+			right += this.getTimerHTML();
+			return '' +
+				'<span class="whatdo-left">' + '<span class="whatdo-title">' + title + '</span>' + '</span>' +
+				'<span class="whatdo-right">' + '<span class="whatdo-guard">' + (guardHTML || '') + '</span>' + right + '</span>';
 		},
 		getGuardActionColorStyle: function (guardType) {
 			var typeColor = {
@@ -1025,7 +1029,7 @@
 				}
 				this.$controls.html(
 					'<div class="controls">' +
-						'<div class="whatdo">' + requestTitle + guardHTML + this.getTeraChargeHTML() + this.getTimerHTML() + '</div>' +
+						'<div class="whatdo">' + this.getWhatDoHTML(requestTitle, guardHTML) + '</div>' +
 						'<div class="switchmenu" style="display:block">' + targetMenus[0] + '<div style="clear:both"></div></div>' +
 						'<div class="switchmenu" style="display:block">' + targetMenus[1] + '</div>' +
 					'</div>'
@@ -1034,7 +1038,7 @@
 			}
 			// move chooser
 			var hpBar = '<small class="' + (hpRatio < 0.2 ? 'critical' : hpRatio < 0.5 ? 'weak' : 'healthy') + '">HP ' + switchables[pos].hp + '/' + switchables[pos].maxhp + '</small>';
-			requestTitle += ' What will <strong>' + BattleLog.escapeHTML(switchables[pos].name) + '</strong> do? ' + hpBar;
+			requestTitle += ' What will <strong>' + BattleLog.escapeHTML(switchables[pos].name) + '</strong> do?';
 			var hasMoves = false;
 			var moveMenu = '';
 			var movebuttons = '';
@@ -1050,13 +1054,19 @@
 				if (move.id === 'Recharge') move.type = '&ndash;';
 				if (name.substr(0, 12) === 'Hidden Power') name = 'Hidden Power';
 				var moveType = this.tooltips.getMoveType(move, typeValueTracker)[0];
+				var moveType2 = move.type2 || null;
 				var tooltipArgs = 'move|' + moveData.move + '|' + pos;
+				var dualStyle = moveType2 ? this.getDualTypeStyle(moveType, moveType2) : null;
+				var typeClass = 'type-' + moveType + (dualStyle ? ' dual-type' : '');
+				var styleAttr = dualStyle ? ' style="' + dualStyle.buttonStyle + '"' : '';
 				if (moveData.disabled) { movebuttons += '<button disabled class="movebutton has-tooltip" data-tooltip="' + BattleLog.escapeHTML(tooltipArgs) + '">'; } 
 				else {
-					movebuttons += '<button class="movebutton type-' + moveType + ' has-tooltip" name="chooseMove" value="' + (m + 1) + '" data-move="' + BattleLog.escapeHTML(moveData.move) + '" data-target="' + BattleLog.escapeHTML(moveData.target) + '" data-tooltip="' + BattleLog.escapeHTML(tooltipArgs) + '">';
+					movebuttons += '<button class="movebutton ' + typeClass + ' has-tooltip"' + styleAttr + ' name="chooseMove" value="' + (m + 1) + '" data-move="' + BattleLog.escapeHTML(moveData.move) + '" data-target="' + BattleLog.escapeHTML(moveData.target) + '" data-tooltip="' + BattleLog.escapeHTML(tooltipArgs) + '">';
 					hasMoves = true;
 				}
-				movebuttons += BattleLog.escapeHTML(name) + '<br />' + '<small class="type">' + (moveType ? Dex.types.get(moveType).name : "Unknown") + '</small> <small class="pp">' + pp + '</small>&nbsp;</button> ';
+				var nameStyle = dualStyle ? ' style="' + dualStyle.textStyle + '"' : '';
+				var typeLabel = moveType ? Dex.getTypeIcon(moveType, false, moveType2) : "Unknown";
+				movebuttons += '<span' + nameStyle + '>' + BattleLog.escapeHTML(name) + '</span><br />' + '<small class="type"' + nameStyle + '>' + typeLabel + '</small> <small class="pp"' + nameStyle + '>' + pp + '</small>&nbsp;</button> ';
 			}
 			if (!hasMoves) { moveMenu += '<button class="movebutton" name="chooseMove" value="0" data-move="Struggle" data-target="randomNormal">Struggle<br /><small class="type">Normal</small> <small class="pp">&ndash;</small>&nbsp;</button> '; } 
 			else { moveMenu += movebuttons; }
@@ -1111,7 +1121,7 @@
 			);
 			this.$controls.html(
 				'<div class="controls">' +
-					'<div class="whatdo">' + requestTitle + guardHTML + this.getTeraChargeHTML() + this.getTimerHTML() + '</div>' +
+					'<div class="whatdo">' + this.getWhatDoHTML(requestTitle, guardHTML) + '</div>' +
 					moveControls + shiftControls + switchControls +
 				'</div>'
 			);
@@ -1172,7 +1182,7 @@
 				controls += '</div>';
 				this.$controls.html(
 					'<div class="controls">' +
-					'<div class="whatdo">' + requestTitle + this.getTeraChargeHTML() + this.getTimerHTML() + '</div>' +
+					'<div class="whatdo">' + this.getWhatDoHTML(requestTitle) + '</div>' +
 					controls +
 					'</div>'
 				);
@@ -1201,7 +1211,7 @@
 				);
 				this.$controls.html(
 					'<div class="controls">' +
-					'<div class="whatdo">' + requestTitle + this.getTeraChargeHTML() + this.getTimerHTML() + '</div>' +
+					'<div class="whatdo">' + this.getWhatDoHTML(requestTitle) + '</div>' +
 					controls +
 					'</div>'
 				);
@@ -1230,7 +1240,7 @@
 			);
 			this.$controls.html(
 				'<div class="controls">' +
-				'<div class="whatdo">' + requestTitle + this.getTeraChargeHTML() + this.getTimerHTML() + '</div>' +
+				'<div class="whatdo">' + this.getWhatDoHTML(requestTitle) + '</div>' +
 				controls +
 				'</div>'
 			);
