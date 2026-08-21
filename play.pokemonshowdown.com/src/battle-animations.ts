@@ -1942,7 +1942,10 @@ export class PokemonSprite extends Sprite {
 			status += '+<img src="' + Dex.resourcePrefix + 'sprites/types/' + type + '.png" alt="' + type + '" class="pixelated" /> ';
 		}
 		for (const stat in pokemon.boosts) { if (pokemon.boosts[stat]) { status += '<span class="' + pokemon.getBoostType(stat as Dex.BoostStatName) + '">' + pokemon.getBoost(stat as Dex.BoostStatName) + '</span> '; } }
-		for (let i in pokemon.volatiles) { status += PokemonSprite.getEffectTag(i); }
+		for (let i in pokemon.volatiles) {
+			if (i === 'needles' && pokemon.volatiles[i][2]) { status += `<span class="bad">Needles&nbsp;[${pokemon.volatiles[i][2]}]</span> `; } 
+			else { status += PokemonSprite.getEffectTag(i); }
+		}
 		for (let i in pokemon.turnstatuses) {
 			if (i === 'roost' && !pokemon.getTypeList().includes('Flying')) continue;
 			status += PokemonSprite.getEffectTag(i);
