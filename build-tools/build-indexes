@@ -80,6 +80,9 @@ console.log(`Merged descriptions for ${Object.keys(ItemsText).length} items`);
 	const speciesTagIds = new Set();
 	for (const id in Dex.data.Pokedex) { for (const tag of (Dex.data.Pokedex[id].tags || [])) { speciesTagIds.add(toID(tag)); } }
 	index = index.concat([...moveFlagIds, ...speciesTagIds].map(x => x + ' flag'));
+	const guardActionMoveIds = new Set();
+	for (const id in Dex.data.Moves) { if (Dex.data.Moves[id].guardActionCD) guardActionMoveIds.add(id); }
+	index = index.concat([...guardActionMoveIds].map(x => x + ' guardaction'));
 	index = index.concat(['monster', 'water1', 'bug', 'flying', 'field', 'fairy', 'grass', 'humanlike', 'water3', 'mineral', 'amorphous', 'water2', 'ditto', 'dragon', 'undiscovered',].map(x => toID(x) + ' egggroup'));
 	index = index.concat(['ou', 'uu', 'ru', 'nu', 'pu', 'zu', 'lc', 'nfe', 'uber', 'uubl', 'rubl', 'nubl', 'publ', 'zubl', 'cap', 'caplc', 'capnfe',].map(x => toID(x) + ' tier'));
 	index = index.concat([ 'fragile', 'volatile', 'pokeball', 'megastone', 'zcrystals', 'tradeevo', 'evostones', 'evolution', 'berry', 'consumable', 'species', 'typeplates', 'healing', 'statboost', 'statuscure', 'resist', 'reactive', 'utility', 'weather', 'terrain',
