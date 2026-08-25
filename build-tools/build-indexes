@@ -706,19 +706,20 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 	// The ONLY regs we want the teambuilder to slice by
 	const regs = ['Reg α','Reg Δ','Reg ι','Reg β','Reg ζ','Reg γ','Reg Θ','Reg ε','Reg λ','Reg ψ','Reg ν','Reg φ'];
 	const buckets = Object.fromEntries(regs.map(r => [r, []]));
-	// Put each species into exactly ONE reg bucket based on FormatsData.tier
-	for (const id in rawFormatsData) {
-		const entry = rawFormatsData[id];
-		const tier = entry?.tier;
-		if (!tier || typeof tier !== 'string') continue;
-		// Ignore smogon tiers and only accept isl tiers
-		if (!(tier in buckets)) continue;
+	// Put each species into exactly ONE reg bucket based on FormatsData.tier,
+	// falling back to the base species' tier for formes that inherit rather than override it.
+	for (const id in Dex.data.Pokedex) {
 		const sp = islDex.species.get(id);
 		if (!sp || !sp.exists) continue;
 		// Avoid MissingNo sprite (0.png spam)
 		if (sp.num === 0) continue;
 		// Hard-hide categories you never want showing in ISL builder lists
 		if (sp.isNonstandard === 'Past' || sp.isNonstandard === 'Gigantamax' || sp.isNonstandard === 'CAP') continue;
+		const baseId = toID(sp.baseSpecies);
+		const tier = rawFormatsData[id]?.tier || (baseId !== id ? rawFormatsData[baseId]?.tier : undefined);
+		if (!tier || typeof tier !== 'string') continue;
+		// Ignore smogon tiers and only accept isl tiers
+		if (!(tier in buckets)) continue;
 		buckets[tier].push(id);
 	}
 	// Optional: stable ordering by dex number
