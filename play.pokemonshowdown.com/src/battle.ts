@@ -3245,8 +3245,12 @@ export class Battle {
 			}
 			case 'poke': {
 				let pokemon = this.rememberTeamPreviewPokemon(args[1], args[2]);
+				// Item is now revealed at team preview, but deliberately not attributed to this icon yet - it's pooled in the topbar until it's genuinely revealed in battle.
 				if (args[3] === 'mail') { pokemon.item = '(mail)'; } 
-				else if (args[3] === 'item') { pokemon.item = '(exists)'; }
+				else if (args[3]) {
+					const { siden } = this.parsePokemonId(args[1]);
+					this.sides[siden].teamsheetItems[this.sides[siden].pokemon.length - 1] = args[3];
+				}
 				break;
 			}
 			case 'updatepoke': {

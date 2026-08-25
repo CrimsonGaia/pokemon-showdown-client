@@ -476,12 +476,11 @@ export class BattleScene implements BattleSceneStub {
 		}
 		return BattleLog.escapeHTML(name);
 	}
-	getTeamBarHTML(side: Side, isP1: boolean): string {
+		getTeamBarHTML(side: Side, isP1: boolean): string {
 		let html = '';
 		const s = side as any;
-		// Own side: the full brought team from the request. Opponent: whatever's been
-		// revealed so far (via showteam at preview, or normal switch-ins during play).
-		const fullTeam: Pokemon[] = s.fullTeam || side.pokemon || [];
+		const fullTeam: Pokemon[] = (s.fullTeam?.length ? s.fullTeam : null) ||
+			(s.sidebarPokemon?.length ? s.sidebarPokemon : null) || side.pokemon || [];
 		const revealedSlots = new Set<number>();
 		for (let i = 0; i < side.pokemon.length; i++) { if (side.pokemon[i]?.searchid || side.pokemon[i]?.fainted) revealedSlots.add(i); }
 		for (let i = 0; i < fullTeam.length; i++) {
@@ -493,9 +492,9 @@ export class BattleScene implements BattleSceneStub {
 			const opacityStyle = revealed ? '' : 'opacity:0.35;';
 			const knownItem = side.pokemon[i]?.item;
 			let itemIconHTML = '';
-			if (knownItem && knownItem !== '(exists)') { itemIconHTML = `<span class="itemicon" data-teambar-item="${isP1 ? 'p1' : 'p2'}-${i}" style="${Dex.getItemIcon(knownItem)}"></span>`; } 
+			if (knownItem && knownItem !== '(exists)') { itemIconHTML = `<span class="itemicon" data-teambar-item="${isP1 ? 'p1' : 'p2'}-${i}" style="${Dex.getItemIcon(knownItem, 24 / 96)}"></span>`; } 
 			else { itemIconHTML = `<span class="itemicon itemicon-unknown" data-teambar-item="${isP1 ? 'p1' : 'p2'}-${i}">?</span>`; }
-			html += `<span class="picon battleteambar-sprite${status}" style="${iconStyle}${opacityStyle}">${itemIconHTML}</span>`;
+			html += `<span class="picon has-tooltip battleteambar-sprite${status}" data-tooltip="pokemon|${side.n}|${i}" style="${iconStyle}${opacityStyle}">${itemIconHTML}</span>`;
 		}
 		return html;
 	}
@@ -680,9 +679,9 @@ export class BattleScene implements BattleSceneStub {
 		);
 		// FLIP: any pool icon present before this render but gone now just got attributed -
 		// fly a floating clone from its old pool position to its new slot on the topbar.
-		for (const [slotKey, fromRect] of preRects) {
+		preRects.forEach((fromRect, slotKey) => {
 			const $target = this.$battleteambar.find(`[data-teambar-item="${slotKey}"]`);
-			if (!$target.length) continue;
+			if (!$target.length) return;
 			const toRect = ($target[0] as HTMLElement).getBoundingClientRect();
 			const $clone = $target.clone().css({
 				position: 'fixed', margin: 0, zIndex: 999, pointerEvents: 'none', transition: 'none',
@@ -695,7 +694,7 @@ export class BattleScene implements BattleSceneStub {
 				});
 			});
 			setTimeout(() => $clone.remove(), 450);
-		}
+		});
 	}
 	updateStatbars() {
 		for (const side of this.battle.sides) { for (const active of side.active) { if (active) active.sprite.updateStatbar(active); } }
