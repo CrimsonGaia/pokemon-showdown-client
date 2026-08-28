@@ -6,13 +6,17 @@
 		title: 'Test Battle',
 		events: { 'change input[name=p2mode]': 'toggleP2Mode' },
 		curFormat: '',
+		bestOf: 1,
 		p1TeamIndex: -1,
 		p2Mode: 'human',
 		p2TeamIndex: -1,
 		p2Opponent: '',
 		initialize: function () {
 			this.$el.addClass('ps-room-light').addClass('scrollable');
+			this.curFormat = Storage.prefs('testBattleFormat') || '';
+			this.bestOf = Storage.prefs('testBattleBestOf') || 1;
 			Storage.whenTeamsLoaded(this.update, this);
+			this.listenTo(app, 'init:formats', this.update);
 			this.update();
 		},
 		update: function () {
@@ -21,16 +25,55 @@
 			buf += '<p>Control both sides of a battle from this tab. No login required.</p>';
 			buf += '<h3>Format</h3>';
 			buf += '<p>' + this.renderFormatButton() + '</p>';
-			buf += '<h3>Player 1</h3>';
+			buf += '<h3>Set Length</h3>';
+			buf += '<p>' + this.renderBestOfButtons() + '</p>';
+			// Players side by side
+			buf += '<div style="display: flex; align-items: flex-start; gap: 15px;">';
+			// Player 1
+			buf += '<div>';
+			buf += '<h3 style="margin-top: 0; height: 22px; display: flex; align-items: center;">Player 1</h3>';
 			buf += this.renderTeamList('p1', this.p1TeamIndex);
-			buf += '<h3>Player 2</h3>';
-			buf += '<p><label class="checkbox"><input type="checkbox" name="p2mode"' + (this.p2Mode === 'computer' ? ' checked' : '') + ' /> Computer opponent</label></p>';
+			buf += '</div>';
+			// Player 2
+			buf += '<div>';
+			buf += '<h3 style="margin-top: 0; height: 22px; display: flex; align-items: center; gap: 8px;">';
+			buf += 'Player 2';
+			buf += '<label class="checkbox" style="font-size: 12px; font-weight: normal; margin: 0;">';
+			buf += '<input type="checkbox" name="p2mode"' + (this.p2Mode === 'computer' ? ' checked' : '') + ' /> Computer opponent';
+			buf += '</label>';
+			buf += '</h3>';
 			if (this.p2Mode === 'computer') { buf += this.rendercomputerList(this.p2Opponent); } 
-            else { buf += this.renderTeamList('p2', this.p2TeamIndex); }
+			else { buf += this.renderTeamList('p2', this.p2TeamIndex); }
+			buf += '</div>';
+			buf += '</div>';
 			var canStart = this.canStart();
 			buf += '<p><button class="button' + (canStart ? ' big' : '') + '" name="startTestBattle" value=""' + (canStart ? '' : ' disabled') + '>Start Battle</button></p>';
 			buf += '</div>';
 			this.$el.html(buf);
+		},
+		renderBestOfButtons: function () {
+			var options = [
+				{ n: 1, color: '130,130,130' }, // grey
+				{ n: 3, color: '60,180,90' },   // green
+				{ n: 5, color: '165,70,200' },  // purple
+			];
+			var buf = '<div style="display: flex; align-items: end; gap: 4px;">';
+			for (var i = 0; i < options.length; i++) {
+				var opt = options[i];
+				var isCur = this.bestOf === opt.n;
+				// Only selected backgrounds are darker
+				var bgColor = isCur
+					? (opt.n === 1 ? '80,80,80' : opt.n === 3 ? '35,120,55' : opt.color)
+					: opt.color;
+				var alpha = isCur ? '0.65' : '0.22';
+				var style = 'font-weight: bold; font-size: 10.5px; cursor: pointer; padding: 1.5px 6px; height: 18px; ' +
+					'background: rgba(' + bgColor + ', ' + alpha + '); text-align: center; ' +
+					'color: ' + (isCur ? 'white' : 'inherit') + ';' +
+					(isCur ? ' box-shadow: inset 0 0 0 1px rgba(' + opt.color + ', 0.9);' : '');
+				buf += '<button type="button" class="textbox" name="selectBestOf" value="' + opt.n + '" style="' + style + '">Best of ' + opt.n + '</button>';
+			}
+			buf += '</div>';
+			return buf;
 		},
 		renderFormatButton: function () {
 			if (!window.BattleFormats) { return '<button class="select" name="selectFormat" value="" disabled><em>Loading...</em></button>'; }
@@ -92,6 +135,7 @@
 			app.addPopup(FormatPopup, { 
                 format: this.curFormat, sourceEl: button, selectType: 'challenge', onselect: function (newFormat) {
                     self.curFormat = newFormat;
+                    Storage.prefs('testBattleFormat', newFormat);
                     self.p1TeamIndex = -1;
                     self.p2TeamIndex = -1;
                     self.update();
@@ -100,6 +144,11 @@
 		},
 		selectOpponent: function (value) {
 			this.p2Opponent = value;
+			this.update();
+		},
+		selectBestOf: function (value) {
+			this.bestOf = parseInt(value, 10);
+			Storage.prefs('testBattleBestOf', this.bestOf);
 			this.update();
 		},
 		toggleP2Mode: function (e) {
@@ -117,7 +166,7 @@
 			var isRandomTeam = window.BattleFormats[this.curFormat] && window.BattleFormats[this.curFormat].team;
 			var p1team = isRandomTeam ? '' : Storage.teams[this.p1TeamIndex].team;
 			var p2team = isRandomTeam ? '' : Storage.teams[this.p2TeamIndex].team;
-			app.send('/starttestbattle ' + this.curFormat + '\t' + p1team + '\t' + p2team);
+			app.send('/starttestbattle ' + this.curFormat + '\t' + (this.bestOf || 1) + '\t' + p1team + '\t' + p2team);
 		}
 	});
 }).call(this, jQuery);
