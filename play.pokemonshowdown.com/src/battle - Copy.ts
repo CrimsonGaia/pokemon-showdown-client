@@ -1717,7 +1717,7 @@ export class Battle {
 		case '-supereffective': {
 			let poke = this.getPokemon(args[1]);
 			if (poke) {
-				this.scene.resultAnim(poke, 'Super-effective', 'bad');
+				this.scene.resultAnim(poke, 'Weak', 'bad');
 				if (Dex.afdMode === true) { this.scene.runOtherAnim('hitmark' as ID, [poke]); } // April Fool's 2018
 			}
 			if (this.activeMoveIsSpread) kwArgs.spread = '.';
@@ -1726,7 +1726,7 @@ export class Battle {
 		}
 		case '-resisted': {
 			let poke = this.getPokemon(args[1]);
-			if (poke) this.scene.resultAnim(poke, 'Resisted', 'neutral');
+			if (poke) this.scene.resultAnim(poke, 'Resist', 'neutral');
 			if (this.activeMoveIsSpread) kwArgs.spread = '.';
 			this.log(args, kwArgs);
 			break;
@@ -2729,7 +2729,12 @@ export class Battle {
 		case '-sidestart': {
 			let side = this.getSide(args[1]);
 			let effect = Dex.getEffect(args[2]);
+			const returning = effect.id === 'stealthrock' && (kwArgs.from === 'Turbulent Winds' || kwArgs.from === 'Delta Stream');
 			side.addSideCondition(effect, !!kwArgs.persistent);
+			if (returning) {
+				this.scene.removeSideCondition(side.n, effect.id, true);
+				this.scene.addSideCondition(side.n, effect.id, false, true);
+			}
 			switch (effect.id) {
 			case 'tailwind':
 			case 'auroraveil':

@@ -2678,6 +2678,8 @@ export const BattleMoveAnims: AnimTable = {
 	matblock: { anim: BattleOtherAnims.selfstatus.anim, },
 	quickguard: { anim: BattleOtherAnims.selfstatus.anim, },
 	wideguard: { anim: BattleOtherAnims.selfstatus.anim, },
+	guard: { anim: BattleOtherAnims.selfstatus.anim, },
+	guardlv2: { anim: BattleOtherAnims.selfstatus.anim, },
 	endure: { anim: BattleOtherAnims.selfstatus.anim, },
 	bide: { anim: BattleOtherAnims.bidecharge.anim, },
 	focusenergy: { anim: BattleOtherAnims.selfstatus.anim, },
@@ -20139,7 +20141,7 @@ export const BattleMoveAnims: AnimTable = {
                 y: y + 30,
                 z: side.z,
                 scale: 0.5,
-                opacity: 1,
+                opacity: 0.85,
             }, 'ballistic');
             scene.showEffect('rocks', {
                 x: attacker.x,
@@ -20153,7 +20155,7 @@ export const BattleMoveAnims: AnimTable = {
                 y: y + 40,
                 z: side.z,
                 scale: 0.5,
-                opacity: 1,
+                opacity: 0.85,
             }, 'ballistic');
             scene.showEffect('rocks', {
                 x: attacker.x,
@@ -20167,7 +20169,7 @@ export const BattleMoveAnims: AnimTable = {
                 y: y + 35,
                 z: side.z,
                 scale: 0.5,
-                opacity: 1,
+                opacity: 0.85,
             }, 'ballistic');
             scene.showEffect('rocks', {
                 x: attacker.x,
@@ -20181,7 +20183,7 @@ export const BattleMoveAnims: AnimTable = {
                 y: y + 45,
                 z: side.z,
                 scale: 0.5,
-                opacity: 1,
+                opacity: 0.85,
             }, 'ballistic');
         },
     },
